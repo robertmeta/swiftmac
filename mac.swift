@@ -1,3 +1,5 @@
+#!/usr/bin/env swift
+
 import AVFoundation
 import AppKit
 import Darwin
@@ -5,36 +7,50 @@ import Foundation
 
 // Supporting Classes
 class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
-
   func speechSynthesizer(_ sender: NSSpeechSynthesizer, didFinishSpeaking finishedSpeaking: Bool) {
     speaker.startSpeaking(ss.popBacklog())
   }
 }
 
 class StateStore {
-  private var myBacklog: String = ""
-  private var rate: Int = 200
+    private var backlog: String = ""
+  private var rate: Int = 275
+  private var sayRate: Int = 330
+  private var speechVolume: Float = 1
+  private var toneVolume: Float = 1
+  private var soundVolume: Float = 1
   private var voice: String = "Alex"
-  private let queue = DispatchQueue(label: "org.emacspeak.server.mac.state")
+  private var splitCaps: Bool = false
+  private var charScale: Double = 1.2
+  private let queue = DispatchQueue(label: "org.emacspeak.server.mac.state", qos: .userInteractive)
+
+  func setVoice(voice: String) {
+    queue.async {
+      if self.voice != voice {
+        self.voice = voice
+        let voice = NSSpeechSynthesizer.VoiceName(
+          rawValue: "com.apple.speech.synthesis.voice." + voice)
+        speaker.setVoice(voice)
+      }
+    }
+  }
 
   func clearBacklog() {
     queue.async {
-      self.myBacklog = ""
+      self.backlog = ""
     }
   }
 
   func pushBacklog(with: String) {
     queue.async {
-      // Access myBacklog here
-      self.myBacklog += with
+      self.backlog += with
     }
   }
 
   func popBacklog() -> String {
     var result: String = ""
     queue.sync {
-      // Access myBacklog here
-      result = self.myBacklog
+      result = self.backlog
     }
     self.clearBacklog()
     return result
@@ -43,13 +59,11 @@ class StateStore {
 
 func playPureTone(frequencyInHz: Int, amplitude: Float, durationInMillis: Int) async {
   let toneQueue = DispatchQueue(label: "org.emacspeak.server.mac.tone", qos: .userInteractive)
-  //Use a semaphore to block until the tone completes playing
   let semaphore = DispatchSemaphore(value: 1)
   toneQueue.async {
-    //Build the player and its engine
     let audioPlayer = AVAudioPlayerNode()
     let audioEngine = AVAudioEngine()
-    semaphore.wait()  //Claim the semphore for blocking
+    semaphore.wait()
     audioEngine.attach(audioPlayer)
     let mixer = audioEngine.mainMixerNode
     let sampleRateHz = Float(mixer.outputFormat(forBus: 0).sampleRate)
@@ -61,22 +75,22 @@ func playPureTone(frequencyInHz: Int, amplitude: Float, durationInMillis: Int) a
     else {
       return
     }
-    // Connect the audio engine to the audio player
+
     audioEngine.connect(audioPlayer, to: mixer, format: format)
 
     let numberOfSamples = AVAudioFrameCount((Float(durationInMillis) / 1000 * sampleRateHz))
-    //create the appropriatly sized buffer
+
     guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: numberOfSamples) else {
       return
     }
     buffer.frameLength = numberOfSamples
-    //get a pointer to the buffer of floats
+
     let channels = UnsafeBufferPointer(
       start: buffer.floatChannelData, count: Int(format.channelCount))
     let floats = UnsafeMutableBufferPointer<Float>(start: channels[0], count: Int(numberOfSamples))
-    //calculate the angular frequency
+
     let angularFrequency = Float(frequencyInHz * 2) * .pi
-    // Generate and store the sequential samples representing the sine wave of the tone
+
     for i in 0..<Int(numberOfSamples) {
       let waveComponent = sinf(Float(i) * angularFrequency / sampleRateHz)
       floats[i] = waveComponent * amplitude
@@ -88,15 +102,14 @@ func playPureTone(frequencyInHz: Int, amplitude: Float, durationInMillis: Int) a
       return
     }
 
-    // Play the pure tone represented by the buffer
     audioPlayer.play()
     audioPlayer.scheduleBuffer(buffer, at: nil, options: .interrupts) {
       toneQueue.async {
-        semaphore.signal()  //Release one claim of the semiphore
+        semaphore.signal()
       }
     }
-    semaphore.wait()  //Wait for the semiphore so the function doesn't end before the playing of the tone completes
-    semaphore.signal()  //Release the other claim of the semiphore
+    semaphore.wait()
+    semaphore.signal()
   }
 }
 
@@ -111,6 +124,8 @@ let dh = DelegateHandler()
 // default values
 let voice = NSSpeechSynthesizer.VoiceName(rawValue: "com.apple.speech.synthesis.voice.Alex")
 speaker.setVoice(voice)
+speaker.rate = 275
+speaker.volume = 1
 speaker.delegate = dh
 
 // Entry point and main loop
@@ -119,27 +134,48 @@ func main() async {
     let cmd = await isolateCommand(line: l)
     debugPrint(cmd)
     switch cmd {
-    case "a": await playAudioIcon(line: l)
-    case "c": await queueCode(line: l)
-    case "d": await dispatchSpeaker()
-    case "l": await sayLetter(line: l)
-    case "p": await playSound(line: l)
-    case "q": await queueSpeaker(line: l)
-    case "s": await stopSpeaker()
-    case "sh": await saySilence(line: l)
-    case "t": await playTone(line: l)
-    case "version": await sayVersion()
-    case "tts_exit": await ttsExit()
-    case "tts_pause": await ttsPause()
-    case "tts_reset": await ttsReset()
-    case "tts_resume": await ttsResume()
-    case "tts_say": await ttsSay(line: l)
-    case "tts_set_character_scale": await ttsSetCharacterScale(line: l)
-    case "tts_set_punctuations": await ttsSetPunctuations(line: l)
-    case "tts_set_speech_rate": await ttsSetRate(line: l)
-    case "tts_split_caps": await ttsSplitCaps(line: l)
-    case "tts_sync_state": await ttsSyncState(line: l)
-    default: await unknownLine(line: l)
+    case "a":
+      await playAudioIcon(line: l)
+    case "c":
+      await queueCode(line: l)
+    case "d":
+      await dispatchSpeaker()
+    case "l":
+      await sayLetter(line: l)
+    case "p":
+      await playSound(line: l)
+    case "q":
+      await queueSpeaker(line: l)
+    case "s":
+      await stopSpeaker()
+    case "sh":
+      await saySilence(line: l)
+    case "t":
+      await playTone(line: l)
+    case "version":
+      await sayVersion()
+    case "tts_exit":
+      await ttsExit()
+    case "tts_pause":
+      await ttsPause()
+    case "tts_reset":
+      await ttsReset()
+    case "tts_resume":
+      await ttsResume()
+    case "tts_say":
+      await ttsSay(line: l)
+    case "tts_set_character_scale":
+      await ttsSetCharacterScale(line: l)
+    case "tts_set_punctuations":
+      await ttsSetPunctuations(line: l)
+    case "tts_set_speech_rate":
+      await ttsSetRate(line: l)
+    case "tts_split_caps":
+      await ttsSplitCaps(line: l)
+    case "tts_sync_state":
+      await ttsSyncState(line: l)
+    default:
+      await unknownLine(line: l)
     }
   }
 }
@@ -153,11 +189,12 @@ func ttsReset() async {
 }
 
 func sayVersion() async {
-  await say(what: "Running " + name + " version " + version, interupt: true)
+    await say(what: "Running \(name) version \(version)", interupt: true)
 }
 
 func sayLetter(line: String) async {
-  debugPrint("Not Implemented Yet")
+    let letter = "S"
+    await say(what:"[[ltrl]]\(letter)[[norm]]", interupt: true)
 }
 
 func saySilence(line: String) async {
@@ -165,11 +202,11 @@ func saySilence(line: String) async {
 }
 
 func ttsPause() async {
-  debugPrint("Not Implemented Yet")
+  
 }
 
 func ttsResume() async {
-  debugPrint("Not Implemented Yet")
+  
 }
 
 func ttsSetCharacterScale(line: String) async {
@@ -193,7 +230,8 @@ func ttsSyncState(line: String) async {
 }
 
 func playTone(line: String) async {
-  await playPureTone(frequencyInHz: 440, amplitude: 1, durationInMillis: 1000)
+    let toneVolume:Float = 1.0
+  await playPureTone(frequencyInHz: 440, amplitude: toneVolume, durationInMillis: 1000)
 }
 
 func stopSpeaker() async {
@@ -236,13 +274,14 @@ func ttsSay(line: String) async {
 }
 
 func say(what: String, interupt: Bool) async {
+  let w = await stripSpecialEmbeds(what)
   if interupt {
-    speaker.startSpeaking(what)
+    speaker.startSpeaking(w)
   } else {
     if speaker.isSpeaking {
-      ss.pushBacklog(with: what)
+      ss.pushBacklog(with: w)
     } else {
-      speaker.startSpeaking(what)
+      speaker.startSpeaking(w)
     }
   }
 }
@@ -259,6 +298,9 @@ func ttsExit() async {
 
 // TODO: handle these, so far I know it uses voice
 // and echo
+// voice is straightforward, call setVoice but
+// dealing with echo is trickier but possible with
+// a customized NSVoiceSynth
 func stripSpecialEmbeds(_ s: String) async -> String {
   let specialEmbedRegexp = #"\[\{.*?\}\]"#
   return s.replacingOccurrences(of: specialEmbedRegexp, with: "", options: .regularExpression)

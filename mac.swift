@@ -1,5 +1,8 @@
 #!/usr/bin/env swift
 /*
+ Usage: Just run it, it will compile-on-demand and cache binary
+ Setup: Set server to "swiftmac"
+ 
  This software is licensed under the MIT license found at the end of
  the file.
 
@@ -171,11 +174,12 @@ speaker.rate = 275
 speaker.volume = 1
 speaker.delegate = dh
 
-// let oai = NSSpeechSynthesizer.DictionaryKey(rawValue: "OpenAI")
-// debugPrint(oai)
-// let customPronunciations = [oai: "open A I"]
-// debugPrint(customPronunciations)
-// speaker.addSpeechDictionary(customPronunciations)
+let speechRawDictionary: NSDictionary = [ "fish": "water"]
+if let dict = speechRawDictionary as? [String: AnyObject] {
+    debugPrint(dict)
+    let speechDictionary = Dictionary(uniqueKeysWithValues: dict.map{(key: NSSpeechSynthesizer.DictionaryKey(rawValue: $0.key), value: $0.value)})
+    speaker.addSpeechDictionary(speechDictionary)
+}
 
 
 // Entry point and main loop

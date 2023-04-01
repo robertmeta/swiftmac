@@ -1,27 +1,33 @@
 #!/usr/bin/env swift
 /*
- Usage: Just run it, it will compile-on-demand and cache binary
- Setup: Set server to "swiftmac"
- 
- This software is licensed under the MIT license found at the end of
- the file.
+HOW TO USE
+ Just set your server to swiftmac, as long as you have swift
+ installed there are no further steps. It will compile and cache the
+ compiled binary so will launch quickly next time.
 
- Motivations for why it was written and goals are also at end of
- the file.
+ To learn more: https://github.com/robertmeta/swiftmac
 
- TODO:
- - Finish python based test driver to validate functionality
- - Add signal handling (control-c, etc)
- - Add handling of voice changes (most of the plumbing is ready)
- - Add echo handling via custom NSSpeechSynthesizer with echo effect
- - Add custom dictionary objects to pronounce things rather than using
-  string manipulation, might need a seperate speaker per class
- - (maybe) disable built-in voice on the fly as speaking to make it
-  require zero configuration to use (no double speaking)  
- - (maybe) Switch to AVFoundation and utterances
-  - Makes it easier to handle adding speech in flight
-  - All speech comes with its own voice and specifics like speed
-  - Very much fits how emacspeak generates speech
+LICENSE
+ Copyright 2023 Robert Melton
+
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation files
+ (the “Software”), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge,
+ publish, distribute, sublicense, and/or sell copies of the Software,
+ and to permit persons to whom the Software is furnished to do so,
+ subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import AVFoundation
 import AppKit
@@ -47,7 +53,7 @@ class StateStore {
   private var rate: Int = 275
   private var sayRate: Int = 330
   private var speechVolume: Float = 1
-  private var toneVolume: Float = 1
+  private var toneVolume: Float = 0.5
   private var soundVolume: Float = 1
   private var voice: String = "Alex"
   private var splitCaps: Bool = false
@@ -158,6 +164,16 @@ func playPureTone(
   }
 }
 
+// Get DEBUG from ENV
+var debug = false
+if let debugStr = ProcessInfo.processInfo.environment["DEBUG"] {
+    if debugStr.lowercased() == "true" {
+      debug = true
+      await say(what: "Debug Mode Turned On", interupt: false)  
+   }
+}
+
+
 // Global Constants
 let version = "0.2"
 let name = "mac.swift"
@@ -173,14 +189,6 @@ speaker.setVoice(voice)
 speaker.rate = 275
 speaker.volume = 1
 speaker.delegate = dh
-
-let speechRawDictionary: NSDictionary = [ "fish": "water"]
-if let dict = speechRawDictionary as? [String: AnyObject] {
-    debugPrint(dict)
-    let speechDictionary = Dictionary(uniqueKeysWithValues: dict.map{(key: NSSpeechSynthesizer.DictionaryKey(rawValue: $0.key), value: $0.value)})
-    speaker.addSpeechDictionary(speechDictionary)
-}
-
 
 // Entry point and main loop
 func main() async {
@@ -247,8 +255,10 @@ func sayVersion() async {
 }
 
 func sayLetter(line: String) async {
-  let letter = "S"
-  await say(what: "[[ctrl]]\(letter)[[norm]]", interupt: true)
+  let letter = await isolateParams(line: line)
+  let charRate = 330
+  let rate = 275
+  await say(what: "[[rate \(charRate)]][[char ltrl]]\(letter)[[char norm]][[rate \(rate)]]", interupt: true)
 }
 
 func saySilence(line: String) async {
@@ -284,11 +294,14 @@ func ttsSyncState(line: String) async {
 }
 
 func playTone(line: String) async {
-  let toneVolume: Float = 1.0
+  let toneVolume: Float = 0.7
+  let p = await isolateParams(line: line)
+  let ps = p.split(separator: " ") 
   await playPureTone(
-    frequencyInHz: 440,
-    amplitude:
-      toneVolume, durationInMillis: 1000)
+    frequencyInHz: Int(ps[0]) ?? 500,
+    amplitude: toneVolume,
+    durationInMillis: Int(ps[1]) ?? 75
+  )
 }
 
 func stopSpeaker() async {
@@ -306,8 +319,9 @@ func queueSpeaker(line: String) async {
 }
 
 func queueCode(line: String) async {
-  let p = await isolateParams(line: line)
-  ss.pushBacklog(with: " " + p)
+    var p = await isolateParams(line: line)
+    p = await stripSpecialEmbeds(p)
+    ss.pushBacklog(with: " " + p)
 }
 
 // Does the same thing as "p " so route it over to playSound
@@ -353,10 +367,13 @@ func ttsExit() async {
 }
 
 func stripSpecialEmbeds(_ s: String) async -> String {
+    debugPrint(s)
   let specialEmbedRegexp = #"\[\{.*?\}\]"#
-  return s.replacingOccurrences(
+  let y = s.replacingOccurrences(
     of: specialEmbedRegexp,
     with: "", options: .regularExpression)
+  debugPrint(y)
+  return y
 }
 
 func isolateCommand(line: String) async -> String {
@@ -384,42 +401,3 @@ func isolateParams(line: String) async -> String {
 }
 
 await main()
-
-/* MOTIVATIONS
- This is a port of the wonderful mac server for emacspeak, the reasons
- for the port are varied, but the key one was a lack of reliability
- when running the mac server for long periods of time, which I suspect
- is actually from the retention code deep in pyobjc but not sure.
-
- Goals:
- - Highly relibable (no memory leaks, no voiceover garble)
- - Completely non-blocking (never lag emacs)
- - Feature-complete (if emacspeak supports it we do)
- - No dependandies except swift (meaning xcode)
- - No install needed, compile on the fly with #!
- - Take full advantage of built-in VoiiceOver features 
-*/
-
-
-/* LICENSE
- Copyright 2023 Robert Melton
-
- Permission is hereby granted, free of charge, to any person
- obtaining a copy of this software and associated documentation files
- (the “Software”), to deal in the Software without restriction,
- including without limitation the rights to use, copy, modify, merge,
- publish, distribute, sublicense, and/or sell copies of the Software,
- and to permit persons to whom the Software is furnished to do so,
- subject to the following conditions:
-
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */

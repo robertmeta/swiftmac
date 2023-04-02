@@ -54,7 +54,7 @@ class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
 // news is the only syncronise bits are on reading the data out.
 class StateStore {
   private var backlog: String = ""
-  private var rate: Int = 275
+  private var rate: Float = 275
   private var sayRate: Int = 330
   private var speechVolume: Float = 1
   private var toneVolume: Float = 0.5
@@ -63,7 +63,7 @@ class StateStore {
   private var splitCaps: Bool = false
   private var charScale: Double = 1.2
   private let queue = DispatchQueue(
-    label: "org.emacspeak.server.mac.state", qos: .userInteractive)
+    label: "org.emacspeak.server.swiftmac.state", qos: .userInteractive)
 
   func setVoice(voice: String) {
     queue.async {
@@ -82,7 +82,7 @@ class StateStore {
     }
   }
 
-  func pushBacklog(with: String, code: Bool = false) {
+  func pushBacklog(_ with: String, code: Bool = false) {
     queue.async {
       var w = stripSpecialEmbeds(with)
       if !code {
@@ -99,6 +99,18 @@ class StateStore {
     }
     self.clearBacklog()
     return result
+  }
+
+  func setRate(_ r: Float) {
+    queue.async {
+      self.rate = r
+    }
+  }
+
+  func getRate() -> Float  {
+    queue.sync {
+      return self.rate
+    }
   }
 }
 
@@ -193,7 +205,7 @@ let dh = DelegateHandler()
 let voice = NSSpeechSynthesizer.VoiceName(
   rawValue: "com.apple.speech.synthesis.voice.Alex")
 speaker.setVoice(voice)
-speaker.rate = 225
+speaker.rate = ss.getRate()
 speaker.volume = 1
 speaker.delegate = dh
 
@@ -315,7 +327,7 @@ func sayVersion() async {
 func sayLetter(_ line: String) async {
   let letter = await isolateParams(line)
   let charRate = 250
-  let rate = 225
+
   await say(
     "[[rate \(charRate)]][[char ltrl]]\(letter)[[rset 0]]", interupt: true)
 }
@@ -384,12 +396,12 @@ func dispatchSpeaker() async {
 
 func queueSpeaker(_ line: String) async {
   let p = await isolateParams(line)
-  ss.pushBacklog(with: p)
+  ss.pushBacklog(p)
 }
 
 func queueCode(_ line: String) async {
   let p = await isolateParams(line)
-  ss.pushBacklog(with: p, code: true)
+  ss.pushBacklog(p, code: true)
 }
 
 // Does the same thing as "p " so route it over to playSound
@@ -427,7 +439,7 @@ func say(_ what: String, interupt: Bool = false) async {
     speaker.startSpeaking(w)
   } else {
     if speaker.isSpeaking {
-      ss.pushBacklog(with: w)
+      ss.pushBacklog(w)
     } else {
       if await debug {
         debugPrint("say:startSpeaking: \(w)")

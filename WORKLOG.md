@@ -2,6 +2,9 @@ Worklog
 =======
 2023-04-02 - Robert Melton
 --------------------------
+ - Realized after I did the debugging work that it was the dumbest 
+   possible way, need to make it a function that can write to a file 
+   that it pulls the name from environment
  - I now understand why so many commands for setting the voice come 
    in, it is as a soft reset of the voice server, better implemented
    with [[reset 0]] 

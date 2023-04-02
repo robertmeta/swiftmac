@@ -1,9 +1,8 @@
-#!/usr/bin/env swift
 /*
 HOW TO USE
- Just set your server to swiftmac, as long as you have swift
- installed there are no further steps. It will compile and cache the
- compiled binary so will launch quickly next time.
+ Just set your server to swiftmac. Assuming you have the swift command
+ line installed via xcode command line tools, you are done, it will
+ just work.
 
  To learn more: https://github.com/robertmeta/swiftmac
 
@@ -37,17 +36,17 @@ import Foundation
 // This delegate class lets us continue speaking with queued data
 // after a speech chunk is completed
 class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
-    func speechSynthesizer(
-        _ sender: NSSpeechSynthesizer,
-        didFinishSpeaking finishedSpeaking: Bool
-    ) {
-        speaker.startSpeaking(ss.popBacklog())
-    }
+  func speechSynthesizer(
+    _ sender: NSSpeechSynthesizer,
+    didFinishSpeaking finishedSpeaking: Bool
+  ) {
+    speaker.startSpeaking(ss.popBacklog())
+  }
 }
 
 // Due to being fully async, handling the state is a bit of a pain,
 // we have to store it all in a class and gate access to it, the good
-// news is the only syncronise bits are on reading the data out. 
+// news is the only syncronise bits are on reading the data out.
 class StateStore {
   private var backlog: String = ""
   private var rate: Int = 275
@@ -80,7 +79,9 @@ class StateStore {
 
   func pushBacklog(with: String) {
     queue.async {
-      self.backlog += with
+      var w = stripSpecialEmbeds(with)
+      w = replaceAllPuncs(w)
+      self.backlog += w
     }
   }
 
@@ -167,16 +168,15 @@ func playPureTone(
 // Get DEBUG from ENV
 var debug = false
 if let debugStr = ProcessInfo.processInfo.environment["DEBUG"] {
-    if debugStr.lowercased() == "true" {
-      debug = true
-      await say(what: "Debug Mode Turned On", interupt: false)  
-   }
+  if debugStr.lowercased() == "true" {
+    debug = true
+    await say(what: "Debug Mode Turned On", interupt: false)
+  }
 }
 
-
 // Global Constants
-let version = "0.2"
-let name = "mac.swift"
+let version = "0.3"
+let name = "swiftmac"
 
 let speaker = NSSpeechSynthesizer()
 let ss = StateStore()
@@ -186,12 +186,13 @@ let dh = DelegateHandler()
 let voice = NSSpeechSynthesizer.VoiceName(
   rawValue: "com.apple.speech.synthesis.voice.Alex")
 speaker.setVoice(voice)
-speaker.rate = 275
+speaker.rate = 300
 speaker.volume = 1
 speaker.delegate = dh
 
 // Entry point and main loop
 func main() async {
+  await say(what: "Welcome to E Mac speak with Swift Mac", interupt: true)
   while let l = readLine() {
     let cmd = await isolateCommand(line: l)
     debugPrint(cmd)
@@ -242,6 +243,46 @@ func main() async {
   }
 }
 
+func replaceBasePuncs(_ line: String) -> String {
+  return line
+}
+
+func replaceSomePuncs(_ line: String) -> String {
+  return line
+}
+
+func replaceAllPuncs(_ line: String) -> String {
+  return
+    line
+    .replacingOccurrences(of: "$", with: "dollar")
+    .replacingOccurrences(of: "#", with: "pound")
+    .replacingOccurrences(of: "-", with: "dash")
+    .replacingOccurrences(of: "'", with: "quote")
+    .replacingOccurrences(of: "(", with: "leftParen")
+    .replacingOccurrences(of: ")", with: "rightParen")
+    .replacingOccurrences(of: "*", with: "star")
+    .replacingOccurrences(of: ";", with: "semi")
+    .replacingOccurrences(of: ":", with: "colon")
+    .replacingOccurrences(of: "<", with: "less than")
+    .replacingOccurrences(of: ">", with: "greater than")
+    .replacingOccurrences(of: "\n", with: "")
+    .replacingOccurrences(of: "\\", with: "backslash")
+    .replacingOccurrences(of: "/", with: "slash")
+    .replacingOccurrences(of: "+", with: "plus")
+    .replacingOccurrences(of: "=", with: "equals")
+    .replacingOccurrences(of: "'", with: "apostrophe")
+    .replacingOccurrences(of: "*", with: "star")
+    .replacingOccurrences(of: "~", with: "tilda")
+    .replacingOccurrences(of: "`", with: "backquote")
+    .replacingOccurrences(of: "!", with: "exclamation")
+    .replacingOccurrences(of: "@", with: "at")
+    .replacingOccurrences(of: "_", with: "underline")
+    .replacingOccurrences(of: "'", with: "apostrophe")
+    .replacingOccurrences(of: ".", with: "dot")
+    .replacingOccurrences(of: ",", with: "comma")
+    .replacingOccurrences(of: "^", with: "caret")
+}
+
 func ttsSplitCaps(line: String) async {
   debugPrint("Not Implemented Yet")
 }
@@ -256,9 +297,10 @@ func sayVersion() async {
 
 func sayLetter(line: String) async {
   let letter = await isolateParams(line: line)
-  let charRate = 330
-  let rate = 275
-  await say(what: "[[rate \(charRate)]][[char ltrl]]\(letter)[[char norm]][[rate \(rate)]]", interupt: true)
+  let charRate = 333
+  let rate = 300
+  await say(
+    what: "[[rate \(charRate)]][[char ltrl]]\(letter)[[char norm]][[rate \(rate)]]", interupt: true)
 }
 
 func saySilence(line: String) async {
@@ -266,11 +308,11 @@ func saySilence(line: String) async {
 }
 
 func ttsPause() async {
-    speaker.pauseSpeaking(at: .immediateBoundary)
+  speaker.pauseSpeaking(at: .immediateBoundary)
 }
 
 func ttsResume() async {
-    speaker.continueSpeaking()
+  speaker.continueSpeaking()
 }
 
 func ttsSetCharacterScale(line: String) async {
@@ -296,7 +338,7 @@ func ttsSyncState(line: String) async {
 func playTone(line: String) async {
   let toneVolume: Float = 0.7
   let p = await isolateParams(line: line)
-  let ps = p.split(separator: " ") 
+  let ps = p.split(separator: " ")
   await playPureTone(
     frequencyInHz: Int(ps[0]) ?? 500,
     amplitude: toneVolume,
@@ -319,9 +361,8 @@ func queueSpeaker(line: String) async {
 }
 
 func queueCode(line: String) async {
-    var p = await isolateParams(line: line)
-    p = await stripSpecialEmbeds(p)
-    ss.pushBacklog(with: " " + p)
+  let p = await isolateParams(line: line)
+  ss.pushBacklog(with: " " + p)
 }
 
 // Does the same thing as "p " so route it over to playSound
@@ -345,7 +386,8 @@ func ttsSay(line: String) async {
 }
 
 func say(what: String, interupt: Bool) async {
-  let w = await stripSpecialEmbeds(what)
+  var w = stripSpecialEmbeds(what)
+  w = replaceAllPuncs(w)
   if interupt {
     speaker.startSpeaking(w)
   } else {
@@ -366,14 +408,11 @@ func ttsExit() async {
   exit(0)
 }
 
-func stripSpecialEmbeds(_ s: String) async -> String {
-    debugPrint(s)
+func stripSpecialEmbeds(_ s: String) -> String {
   let specialEmbedRegexp = #"\[\{.*?\}\]"#
-  let y = s.replacingOccurrences(
+  return s.replacingOccurrences(
     of: specialEmbedRegexp,
     with: "", options: .regularExpression)
-  debugPrint(y)
-  return y
 }
 
 func isolateCommand(line: String) async -> String {
@@ -401,3 +440,8 @@ func isolateParams(line: String) async -> String {
 }
 
 await main()
+
+// local variables:
+// mode: swift
+// tab-width: 2
+// end:

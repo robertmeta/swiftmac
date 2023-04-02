@@ -78,10 +78,12 @@ class StateStore {
     }
   }
 
-  func pushBacklog(with: String) {
+  func pushBacklog(with: String, code: Bool = false) {
     queue.async {
       var w = stripSpecialEmbeds(with)
-      w = replaceAllPuncs(w)
+      if !code {
+        w = replaceAllPuncs(w)
+      }
       self.backlog += w
     }
   }
@@ -171,7 +173,7 @@ var debug = false
 if let debugStr = ProcessInfo.processInfo.environment["DEBUG"] {
   if debugStr.lowercased() == "true" {
     debug = true
-    await say(what: "Debug Mode Turned On", interupt: false)
+    await say("Debug Mode Turned On")
   }
 }
 
@@ -187,35 +189,35 @@ let dh = DelegateHandler()
 let voice = NSSpeechSynthesizer.VoiceName(
   rawValue: "com.apple.speech.synthesis.voice.Alex")
 speaker.setVoice(voice)
-speaker.rate = 300
+speaker.rate = 225
 speaker.volume = 1
 speaker.delegate = dh
 
 // Entry point and main loop
 func main() async {
-  await say(what: "Welcome to E Mac speak with Swift Mac", interupt: true)
+  await say("welcome to e mac speak with swift mac", interupt: true)
   while let l = readLine() {
-    let cmd = await isolateCommand(line: l)
+    let cmd = await isolateCommand(l)
     debugPrint(cmd)
     switch cmd {
     case "a":
-      await playAudioIcon(line: l)
+      await playAudioIcon(l)
     case "c":
-      await queueCode(line: l)
+      await queueCode(l)
     case "d":
       await dispatchSpeaker()
     case "l":
-      await sayLetter(line: l)
+      await sayLetter(l)
     case "p":
-      await playSound(line: l)
+      await playSound(l)
     case "q":
-      await queueSpeaker(line: l)
+      await queueSpeaker(l)
     case "s":
       await stopSpeaker()
     case "sh":
-      await saySilence(line: l)
+      await saySilence(l)
     case "t":
-      await playTone(line: l)
+      await playTone(l)
     case "version":
       await sayVersion()
     case "tts_exit":
@@ -227,19 +229,19 @@ func main() async {
     case "tts_resume":
       await ttsResume()
     case "tts_say":
-      await ttsSay(line: l)
+      await ttsSay(l)
     case "tts_set_character_scale":
-      await ttsSetCharacterScale(line: l)
+      await ttsSetCharacterScale(l)
     case "tts_set_punctuations":
-      await ttsSetPunctuations(line: l)
+      await ttsSetPunctuations(l)
     case "tts_set_speech_rate":
-      await ttsSetRate(line: l)
+      await ttsSetRate(l)
     case "tts_split_caps":
-      await ttsSplitCaps(line: l)
+      await ttsSplitCaps(l)
     case "tts_sync_state":
-      await ttsSyncState(line: l)
+      await ttsSyncState(l)
     default:
-      await unknownLine(line: l)
+      await unknownLine(l)
     }
   }
 }
@@ -255,36 +257,37 @@ func replaceSomePuncs(_ line: String) -> String {
 func replaceAllPuncs(_ line: String) -> String {
   return
     line
-    .replacingOccurrences(of: "$", with: "dollar")
-    .replacingOccurrences(of: "#", with: "pound")
-    .replacingOccurrences(of: "-", with: "dash")
-    .replacingOccurrences(of: "'", with: "quote")
-    .replacingOccurrences(of: "(", with: "leftParen")
-    .replacingOccurrences(of: ")", with: "rightParen")
-    .replacingOccurrences(of: "*", with: "star")
-    .replacingOccurrences(of: ";", with: "semi")
-    .replacingOccurrences(of: ":", with: "colon")
-    .replacingOccurrences(of: "<", with: "less than")
-    .replacingOccurrences(of: ">", with: "greater than")
+    .replacingOccurrences(of: "$", with: " dollar ")
+    .replacingOccurrences(of: "#", with: " pound ")
+    .replacingOccurrences(of: "-", with: " dash ")
+    .replacingOccurrences(of: "'", with: " quote ")
+  .replacingOccurrences(of: "\"", with: " dboule quote ")
+    .replacingOccurrences(of: "(", with: " leftParen ")
+    .replacingOccurrences(of: ")", with: " rightParen ")
+    .replacingOccurrences(of: "*", with: " star ")
+    .replacingOccurrences(of: ";", with: " semi ")
+    .replacingOccurrences(of: ":", with: " colon ")
+    .replacingOccurrences(of: "<", with: " less than ")
+    .replacingOccurrences(of: ">", with: " greater than ")
     .replacingOccurrences(of: "\n", with: "")
-    .replacingOccurrences(of: "\\", with: "backslash")
-    .replacingOccurrences(of: "/", with: "slash")
-    .replacingOccurrences(of: "+", with: "plus")
-    .replacingOccurrences(of: "=", with: "equals")
-    .replacingOccurrences(of: "'", with: "apostrophe")
-    .replacingOccurrences(of: "*", with: "star")
-    .replacingOccurrences(of: "~", with: "tilda")
-    .replacingOccurrences(of: "`", with: "backquote")
-    .replacingOccurrences(of: "!", with: "exclamation")
-    .replacingOccurrences(of: "@", with: "at")
-    .replacingOccurrences(of: "_", with: "underline")
-    .replacingOccurrences(of: "'", with: "apostrophe")
-    .replacingOccurrences(of: ".", with: "dot")
-    .replacingOccurrences(of: ",", with: "comma")
-    .replacingOccurrences(of: "^", with: "caret")
+    .replacingOccurrences(of: "\\", with: " backslash ")
+    .replacingOccurrences(of: "/", with: " slash ")
+    .replacingOccurrences(of: "+", with: " plus ")
+    .replacingOccurrences(of: "=", with: " equals ")
+    .replacingOccurrences(of: "'", with: " apostrophe ")
+    .replacingOccurrences(of: "*", with: " star ")
+    .replacingOccurrences(of: "~", with: " tilda ")
+    .replacingOccurrences(of: "`", with: " backquote ")
+    .replacingOccurrences(of: "!", with: " exclamation ")
+    .replacingOccurrences(of: "@", with: " at sign ")
+    .replacingOccurrences(of: "_", with: " underline ")
+    .replacingOccurrences(of: "'", with: " apostrophe ")
+    .replacingOccurrences(of: ".", with: " dot ")
+    .replacingOccurrences(of: ",", with: " comma ")
+    .replacingOccurrences(of: "^", with: " caret ")
 }
 
-func ttsSplitCaps(line: String) async {
+func ttsSplitCaps(_ line: String) async {
   debugPrint("Not Implemented Yet")
 }
 
@@ -293,19 +296,19 @@ func ttsReset() async {
 }
 
 func sayVersion() async {
-  await say(what: "Running \(name) version \(version)", interupt: true)
+  await say("Running \(name) version \(version)", interupt: true)
 }
 
-func sayLetter(line: String) async {
-  let letter = await isolateParams(line: line)
-  let charRate = 333
-  let rate = 300
+func sayLetter(_ line: String) async {
+  let letter = await isolateParams(line)
+  let charRate = 250
+  let rate = 225
   await say(
-    what: "[[rate \(charRate)]][[char ltrl]]\(letter)[[char norm]][[rate \(rate)]]", interupt: true)
+    "[[rate \(charRate)]][[char ltrl]]\(letter)[[char norm]][[rate \(rate)]]", interupt: true)
 }
 
-func saySilence(line: String) async {
-  await say(what: "[[slic]]", interupt: false)
+func saySilence(_ line: String) async {
+  await say("[[slic]]", interupt: false)
 }
 
 func ttsPause() async {
@@ -316,29 +319,29 @@ func ttsResume() async {
   speaker.continueSpeaking()
 }
 
-func ttsSetCharacterScale(line: String) async {
+func ttsSetCharacterScale(_ line: String) async {
   debugPrint("Not Implemented Yet")
 }
 
-func ttsSetPunctuations(line: String) async {
+func ttsSetPunctuations(_ line: String) async {
   debugPrint("Not Implemented Yet")
 }
 
-func ttsSetRate(line: String) async {
+func ttsSetRate(_ line: String) async {
   debugPrint("Not Implemented Yet")
 }
 
-func ttSplitCaps(line: String) async {
+func ttSplitCaps(_ line: String) async {
   debugPrint("Not Implemented Yet")
 }
 
-func ttsSyncState(line: String) async {
+func ttsSyncState(_ line: String) async {
   debugPrint("Not Implemented Yet")
 }
 
-func playTone(line: String) async {
-  let toneVolume: Float = 0.7
-  let p = await isolateParams(line: line)
+func playTone(_ line: String) async {
+  let toneVolume: Float = 0.5
+  let p = await isolateParams(line)
   let ps = p.split(separator: " ")
   await playPureTone(
     frequencyInHz: Int(ps[0]) ?? 500,
@@ -356,39 +359,39 @@ func dispatchSpeaker() async {
   speaker.startSpeaking(ss.popBacklog())
 }
 
-func queueSpeaker(line: String) async {
-  let p = await isolateParams(line: line)
-  ss.pushBacklog(with: " " + p)
+func queueSpeaker(_ line: String) async {
+  let p = await isolateParams(line)
+  ss.pushBacklog(with: p)
 }
 
-func queueCode(line: String) async {
-  let p = await isolateParams(line: line)
-  ss.pushBacklog(with: " " + p)
+func queueCode(_ line: String) async {
+  let p = await isolateParams(line)
+  ss.pushBacklog(with: p, code: true)
 }
 
 // Does the same thing as "p " so route it over to playSound
-func playAudioIcon(line: String) async {
+func playAudioIcon(_ line: String) async {
   print("Playing audio icon: " + line)
-  await playSound(line: line)
+  await playSound(line)
 }
 
-func playSound(line: String) async {
+func playSound(_ line: String) async {
   print("Playing sound: " + line)
-  let p = await isolateParams(line: line)
+  let p = await isolateParams(line)
   let soundURL = URL(fileURLWithPath: p)
   let sound = NSSound(contentsOf: soundURL, byReference: true)
   sound?.volume = 0.5
   sound?.play()
 }
 
-func ttsSay(line: String) async {
+func ttsSay(_ line: String) async {
   print("ttsSay: " + line)
-  let p = await isolateParams(line: line)
-  await say(what: p, interupt: true)
+  let p = await isolateParams(line)
+  await say(p, interupt: true)
 
 }
 
-func say(what: String, interupt: Bool) async {
+func say(_ what: String, interupt: Bool = false) async {
   var w = stripSpecialEmbeds(what)
   w = replaceAllPuncs(w)
   if interupt {
@@ -402,7 +405,7 @@ func say(what: String, interupt: Bool) async {
   }
 }
 
-func unknownLine(line: String) async {
+func unknownLine(_ line: String) async {
   debugPrint("Unknown command: " + line)
 }
 
@@ -411,14 +414,24 @@ func ttsExit() async {
   exit(0)
 }
 
-func stripSpecialEmbeds(_ s: String) -> String {
+func stripSpecialEmbeds(_ line: String) -> String {
   let specialEmbedRegexp = #"\[\{.*?\}\]"#
-  return s.replacingOccurrences(
+  return voiceToReset(line).replacingOccurrences(
     of: specialEmbedRegexp,
     with: "", options: .regularExpression)
 }
 
-func isolateCommand(line: String) async -> String {
+// So, it turns out we get spammed with voice often as a form of a
+// reset of the voice engine, good news is we have that command
+// built right in
+func voiceToReset(_ line: String) -> String {
+  let specialEmbedRegexp = #"\[\{voice.*?\}\]"#
+  return line.replacingOccurrences(
+    of: specialEmbedRegexp,
+    with: " [[rset 0]] ", options: .regularExpression)
+}
+
+func isolateCommand(_ line: String) async -> String {
   var cmd = line.trimmingCharacters(in: .whitespacesAndNewlines)
   if let firstIndex = cmd.firstIndex(of: " ") {
     cmd.replaceSubrange(firstIndex..<cmd.endIndex, with: "")
@@ -427,8 +440,8 @@ func isolateCommand(line: String) async -> String {
   return cmd
 }
 
-func isolateParams(line: String) async -> String {
-  let cmd = await isolateCommand(line: line) + " "
+func isolateParams(_ line: String) async -> String {
+  let cmd = await isolateCommand(line) + " "
   var params = line.replacingOccurrences(of: cmd, with: "")
   params = params.trimmingCharacters(in: .whitespacesAndNewlines)
   if params.hasPrefix("{") && params.hasSuffix("}") {

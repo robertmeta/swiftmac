@@ -29,8 +29,8 @@ LICENSE
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import AVFoundation
 import AppKit
+import AVFoundation
 import Darwin
 import Foundation
 
@@ -41,7 +41,11 @@ class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
     _ sender: NSSpeechSynthesizer,
     didFinishSpeaking finishedSpeaking: Bool
   ) {
-    speaker.startSpeaking(ss.popBacklog())
+    let s = ss.popBacklog()
+    if debug {
+      debugPrint("startSpeaking: \(s)")
+    }
+    speaker.startSpeaking(s)
   }
 }
 
@@ -153,7 +157,7 @@ func playPureTone(
     do {
       try audioEngine.start()
     } catch {
-      print("Error: Engine start failure")
+      debugPrint("Error: Engine start failure")
       return
     }
 
@@ -173,7 +177,7 @@ var debug = false
 if let debugStr = ProcessInfo.processInfo.environment["DEBUG"] {
   if debugStr.lowercased() == "true" {
     debug = true
-    await say("Debug Mode Turned On")
+    await say("debug mode turned on")
   }
 }
 
@@ -198,7 +202,6 @@ func main() async {
   await say("welcome to e mac speak with swift mac", interupt: true)
   while let l = readLine() {
     let cmd = await isolateCommand(l)
-    debugPrint(cmd)
     switch cmd {
     case "a":
       await playAudioIcon(l)
@@ -246,53 +249,63 @@ func main() async {
   }
 }
 
-func replaceBasePuncs(_ line: String) -> String {
+// This is replacements that always must happen when doing
+// replaceements like [*] -> slnc 
+func replaceCore(_ line: String) -> String {
   return line
+    .replacingOccurrences(of: "[*]", with: " [[slnc 50]] ")
+}
+
+func replaceBasePuncs(_ line: String) -> String {
+  return replaceCore(line)
+      .replacingOccurrences(of: "$", with: " dollar ")
+
 }
 
 func replaceSomePuncs(_ line: String) -> String {
-  return line
-}
-
-func replaceAllPuncs(_ line: String) -> String {
-  return
-    line
-    .replacingOccurrences(of: "$", with: " dollar ")
+  return replaceBasePuncs(line)
     .replacingOccurrences(of: "#", with: " pound ")
     .replacingOccurrences(of: "-", with: " dash ")
-    .replacingOccurrences(of: "'", with: " quote ")
-    .replacingOccurrences(of: "\"", with: " dboule quote ")
+    .replacingOccurrences(of: "\"", with: " quote ")
     .replacingOccurrences(of: "(", with: " leftParen ")
     .replacingOccurrences(of: ")", with: " rightParen ")
     .replacingOccurrences(of: "*", with: " star ")
     .replacingOccurrences(of: ";", with: " semi ")
     .replacingOccurrences(of: ":", with: " colon ")
-    .replacingOccurrences(of: "<", with: " less than ")
-    .replacingOccurrences(of: ">", with: " greater than ")
     .replacingOccurrences(of: "\n", with: "")
     .replacingOccurrences(of: "\\", with: " backslash ")
     .replacingOccurrences(of: "/", with: " slash ")
     .replacingOccurrences(of: "+", with: " plus ")
     .replacingOccurrences(of: "=", with: " equals ")
-    .replacingOccurrences(of: "'", with: " apostrophe ")
-    .replacingOccurrences(of: "*", with: " star ")
     .replacingOccurrences(of: "~", with: " tilda ")
     .replacingOccurrences(of: "`", with: " backquote ")
     .replacingOccurrences(of: "!", with: " exclamation ")
-    .replacingOccurrences(of: "@", with: " at sign ")
-    .replacingOccurrences(of: "_", with: " underline ")
-    .replacingOccurrences(of: "'", with: " apostrophe ")
-    .replacingOccurrences(of: ".", with: " dot ")
-    .replacingOccurrences(of: ",", with: " comma ")
     .replacingOccurrences(of: "^", with: " caret ")
 }
 
+func replaceAllPuncs(_ line: String) -> String {
+  return replaceSomePuncs(line)
+    .replacingOccurrences(of: "<", with: " less than ")
+    .replacingOccurrences(of: ">", with: " greater than ")
+    .replacingOccurrences(of: "'", with: " apostrophe ")
+    .replacingOccurrences(of: "*", with: " star ")
+    .replacingOccurrences(of: "@", with: " at sign ")
+    .replacingOccurrences(of: "_", with: " underline ")
+    .replacingOccurrences(of: ".", with: " dot ")
+    .replacingOccurrences(of: ",", with: " comma ")
+   
+}
+
 func ttsSplitCaps(_ line: String) async {
-  debugPrint("Not Implemented Yet")
+  if await debug {
+    debugPrint("Not Implemented Yet")
+  }
 }
 
 func ttsReset() async {
-  debugPrint("Not Implemented Yet")
+  if await debug {
+    debugPrint("Not Implemented Yet")
+  }
 }
 
 func sayVersion() async {
@@ -320,23 +333,33 @@ func ttsResume() async {
 }
 
 func ttsSetCharacterScale(_ line: String) async {
-  debugPrint("Not Implemented Yet")
+  if await debug {
+    debugPrint("Not Implemented Yet")
+  }
 }
 
 func ttsSetPunctuations(_ line: String) async {
-  debugPrint("Not Implemented Yet")
+  if await debug {
+    debugPrint("Not Implemented Yet")
+  }
 }
 
 func ttsSetRate(_ line: String) async {
-  debugPrint("Not Implemented Yet")
+  if await debug {
+    debugPrint("Not Implemented Yet")
+  }
 }
 
 func ttSplitCaps(_ line: String) async {
-  debugPrint("Not Implemented Yet")
+  if await debug {
+    debugPrint("Not Implemented Yet")
+  }
 }
 
 func ttsSyncState(_ line: String) async {
-  debugPrint("Not Implemented Yet")
+  if await debug {
+    debugPrint("Not Implemented Yet")
+  }
 }
 
 func playTone(_ line: String) async {
@@ -371,12 +394,16 @@ func queueCode(_ line: String) async {
 
 // Does the same thing as "p " so route it over to playSound
 func playAudioIcon(_ line: String) async {
-  print("Playing audio icon: " + line)
+  if await debug {
+    debugPrint("Playing audio icon: " + line)
+  }
   await playSound(line)
 }
 
 func playSound(_ line: String) async {
-  print("Playing sound: " + line)
+  if await debug {
+    debugPrint("Playing sound: " + line)
+  }
   let p = await isolateParams(line)
   let soundURL = URL(fileURLWithPath: p)
   let sound = NSSound(contentsOf: soundURL, byReference: true)
@@ -385,7 +412,9 @@ func playSound(_ line: String) async {
 }
 
 func ttsSay(_ line: String) async {
-  print("ttsSay: " + line)
+  if await debug {
+    debugPrint("ttsSay: " + line)
+  }
   let p = await isolateParams(line)
   await say(p, interupt: true)
 
@@ -400,6 +429,9 @@ func say(_ what: String, interupt: Bool = false) async {
     if speaker.isSpeaking {
       ss.pushBacklog(with: w)
     } else {
+      if await debug {
+        debugPrint("say:startSpeaking: \(w)")
+      }
       speaker.startSpeaking(w)
     }
   }
@@ -459,5 +491,5 @@ await main()
 
 // local variables:
 // mode: swift
-// tab-width: 2
+// swift-mode:basic-offset: 2
 // end:

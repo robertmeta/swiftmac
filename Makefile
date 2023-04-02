@@ -8,6 +8,7 @@ install:
 	echo "log-swiftmac" >> ~/.emacs.d/emacspeak/servers/.servers
 
 format:
-	swift-format -i swiftmac
-	set -i '1s/^/#!\/usr\/bin\/env swift\n/' swiftmac
+	swift-format swiftmac > new
+	cat reinsert.header new > swiftmac
+	rm new
 	chmod +x swiftmac

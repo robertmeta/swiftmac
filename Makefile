@@ -9,3 +9,5 @@ install:
 
 format:
 	swift-format -i swiftmac
+	set -i '1s/^/#!\/usr\/bin\/env swift\n/' swiftmac
+	chmod +x swiftmac

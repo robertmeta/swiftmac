@@ -376,7 +376,9 @@ func playSound(line: String) async {
   print("Playing sound: " + line)
   let p = await isolateParams(line: line)
   let soundURL = URL(fileURLWithPath: p)
-  NSSound(contentsOf: soundURL, byReference: true)?.play()
+  let sound = NSSound(contentsOf: soundURL, byReference: true)
+  sound?.volume = 0.5
+  sound?.play()
 }
 
 func ttsSay(line: String) async {

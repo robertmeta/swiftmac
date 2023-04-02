@@ -13,7 +13,7 @@ install:
 
 
 format:
-	swift-format swiftmac > new
+	swift-format --maxwidth=79 swiftmac > new
 	cat reinsert.header new > swiftmac
 	rm new
 	chmod +x swiftmac

@@ -261,7 +261,7 @@ func replaceAllPuncs(_ line: String) -> String {
     .replacingOccurrences(of: "#", with: " pound ")
     .replacingOccurrences(of: "-", with: " dash ")
     .replacingOccurrences(of: "'", with: " quote ")
-  .replacingOccurrences(of: "\"", with: " dboule quote ")
+    .replacingOccurrences(of: "\"", with: " dboule quote ")
     .replacingOccurrences(of: "(", with: " leftParen ")
     .replacingOccurrences(of: ")", with: " rightParen ")
     .replacingOccurrences(of: "*", with: " star ")
@@ -304,11 +304,11 @@ func sayLetter(_ line: String) async {
   let charRate = 250
   let rate = 225
   await say(
-    "[[rate \(charRate)]][[char ltrl]]\(letter)[[char norm]][[rate \(rate)]]", interupt: true)
+    "[[rate \(charRate)]][[char ltrl]]\(letter)[[rset 0]]", interupt: true)
 }
 
-func saySilence(_ line: String) async {
-  await say("[[slic]]", interupt: false)
+func saySilence(_ line: String, duration: Int = 50) async {
+  await say("[[slnc \(duration)]]", interupt: false)
 }
 
 func ttsPause() async {

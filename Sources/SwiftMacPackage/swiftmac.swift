@@ -256,15 +256,13 @@ func replaceCore(_ line: String) -> String {
 }
 
 func replaceBasePuncs(_ line: String) -> String {
-  return replaceCore(line)
+  let l = replaceCore(line)
+  return replaceCore(l)
     .replacingOccurrences(of: "$", with: " dollar ")
 
 }
 
 func replaceSomePuncs(_ line: String) -> String {
-  if ss.getPunct().lowercased() == "none" {
-    return replaceBasePuncs(line)
-  }
   return replaceBasePuncs(line)
     .replacingOccurrences(of: "#", with: " pound ")
     .replacingOccurrences(of: "-", with: " dash ")

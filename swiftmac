@@ -197,12 +197,25 @@ let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
 let ss = StateStore()
 let dh = DelegateHandler()
+let defaultRate = 200
+let defaultCharScale = 1.2
+let defaultVolume = 1
+
+
+// TODO: move default settings to the reset and call it here 
+// TODO: set this into the ss for compare later
+let defaultVoice = speaker.defaultVoice
 
 // default values
-let voice = NSSpeechSynthesizer.VoiceName(
-  rawValue: "com.apple.speech.synthesis.voice.Alex")
-speaker.setVoice(voice)
-speaker.rate = 200
+do {
+  let voice = NSSpeechSynthesizer.VoiceName(
+    rawValue: "com.apple.speech.synthesis.voice.Alex")
+  speaker.setVoice(voice)
+} catch {
+  speaker.setVoice(defaultVoice)
+}
+
+speaker.rate = 
 speaker.volume = 1
 speaker.delegate = dh
 

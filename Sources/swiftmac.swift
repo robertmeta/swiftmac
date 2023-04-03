@@ -7,7 +7,10 @@ HOW TO USE
 
  To learn more: https://github.com/robertmeta/swiftmac
 
-LICENSE
+Major Issues
+ Ignores voice channges, uses Alex is available or default. 
+
+License
  Copyright 2023 Robert Melton
 
  Permission is hereby granted, free of charge, to any person
@@ -34,6 +37,20 @@ import AVFoundation
 import Darwin
 import Foundation
 
+// Global Constants
+let version = "0.3"
+let name = "swiftmac"
+let speaker = NSSpeechSynthesizer()
+let defaultRate:Float = 200
+let defaultCharScale: Float = 1.2
+let defaultVoice = NSSpeechSynthesizer.defaultVoice
+let defaultPunct = "all"
+let defaultSplitCaps = false
+let defaultBeepCaps = false
+let soundVolume: Float = 0.5
+let toneVolume: Float = 0.75
+let voiceVolume: Float = 1.0
+
 // This delegate class lets us continue speaking with queued data
 // after a speech chunk is completed
 class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
@@ -43,35 +60,41 @@ class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
   ) {
     let s = ss.popBacklog()
     if debug {
-      debugPrint("startSpeaking: \(s)")
+      debugPrint("didFinishSpeaking:startSpeaking: \(s)")
     }
     speaker.startSpeaking(s)
   }
 }
+let dh = DelegateHandler()
+speaker.delegate = dh
 
 // Due to being fully async, handling the state is a bit of a pain,
 // we have to store it all in a class and gate access to it, the good
 // news is the only syncronise bits are on reading the data out.
 class StateStore {
   private var backlog: String = ""
-  private var toneVolume: Float = 0.5
-  private var soundVolume: Float = 0.5
-  private var voice: String = "Alex"
-  private var splitCaps: Bool = false
-  private var charScale: Float = 1.2
+  // private var voiceq = defaultVoice
+  private var splitCaps: Bool = defaultSplitCaps
+  private var voice = defaultVoice
+  private var beepCaps: Bool = defaultBeepCaps 
+  private var charScale: Float = defaultCharScale
+  private var punct: String = defaultPunct
   private let queue = DispatchQueue(
     label: "org.emacspeak.server.swiftmac.state", qos: .userInteractive)
 
+  /* 
   func setVoice(voice: String) {
     queue.async {
       if self.voice != voice {
-        self.voice = voice
-        let voice = NSSpeechSynthesizer.VoiceName(
-          rawValue: "com.apple.speech.synthesis.voice." + voice)
-        speaker.setVoice(voice)
+        let alex = NSSpeechSynthesizer.VoiceName(
+          rawValue: "com.apple.speech.synthesis.voice.Alex")
+        if !speaker.setVoice(voice) {
+          speaker.setVoice(defaultVoice)
+        }
       }
     }
   }
+  */
 
   func clearBacklog() {
     queue.async {
@@ -109,7 +132,44 @@ class StateStore {
       return self.charScale
     }
   }
+
+  func setPunct(_ s: String) {
+    queue.async {
+      self.punct = s
+    }
+  }
+
+  func getPunct() -> String {
+    queue.sync {
+      return self.punct
+    }
+  }
+
+  func setSplitCaps(_ b: Bool) {
+    queue.async {
+      self.splitCaps = b
+    }
+  }
+
+  func getSplitCaps() -> Bool {
+    queue.sync {
+      return self.splitCaps
+    }
+  }
+
+  func setBeepCaps(_ b: Bool) {
+    queue.async {
+      self.beepCaps = b
+    }
+  }
+
+  func getBeepCaps() -> Bool {
+    queue.sync {
+      return self.beepCaps
+    }
+  }
 }
+let ss = StateStore()
 
 // Generates a tone in pure swift
 func playPureTone(
@@ -190,35 +250,6 @@ if let debugStr = ProcessInfo.processInfo.environment["DEBUG"] {
   }
 }
 
-// Global Constants
-let version = "0.3"
-let name = "swiftmac"
-
-let speaker = NSSpeechSynthesizer()
-let ss = StateStore()
-let dh = DelegateHandler()
-let defaultRate = 200
-let defaultCharScale = 1.2
-let defaultVolume = 1
-
-
-// TODO: move default settings to the reset and c
-// TODO: set this into the ss for compare later
-let defaultVoice = speaker.defaultVoice
-
-// default values
-do {
-  let voice = NSSpeechSynthesizer.VoiceName(
-    rawValue: "com.apple.speech.synthesis.voice.Alex")
-  speaker.setVoice(voice)
-} catch {
-  speaker.setVoice(defaultVoice)
-}
-
-speaker.rate = 
-speaker.volume = 1
-speaker.delegate = dh
-
 // Entry point and main loop
 func main() async {
   await say("welcome to e mac speak with swift mac", interupt: true)
@@ -237,20 +268,15 @@ func main() async {
     case "version": await sayVersion()
     case "tts_exit": await ttsExit()
     case "tts_pause": await ttsPause()
-    case "tts_reset":
-      await ttsReset()
+    case "tts_reset": await ttsReset()
     case "tts_resume": await ttsResume()
     case "tts_say": await ttsSay(l)
     case "tts_set_character_scale": await ttsSetCharacterScale(l)
-    case "tts_set_punctuations":
-      await ttsSetPunctuations(l)
+    case "tts_set_punctuations": await ttsSetPunctuations(l)
     case "tts_set_speech_rate": await ttsSetRate(l)
-    case "tts_split_caps":
-      await ttsSplitCaps(l)
-    case "tts_sync_state":
-      await ttsSyncState(l)
-    default:
-      await unknownLine(l)
+    case "tts_split_caps": await ttsSplitCaps(l)
+    case "tts_sync_state": await ttsSyncState(l)
+    default: await unknownLine(l)
     }
   }
 }
@@ -304,15 +330,26 @@ func replaceAllPuncs(_ line: String) -> String {
 }
 
 func ttsSplitCaps(_ line: String) async {
-  if await debug {
-    debugPrint("Not Implemented Yet")
+  let l = await isolateCommand(line)
+  if l == "1" {
+    ss.setSplitCaps(true)
+  } else {
+    ss.setSplitCaps(false)
   }
 }
 
 func ttsReset() async {
-  if await debug {
-    debugPrint("Not Implemented Yet")
+  speaker.stopSpeaking()
+  ss.clearBacklog()
+  let voice = NSSpeechSynthesizer.VoiceName(
+    rawValue: "com.apple.speech.synthesis.voice.Alex")
+  if !speaker.setVoice(voice) {
+    speaker.setVoice(defaultVoice)
   }
+  speaker.rate = defaultRate
+  speaker.volume = voiceVolume
+  ss.setCharScale(defaultCharScale)
+  ss.setPunct(defaultPunct)
 }
 
 func sayVersion() async {
@@ -350,9 +387,8 @@ func ttsSetCharacterScale(_ line: String) async {
 }
 
 func ttsSetPunctuations(_ line: String) async {
-  if await debug {
-    debugPrint("Not Implemented Yet")
-  }
+  let l = await isolateParams(line)
+  ss.setPunct(l)
 }
 
 func ttsSetRate(_ line: String) async {
@@ -360,14 +396,11 @@ func ttsSetRate(_ line: String) async {
   if let fl = Float(l) {
     speaker.rate = fl
   }
-  if await debug {
-    debugPrint("Not Implemented Yet")
-  }
 }
 
 func ttSplitCaps(_ line: String) async {
-  if await debug {
-    debugPrint("Not Implemented Yet")
+  let l = await isolateParams(line)
+  if l == "1" {
   }
 }
 
@@ -378,14 +411,26 @@ func ttsSyncState(_ line: String) async {
     if let r = Float(ps[3]) {
       speaker.rate = r
     }
+    
     let beepCaps = ps[2]
+    if beepCaps == "1" {
+      ss.setBeepCaps(true)
+    } else {
+      ss.setBeepCaps(false)
+    }
+
     let splitCaps = ps[1]
-    let puncts = ps[0]
+    if splitCaps == "1" {
+      ss.setSplitCaps(true)
+    } else {
+      ss.setSplitCaps(false)
+    }
+    let punct = ps[0]
+    ss.setPunct(String(punct))
   }
 }
 
 func playTone(_ line: String) async {
-  let toneVolume: Float = 0.5
   let p = await isolateParams(line)
   let ps = p.split(separator: " ")
   await playPureTone(
@@ -423,13 +468,10 @@ func playAudioIcon(_ line: String) async {
 }
 
 func playSound(_ line: String) async {
-  if await debug {
-    debugPrint("Playing sound: " + line)
-  }
   let p = await isolateParams(line)
   let soundURL = URL(fileURLWithPath: p)
   let sound = NSSound(contentsOf: soundURL, byReference: true)
-  sound?.volume = 0.5
+  sound?.volume = soundVolume
   sound?.play()
 }
 
@@ -462,11 +504,15 @@ func say(_ what: String, interupt: Bool = false, code: Bool = false) async {
 }
 
 func unknownLine(_ line: String) async {
-  debugPrint("Unknown command: " + line)
+  if await debug {
+    debugPrint("Unknown command: " + line)
+  }
 }
 
 func ttsExit() async {
-  print("Exiting " + name)
+  if await debug { 
+    debugPrint("Exiting " + name)
+  }
   exit(0)
 }
 
@@ -511,6 +557,7 @@ func isolateParams(_ line: String) async -> String {
   return params
 }
 
+await ttsReset()
 await main()
 
 // local variables:

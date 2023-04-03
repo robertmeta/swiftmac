@@ -1,5 +1,0 @@
-#!/bin/sh
-
-LOG=/tmp/swiftmac-$$.log
-DEBUG=/tmp/swiftmac-debug-$$.log
-tee -a $LOG | `dirname $0`/swiftmac

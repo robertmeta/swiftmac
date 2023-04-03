@@ -15,6 +15,7 @@ command = [server]
 
 # Open a subprocess and pipe data to its stdin
 with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
-    process.stdin.write(b"tts_say a b c d e f g h i j k l m n o p q r s t u v w x y z\n")
+    process.stdin.write(b"tts_say This is the emacspeak test server\n")
+    process.stdin.write(b"tts_say tts_say is working if you can hear this.\n")
     process.stdin.flush()
     time.sleep(3)

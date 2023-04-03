@@ -22,6 +22,9 @@ install: release support_files
 install-debug: debug support_files 
 	cp .build/debug/swiftmac $(SERVERS)/swiftmac
 
+test: release
+	python3 test-server.py .build/release/swiftmac
+
 format:
 	swift-format Package.swift > temp
 	cp temp Package.swift

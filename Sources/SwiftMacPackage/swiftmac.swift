@@ -13,8 +13,8 @@ let defaultVoice = NSSpeechSynthesizer.defaultVoice
 let defaultPunct = "all"
 let defaultSplitCaps = false
 let defaultBeepCaps = false
-let soundVolume: Float = 0.5
-let toneVolume: Float = 0.75
+let soundVolume: Float = 0.1
+let toneVolume: Float = 0.1
 let voiceVolume: Float = 1.0
 
 // This delegate class lets us continue speaking with queued data

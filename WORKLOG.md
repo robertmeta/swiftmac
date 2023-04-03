@@ -1,5 +1,13 @@
 Worklog
 =======
+2023-04-03 - Robert Melton
+--------------------------
+ - Converted to a proper swift project with a pre-build step to make
+   it more like a proper swift app and fit in the swift ecosystem
+ - Still missing major features (voice change, how do split caps 
+   work, etc) - the voice change thing is strange, it seems to be 
+   spammed as a way to do a tts_reset.
+
 2023-04-02 - Robert Melton
 --------------------------
  - Tomorrow a few implmentations left, then release 1.0

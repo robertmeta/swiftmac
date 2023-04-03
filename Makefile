@@ -1,20 +1,30 @@
 EMACSPEAK := ~/.emacs.d/emacspeak
 SERVERS := $(EMACSPEAK)/servers
 
-install:
-	cp swiftmac ~/.emacs.d/emacspeak/servers/swiftmac
-	cp log-swiftmac ~/.emacs.d/emacspeak/servers/log-swiftmac
-	chmod +x swiftmac
-	chmod +x log-swiftmac
-	chmod +x cloud-swiftmac
+debug:
+	swift build
+
+release:
+	swift build -c release
+
+support_files:
+	cp cloud-swiftmac $(SERVERS)/cloud-swiftmac
+	cp log-swiftmac $(SERVERS)/log-swiftmac
 	sed -i '' '/swiftmac/d' $(SERVERS)/.servers
 	echo "swiftmac" >>  $(SERVERS)/.servers
 	echo "log-swiftmac" >>  $(SERVERS)/.servers
 	echo "cloud-swiftmac" >> $(SERVERS)/.servers
 	sort -o $(SERVERS)/.servers $(SERVERS)/.servers
 
+install: release support_files 
+	cp .build/release/swiftmac $(SERVERS)/swiftmac
+
+install-debug: debug support_files 
+	cp .build/debug/swiftmac $(SERVERS)/swiftmac
+
 format:
-	swift-format swiftmac > new
-	cat reinsert.header new > swiftmac
-	rm new
-	chmod +x swiftmac
+	swift-format Package.swift > temp
+	cp temp Package.swift
+	swift-format Sources/SwiftMacPackage/swiftmac.swift > temp
+	cp temp Sources/SwiftMacPackage/swiftmac.swift
+	rm temp

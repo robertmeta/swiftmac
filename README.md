@@ -28,7 +28,7 @@ Motivation
 
 TODO
 ----
- = Support voice changes (why are so many changes spammed?)
+ - Support voice changes (why are so many changes spammed?)
  - Add an error handling delegate
  - Add handing for beep caps (entirely) 
  - Finish handling splitCaps 

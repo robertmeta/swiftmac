@@ -2,6 +2,8 @@ Worklog
 =======
 2023-04-02 - Robert Melton
 --------------------------
+ - Tomorrow a few implmentations left, then release 1.0
+ - Tomorrow need to wrap everything in try/catch no crashes
  - Realized after I did the debugging work that it was the dumbest 
    possible way, need to make it a function that can write to a file 
    that it pulls the name from environment

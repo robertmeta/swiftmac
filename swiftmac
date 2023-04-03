@@ -54,14 +54,11 @@ class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
 // news is the only syncronise bits are on reading the data out.
 class StateStore {
   private var backlog: String = ""
-  private var rate: Float = 275
-  private var sayRate: Int = 330
-  private var speechVolume: Float = 1
   private var toneVolume: Float = 0.5
-  private var soundVolume: Float = 1
+  private var soundVolume: Float = 0.5
   private var voice: String = "Alex"
   private var splitCaps: Bool = false
-  private var charScale: Double = 1.2
+  private var charScale: Float = 1.2
   private let queue = DispatchQueue(
     label: "org.emacspeak.server.swiftmac.state", qos: .userInteractive)
 
@@ -101,15 +98,15 @@ class StateStore {
     return result
   }
 
-  func setRate(_ r: Float) {
+  func setCharScale(_ r: Float) {
     queue.async {
-      self.rate = r
+      self.charScale = r
     }
   }
 
-  func getRate() -> Float  {
+  func getCharScale() -> Float {
     queue.sync {
-      return self.rate
+      return self.charScale
     }
   }
 }
@@ -120,7 +117,7 @@ func playPureTone(
   durationInMillis: Int
 ) async {
   let toneQueue = DispatchQueue(
-    label: "org.emacspeak.server.mac.tone", qos: .userInteractive)
+    label: "org.emacspeak.server.swiftmac.tone", qos: .userInteractive)
   let semaphore = DispatchSemaphore(value: 1)
   toneQueue.async {
     let audioPlayer = AVAudioPlayerNode()
@@ -205,7 +202,7 @@ let dh = DelegateHandler()
 let voice = NSSpeechSynthesizer.VoiceName(
   rawValue: "com.apple.speech.synthesis.voice.Alex")
 speaker.setVoice(voice)
-speaker.rate = ss.getRate()
+speaker.rate = 200
 speaker.volume = 1
 speaker.delegate = dh
 
@@ -215,42 +212,26 @@ func main() async {
   while let l = readLine() {
     let cmd = await isolateCommand(l)
     switch cmd {
-    case "a":
-      await playAudioIcon(l)
-    case "c":
-      await queueCode(l)
-    case "d":
-      await dispatchSpeaker()
-    case "l":
-      await sayLetter(l)
-    case "p":
-      await playSound(l)
-    case "q":
-      await queueSpeaker(l)
-    case "s":
-      await stopSpeaker()
-    case "sh":
-      await saySilence(l)
-    case "t":
-      await playTone(l)
-    case "version":
-      await sayVersion()
-    case "tts_exit":
-      await ttsExit()
-    case "tts_pause":
-      await ttsPause()
+    case "a": await playAudioIcon(l)
+    case "c": await queueCode(l)
+    case "d": await dispatchSpeaker()
+    case "l": await sayLetter(l)
+    case "p": await playSound(l)
+    case "q": await queueSpeaker(l)
+    case "s": await stopSpeaker()
+    case "sh": await saySilence(l)
+    case "t": await playTone(l)
+    case "version": await sayVersion()
+    case "tts_exit": await ttsExit()
+    case "tts_pause": await ttsPause()
     case "tts_reset":
       await ttsReset()
-    case "tts_resume":
-      await ttsResume()
-    case "tts_say":
-      await ttsSay(l)
-    case "tts_set_character_scale":
-      await ttsSetCharacterScale(l)
+    case "tts_resume": await ttsResume()
+    case "tts_say": await ttsSay(l)
+    case "tts_set_character_scale": await ttsSetCharacterScale(l)
     case "tts_set_punctuations":
       await ttsSetPunctuations(l)
-    case "tts_set_speech_rate":
-      await ttsSetRate(l)
+    case "tts_set_speech_rate": await ttsSetRate(l)
     case "tts_split_caps":
       await ttsSplitCaps(l)
     case "tts_sync_state":
@@ -262,15 +243,16 @@ func main() async {
 }
 
 // This is replacements that always must happen when doing
-// replaceements like [*] -> slnc 
+// replaceements like [*] -> slnc
 func replaceCore(_ line: String) -> String {
-  return line
+  return
+    line
     .replacingOccurrences(of: "[*]", with: " [[slnc 50]] ")
 }
 
 func replaceBasePuncs(_ line: String) -> String {
   return replaceCore(line)
-      .replacingOccurrences(of: "$", with: " dollar ")
+    .replacingOccurrences(of: "$", with: " dollar ")
 
 }
 
@@ -305,7 +287,7 @@ func replaceAllPuncs(_ line: String) -> String {
     .replacingOccurrences(of: "_", with: " underline ")
     .replacingOccurrences(of: ".", with: " dot ")
     .replacingOccurrences(of: ",", with: " comma ")
-   
+
 }
 
 func ttsSplitCaps(_ line: String) async {
@@ -326,10 +308,13 @@ func sayVersion() async {
 
 func sayLetter(_ line: String) async {
   let letter = await isolateParams(line)
-  let charRate = 250
+  let charRate = speaker.rate * ss.getCharScale()
 
   await say(
-    "[[rate \(charRate)]][[char ltrl]]\(letter)[[rset 0]]", interupt: true)
+    "[[rate \(charRate)]][[char ltrl]]\(letter)[[rset 0]]",
+    interupt: true,
+    code: true
+  )
 }
 
 func saySilence(_ line: String, duration: Int = 50) async {
@@ -345,8 +330,9 @@ func ttsResume() async {
 }
 
 func ttsSetCharacterScale(_ line: String) async {
-  if await debug {
-    debugPrint("Not Implemented Yet")
+  let l = await isolateParams(line)
+  if let fl = Float(l) {
+    ss.setCharScale(fl)
   }
 }
 
@@ -357,6 +343,10 @@ func ttsSetPunctuations(_ line: String) async {
 }
 
 func ttsSetRate(_ line: String) async {
+  let l = await isolateParams(line)
+  if let fl = Float(l) {
+    speaker.rate = fl
+  }
   if await debug {
     debugPrint("Not Implemented Yet")
   }
@@ -369,8 +359,15 @@ func ttSplitCaps(_ line: String) async {
 }
 
 func ttsSyncState(_ line: String) async {
-  if await debug {
-    debugPrint("Not Implemented Yet")
+  let l = await isolateParams(line)
+  let ps = l.split(separator: " ")
+  if ps.count == 4 {
+    if let r = Float(ps[3]) {
+      speaker.rate = r
+    }
+    let beepCaps = ps[2]
+    let splitCaps = ps[1]
+    let puncts = ps[0]
   }
 }
 
@@ -432,9 +429,11 @@ func ttsSay(_ line: String) async {
 
 }
 
-func say(_ what: String, interupt: Bool = false) async {
+func say(_ what: String, interupt: Bool = false, code: Bool = false) async {
   var w = stripSpecialEmbeds(what)
-  w = replaceAllPuncs(w)
+  if !code {
+    w = replaceAllPuncs(w)
+  }
   if interupt {
     speaker.startSpeaking(w)
   } else {

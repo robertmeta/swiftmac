@@ -1,4 +1,4 @@
-#!/usr/bin/env swift
+import AVFoundation
 /*
 HOW TO USE
  Just set your server to swiftmac. Assuming you have the swift command
@@ -8,7 +8,7 @@ HOW TO USE
  To learn more: https://github.com/robertmeta/swiftmac
 
 Major Issues
- Ignores voice channges, uses Alex is available or default. 
+ Ignores voice channges, uses Alex is available or default.
 
 License
  Copyright 2023 Robert Melton
@@ -33,7 +33,6 @@ License
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import AppKit
-import AVFoundation
 import Darwin
 import Foundation
 
@@ -41,7 +40,7 @@ import Foundation
 let version = "0.3"
 let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
-let defaultRate:Float = 200
+let defaultRate: Float = 200
 let defaultCharScale: Float = 1.2
 let defaultVoice = NSSpeechSynthesizer.defaultVoice
 let defaultPunct = "all"
@@ -76,13 +75,13 @@ class StateStore {
   // private var voiceq = defaultVoice
   private var splitCaps: Bool = defaultSplitCaps
   private var voice = defaultVoice
-  private var beepCaps: Bool = defaultBeepCaps 
+  private var beepCaps: Bool = defaultBeepCaps
   private var charScale: Float = defaultCharScale
   private var punct: String = defaultPunct
   private let queue = DispatchQueue(
     label: "org.emacspeak.server.swiftmac.state", qos: .userInteractive)
 
-  /* 
+  /*
   func setVoice(voice: String) {
     queue.async {
       if self.voice != voice {
@@ -296,6 +295,9 @@ func replaceBasePuncs(_ line: String) -> String {
 }
 
 func replaceSomePuncs(_ line: String) -> String {
+  if ss.getPunct().lowercased() == "none" {
+    return replaceBasePuncs(line)
+  }
   return replaceBasePuncs(line)
     .replacingOccurrences(of: "#", with: " pound ")
     .replacingOccurrences(of: "-", with: " dash ")
@@ -411,7 +413,7 @@ func ttsSyncState(_ line: String) async {
     if let r = Float(ps[3]) {
       speaker.rate = r
     }
-    
+
     let beepCaps = ps[2]
     if beepCaps == "1" {
       ss.setBeepCaps(true)
@@ -510,7 +512,7 @@ func unknownLine(_ line: String) async {
 }
 
 func ttsExit() async {
-  if await debug { 
+  if await debug {
     debugPrint("Exiting " + name)
   }
   exit(0)

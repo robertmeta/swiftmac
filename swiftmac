@@ -202,7 +202,7 @@ let defaultCharScale = 1.2
 let defaultVolume = 1
 
 
-// TODO: move default settings to the reset and call it here 
+// TODO: move default settings to the reset and c
 // TODO: set this into the ss for compare later
 let defaultVoice = speaker.defaultVoice
 

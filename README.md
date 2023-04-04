@@ -12,6 +12,7 @@ Quick Install
 1. Open Makefile, make sure first two lines point to your emacspeak
 2. Make install 
 3. Change the server in your init.el from "mac" to "swiftmac"
+4. Restart emacs
 
 Motivation
 ----------
@@ -33,6 +34,5 @@ TODO
  - Add handing for beep caps (entirely) 
  - Finish handling splitCaps 
  - Finish python based test driver to validate functionality
- - Add signal handling (control-c, etc)
  - Add echo handling via custom NSSpeechSynthesizer with echo effect
  

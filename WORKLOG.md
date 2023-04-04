@@ -2,6 +2,10 @@ Worklog
 =======
 2023-04-03 - Robert Melton
 --------------------------
+ - TODO: log the debug to a fiel so crashes can be debugged, make it 
+   flush too.
+ - Fixed up debug mode with real checks
+ - Hunted down any obvious crashes 
  - Converted to a proper swift project with a pre-build step to make
    it more like a proper swift app and fit in the swift ecosystem
  - Still missing major features (voice change, how do split caps 

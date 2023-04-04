@@ -1,8 +1,18 @@
 Worklog
 =======
+2023-04-04 - Robert Melton
+--------------------------
+ - I think it is just good enough to announce today and ask some 
+   questions, after I finished debug mode so people can send in 
+   debug logs.
+ - now generating debug logs so it should be able to produce usefu 
+   feedback from users of debug builds.
+ - added SWIFTMAC_SOUND_VOLUME, SWIFTMAC_VOICE_VOLUME and 
+   SWIFTMAC_TONE_VOLUME for being able to tweak them via env
+
 2023-04-03 - Robert Melton
 --------------------------
- - TODO: log the debug to a fiel so crashes can be debugged, make it 
+ - TODO: log the debug to a file so crashes can be debugged, make it 
    flush too.
  - Fixed up debug mode with real checks
  - Hunted down any obvious crashes 

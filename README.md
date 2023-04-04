@@ -10,7 +10,7 @@ missing critical features for your use case.
 Quick Install
 -------------
 1. Open Makefile, make sure first two lines point to your emacspeak
-2. Make install 
+2. make install (or make install-debug for debug logging to /tmp) 
 3. Change the server in your init.el from "mac" to "swiftmac"
 4. Restart emacs
 
@@ -26,13 +26,13 @@ Motivation
  5. Feature complete support of all emacs speech server commands
  6. With a separate test script to confirm all features work 
  
+ Not there yet, but getting close.
 
 TODO
 ----
  - Support voice changes (why are so many changes spammed?)
  - Add an error handling delegate
- - Add handing for beep caps (entirely) 
+ - Add handing for beep caps
  - Finish handling splitCaps 
  - Finish python based test driver to validate functionality
  - Add echo handling via custom NSSpeechSynthesizer with echo effect
- 

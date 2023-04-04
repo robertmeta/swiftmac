@@ -38,10 +38,12 @@ install-debug: debug support_files
 
 
 install-binary: support_files
-	curl -L https://github.com/robertmeta/swiftmac/releases/download/alpha0.3/swiftmac --output  $(SERVERS)/swiftmac
+	curl -L https://github.com/robertmeta/swiftmac/releases/download/alpha0.3/swiftmac --output $(SERVERS)/swiftmac
+	chmod +x $(SERVERS)/swiftmac
 
 install-binary-debug: support_files
 	curl -L https://github.com/robertmeta/swiftmac/releases/download/alpha0.3/swiftmac-debug --output  $(SERVERS)/swiftmac
+	chmod +x $(SERVERS)/swiftmac
 
 test: release
 	python3 test-server.py .build/release/swiftmac

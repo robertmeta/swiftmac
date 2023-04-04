@@ -9,10 +9,11 @@ missing critical features for your use case.
 
 Quick Install
 -------------
-1. Open Makefile, make sure first two lines point to your emacspeak
-2. make install (or make install-debug for debug logging to /tmp) 
-3. Change the server in your init.el from "mac" to "swiftmac"
-4. Restart emacs
+ - Open Makefile, make sure first two lines point to your emacspeak
+ - make install (or make install-binary to download prebuilt)
+ - (alt for debug) make install-debug (or make install-binary-debug) 
+ - Change the server in your init.el from "mac" to "swiftmac"
+ - Restart emacs
 
 Motivation
 ----------

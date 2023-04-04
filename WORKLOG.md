@@ -2,6 +2,8 @@ Worklog
 =======
 2023-04-04 - Robert Melton
 --------------------------
+ - I added in fat binaries and curl downloads for them, need a 
+   sane way to update the github releases 
  - I think it is just good enough to announce today and ask some 
    questions, after I finished debug mode so people can send in 
    debug logs.

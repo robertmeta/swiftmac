@@ -36,3 +36,4 @@ TODO
  - Finish handling splitCaps 
  - Finish python based test driver to validate functionality
  - Add echo handling via custom NSSpeechSynthesizer with echo effect
+ - Support pitch change for caps (like mac server does)

@@ -8,13 +8,13 @@ let version = "0.3"
 let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
 let defaultRate: Float = 200
-let defaultCharScale: Float = 1.2
+let defaultCharScale: Float = 1.1
 let defaultVoice = NSSpeechSynthesizer.defaultVoice
 let defaultPunct = "all"
 let defaultSplitCaps = false
 let defaultBeepCaps = false
-var soundVolume: Float = 1.0
-var toneVolume: Float = 1.0
+var soundVolume: Float = 0.1
+var toneVolume: Float = 0.1
 var voiceVolume: Float = 1.0
 
 func getEnvironmentVariable(_ variable: String) -> String {
@@ -29,6 +29,10 @@ if let f = Float(getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
 if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
   voiceVolume = f
 }
+
+print("soundVolume \(soundVolume)")
+print("toneVolume \(toneVolume)")
+print("voiceVolume \(voiceVolume)")
 
 class Logger {
   private let fileURL: URL

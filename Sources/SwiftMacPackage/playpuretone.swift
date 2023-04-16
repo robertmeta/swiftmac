@@ -9,7 +9,7 @@ func playPureTone(
   durationInMillis: Int
 ) async {
   #if DEBUG
-    DebugLogger.log("in playPureTone")
+    debugLogger.log("in playPureTone")
   #endif
   let toneQueue = DispatchQueue(
     label: "org.emacspeak.server.swiftmac.tone", qos: .userInteractive)

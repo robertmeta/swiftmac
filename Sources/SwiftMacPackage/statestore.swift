@@ -18,23 +18,9 @@ class StateStore {
     label: "org.emacspeak.server.swiftmac.state",
     qos: .userInteractive)
 
-  /*
-  func setVoice(voice: String) {
-    queue.async {
-      if self.voice != voice {
-        let alex = NSSpeechSynthesizer.VoiceName(
-          rawValue: "com.apple.speech.synthesis.voice.Alex")
-        if !speaker.setVoice(voice) {
-          speaker.setVoice(defaultVoice)
-        }
-      }
-    }
-  }
-  */
-
   func clearBacklog() {
     #if DEBUG
-      DebugLogger.log("Enter: clearBacklog")
+      debugLogger.log("Enter: clearBacklog")
     #endif
 
     queue.async {
@@ -44,7 +30,7 @@ class StateStore {
 
   func pushBacklog(_ with: String, code: Bool = false) {
     #if DEBUG
-      DebugLogger.log("Enter: pushBacklog")
+      debugLogger.log("Enter: pushBacklog")
     #endif
     let punct = self.getPunct().lowercased()
     queue.async { [weak self] in
@@ -68,7 +54,7 @@ class StateStore {
 
   func popBacklog() -> String {
     #if DEBUG
-      DebugLogger.log("Enter: popBacklog")
+      debugLogger.log("Enter: popBacklog")
     #endif
     var result: String = ""
     queue.sync {
@@ -80,7 +66,7 @@ class StateStore {
 
   func setCharScale(_ r: Float) {
     #if DEBUG
-      DebugLogger.log("Enter: setCharScale")
+      debugLogger.log("Enter: setCharScale")
     #endif
     queue.async {
       self.charScale = r
@@ -89,7 +75,7 @@ class StateStore {
 
   func getCharScale() -> Float {
     #if DEBUG
-      DebugLogger.log("Enter: getCharScale")
+      debugLogger.log("Enter: getCharScale")
     #endif
     return queue.sync {
       return self.charScale
@@ -98,7 +84,7 @@ class StateStore {
 
   func setPunct(_ s: String) {
     #if DEBUG
-      DebugLogger.log("Enter: setPunct")
+      debugLogger.log("Enter: setPunct")
     #endif
     queue.async {
       self.punct = s
@@ -107,7 +93,7 @@ class StateStore {
 
   func getPunct() -> String {
     #if DEBUG
-      DebugLogger.log("Enter: getPunct")
+      debugLogger.log("Enter: getPunct")
     #endif
     return queue.sync {
       return self.punct
@@ -116,7 +102,7 @@ class StateStore {
 
   func setSplitCaps(_ b: Bool) {
     #if DEBUG
-      DebugLogger.log("Enter: setSplitCaps")
+      debugLogger.log("Enter: setSplitCaps")
     #endif
     queue.async {
       self.splitCaps = b
@@ -125,7 +111,7 @@ class StateStore {
 
   func getSplitCaps() -> Bool {
     #if DEBUG
-      DebugLogger.log("Enter: getSplitCaps")
+      debugLogger.log("Enter: getSplitCaps")
     #endif
     return queue.sync {
       return self.splitCaps
@@ -134,7 +120,7 @@ class StateStore {
 
   func setBeepCaps(_ b: Bool) {
     #if DEBUG
-      DebugLogger.log("Enter: setBeepCaps")
+      debugLogger.log("Enter: setBeepCaps")
     #endif
     queue.async {
       self.beepCaps = b
@@ -143,7 +129,7 @@ class StateStore {
 
   func getBeepCaps() -> Bool {
     #if DEBUG
-      DebugLogger.log("Enter: getBeepCaps")
+      debugLogger.log("Enter: getBeepCaps")
     #endif
     return queue.sync {
       return self.beepCaps

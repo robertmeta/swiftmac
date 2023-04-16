@@ -30,7 +30,7 @@ let package = Package(
       name: "swiftmac",
       dependencies: [],
       path: "Sources/SwiftMacPackage",
-      sources: ["swiftmac.swift"]
+      sources: ["logger.swift", "statestore.swift", "playpuretone.swift", "main.swift"]
     )
   ]
 )

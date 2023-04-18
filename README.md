@@ -25,7 +25,7 @@ Recommended init.el Settings
   (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")
   (defvar emacspeak-auditory-icon-function #'emacspeak-serve-auditory-icon)
   (require 'emacspeak-setup)
-  (dtk-set-rate 275 t))
+  (dtk-set-rate 275 t)
 ```
 
 Motivation

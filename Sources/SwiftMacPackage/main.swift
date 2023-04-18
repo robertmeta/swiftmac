@@ -30,16 +30,16 @@ if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
   voiceVolume = f
 }
 
-print("soundVolume \(soundVolume)")
-print("toneVolume \(toneVolume)")
-print("voiceVolume \(voiceVolume)")
-
 #if DEBUG
   let currentDate = Date()
   let dateFormatter = DateFormatter()
   dateFormatter.dateFormat = "yyyy-MM-dd_HH_mm_ss"
   let timestamp = dateFormatter.string(from: currentDate)
   let debugLogger = Logger(fileName: "swiftmac-debug-\(timestamp).log")
+
+  debugLogger.log("soundVolume \(soundVolume)")
+  debugLogger.log("toneVolume \(toneVolume)")
+  debugLogger.log("voiceVolume \(voiceVolume)")
 #endif
 
 // This delegate class lets us continue speaking with queued data

@@ -14,6 +14,19 @@ Quick Install
  - (alt for debug) make install-debug (or make install-binary-debug) 
  - Change the server in your init.el from "mac" to "swiftmac"
  - Restart emacs
+ 
+Recommended init.el Settings
+----------------------------
+```
+  (setq dtk-program "swiftmac")
+  (setq emacspeak-play-emacspeak-startup-icon nil)
+  (setenv "SWIFTMAC_TONE_VOLUME" "0.1")
+  (setenv "SWIFTMAC_SOUND_VOLUME" "0.1")
+  (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")
+  (defvar emacspeak-auditory-icon-function #'emacspeak-serve-auditory-icon)
+  (require 'emacspeak-setup)
+  (dtk-set-rate 275 t))
+```
 
 Motivation
 ----------
@@ -28,13 +41,3 @@ Motivation
  6. With a separate test script to confirm all features work 
  
  Not there yet, but getting close.
-
-TODO
-----
- - Support voice changes (why are so many changes spammed?)
- - Add an error handling delegate
- - Add handing for beep caps
- - Finish handling splitCaps 
- - Finish python based test driver to validate functionality
- - Add echo handling via custom NSSpeechSynthesizer with echo effect
- - Support pitch change for caps (like mac server does)

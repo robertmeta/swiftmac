@@ -1,5 +1,12 @@
-Worklog
-=======
+Devlog
+======
+2023-04-18 - Robert Melton
+--------------------------
+ - Moved TODO to github issues
+ - Renamed Worklog to devlog 
+ - Added recommended settings 
+ - Added backing up of old working swiftmacs on install 
+
 2023-04-04 - Robert Melton
 --------------------------
  - I added in fat binaries and curl downloads for them, need a 

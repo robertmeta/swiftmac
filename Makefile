@@ -1,4 +1,4 @@
-EMACSPEAK := ~/.emacs.d/emacspeak
+EMACSPEAK := $(shell ./get-emacspeak-path.sh)
 SERVERS := $(EMACSPEAK)/servers
 
 debug:

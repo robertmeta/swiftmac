@@ -1,5 +1,9 @@
 Devlog
 ======
+2023-04-21 - Robert Melton
+--------------------------
+ - Better install process with detection of location of emacspeak
+
 2023-04-18 - Robert Melton
 --------------------------
  - Moved TODO to github issues

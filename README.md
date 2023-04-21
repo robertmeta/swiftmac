@@ -4,7 +4,7 @@ This is a drop in replacement for the python "mac" server that comes
 with emacspeak. The goal is to get it mainlined into Emacspeak once
 it is feature complete.
 
-You can look at TODO (toward end of this file) to see if it is 
+You can look at open github issues to see if it is 
 missing critical features for your use case.
 
 Quick Install (no prerequisites)

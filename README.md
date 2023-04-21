@@ -7,15 +7,20 @@ it is feature complete.
 You can look at TODO (toward end of this file) to see if it is 
 missing critical features for your use case.
 
-Quick Install
--------------
- - Open Makefile, make sure first two lines point to your emacspeak
- - make install (or make install-binary to download prebuilt)
- - (alt for debug) make install-debug (or make install-binary-debug) 
- - Change the server in your init.el from "mac" to "swiftmac"
+Quick Install (no prerequisites)
+--------------------------------
+ - make install-binary or make install-binary-debug 
+ - Change the server in your configuration from "mac" to "swiftmac"
+ - Restart emacs
+
+Build Your Own
+--------------
+ - Prerequisite: xcode installed
+ - make install or make install-debug
+ - Change the server in your configuration from "mac" to "swiftmac"
  - Restart emacs
  
-Recommended init.el Settings
+Recommended Settings
 ----------------------------
 ```
   (setq dtk-program "swiftmac")

@@ -1,0 +1,12 @@
+{
+  "": {
+    "dependencies": "/Users/rmelton/projects/swiftmac/.build/x86_64-apple-macosx/release/swiftmac.build/swiftmac.d",
+    "object": "/Users/rmelton/projects/swiftmac/.build/x86_64-apple-macosx/release/swiftmac.build/swiftmac.o",
+    "swift-dependencies": "/Users/rmelton/projects/swiftmac/.build/x86_64-apple-macosx/release/swiftmac.build/master.swiftdeps"
+  },
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/swiftmac.swift": {
+    "object": "/Users/rmelton/projects/swiftmac/.build/x86_64-apple-macosx/release/swiftmac.build/swiftmac.swift.o",
+    "swiftmodule": "/Users/rmelton/projects/swiftmac/.build/x86_64-apple-macosx/release/swiftmac.build/swiftmac~partial.swiftmodule",
+    "swift-dependencies": "/Users/rmelton/projects/swiftmac/.build/x86_64-apple-macosx/release/swiftmac.build/swiftmac.swiftdeps"
+  }
+}

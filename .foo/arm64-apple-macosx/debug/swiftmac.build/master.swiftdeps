@@ -1,0 +1,9 @@
+version: "Apple Swift version 5.8 (swiftlang-5.8.0.124.2 clang-1403.0.22.11.100)"
+options: "37a3ad313fc0bac079a8e0afd221d4a7df2e1ce221a07881bf5bf2d3123d5c52"
+build_start_time: [1682082149, 611421000]
+build_end_time: [1682082149, 663239000]
+inputs:
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/logger.swift": [1681670218, 50807427]
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/main.swift": [1681670506, 803621956]
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/playpuretone.swift": [1681670218, 125364368]
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/statestore.swift": [1681670330, 822740664]

@@ -1,0 +1,165 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.swiftmac-release.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "importPath" : "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/logger.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/main.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/playpuretone.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/statestore.swift"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "swiftmac",
+      "moduleOutputPath" : "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.swiftmodule",
+      "objects" : [
+        "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build/logger.swift.o",
+        "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build/main.swift.o",
+        "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build/playpuretone.swift.o",
+        "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build/statestore.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx10.15",
+        "-swift-version",
+        "5",
+        "-O",
+        "-g",
+        "-j20",
+        "-DSWIFT_PACKAGE",
+        "-module-cache-path",
+        "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "swiftmac_main",
+        "-color-diagnostics",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib"
+      ],
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build/logger.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build/main.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build/playpuretone.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build/statestore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.swiftmodule"
+        }
+      ],
+      "sources" : [
+        "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/logger.swift",
+        "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/main.swift",
+        "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/playpuretone.swift",
+        "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/statestore.swift"
+      ],
+      "tempsPath" : "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/swiftmac.build",
+      "wholeModuleOptimization" : true
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "swiftmac" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "swiftmac",
+      "-whole-module-optimization",
+      "-num-threads",
+      "20",
+      "-c",
+      "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/logger.swift",
+      "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/main.swift",
+      "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/playpuretone.swift",
+      "/Users/rmelton/Projects/swiftmac/Sources/SwiftMacPackage/statestore.swift",
+      "-I",
+      "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release",
+      "-target",
+      "arm64-apple-macosx10.15",
+      "-swift-version",
+      "5",
+      "-O",
+      "-g",
+      "-j20",
+      "-DSWIFT_PACKAGE",
+      "-module-cache-path",
+      "/Users/rmelton/Projects/swiftmac/.build/arm64-apple-macosx/release/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "swiftmac_main",
+      "-color-diagnostics",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "swiftmac" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  }
+}

@@ -3,7 +3,10 @@ import AppKit
 import Darwin
 import Foundation
 
-// Generates a tone in pure swift
+let audioPlayer = AVAudioPlayerNode()
+let audioEngine = AVAudioEngine()
+
+/* Generates a tone in pure swift */
 func playPureTone(
   frequencyInHz: Int, amplitude: Float,
   durationInMillis: Int
@@ -15,8 +18,6 @@ func playPureTone(
     label: "org.emacspeak.server.swiftmac.tone", qos: .userInteractive)
   let semaphore = DispatchSemaphore(value: 1)
   toneQueue.async {
-    let audioPlayer = AVAudioPlayerNode()
-    let audioEngine = AVAudioEngine()
     semaphore.wait()
     audioEngine.attach(audioPlayer)
     let mixer = audioEngine.mainMixerNode

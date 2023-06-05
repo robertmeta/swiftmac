@@ -3,7 +3,7 @@ import AppKit
 import Darwin
 import Foundation
 
-// Global Constants
+/* Global Constants */
 let version = "0.3"
 let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
@@ -42,21 +42,41 @@ if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
   debugLogger.log("voiceVolume \(voiceVolume)")
 #endif
 
-// This delegate class lets us continue speaking with queued data
-// after a speech chunk is completed
+/* Used in the class below, so defiend here */
+func splitStringBySpaceAfterLimit(_ str: String, limit: Int) -> (before: String, after: String) {
+    if str.count <= limit {
+        return (str, "")
+    } else {
+        var limitIndex = str.index(str.startIndex, offsetBy: limit)
+        while limitIndex < str.endIndex {
+            if str[limitIndex] == " " {
+                let before = String(str[str.startIndex..<limitIndex])
+                let after = String(str[limitIndex..<str.endIndex])
+                return (before, after)
+            }
+            limitIndex = str.index(after: limitIndex)
+        }
+    }
+    return (str, "")
+} 
+
+/* This delegate class lets us continue speaking with queued data
+   after a speech chunk is completed */
 class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
   func speechSynthesizer(
     _ sender: NSSpeechSynthesizer,
     didFinishSpeaking finishedSpeaking: Bool
   ) {
-    let s = ss.popBacklog()
-    #if DEBUG
+    if finishedSpeaking {
+      let s = ss.popBacklog()
+      #if DEBUG
       debugLogger.log("didFinishSpeaking:startSpeaking: \(s)")
-    #endif
-    speaker.startSpeaking(s)
-    #if DEBUG
+      #endif
+      speaker.startSpeaking(s)
+      #if DEBUG
       debugLogger.log("Enter: startSpeaking")
-    #endif
+      #endif
+    }
   }
 }
 let dh = DelegateHandler()
@@ -64,7 +84,7 @@ speaker.delegate = dh
 
 let ss = StateStore()
 
-// Entry point and main loop
+/* Entry point and main loop */
 func main() async {
   #if DEBUG
     debugLogger.log("Enter: main")
@@ -106,8 +126,8 @@ func main() async {
   }
 }
 
-// This is replacements that always must happen when doing
-// replaceements like [*] -> slnc
+/* This is replacements that always must happen when doing
+   replaceements like [*] -> slnc */
 func replaceCore(_ line: String) -> String {
   #if DEBUG
     debugLogger.log("Enter: replaceCore")
@@ -117,7 +137,7 @@ func replaceCore(_ line: String) -> String {
     .replacingOccurrences(of: "[*]", with: " [[slnc 50]] ")
 }
 
-// This is used for "none" puncts
+/* This is used for "none" puncts */
 func replaceBasePuncs(_ line: String) -> String {
   #if DEBUG
     debugLogger.log("Enter: replaceBasePuncs")
@@ -128,7 +148,7 @@ func replaceBasePuncs(_ line: String) -> String {
 
 }
 
-// this is used for "some" puncts
+/* this is used for "some" puncts */
 func replaceSomePuncs(_ line: String) -> String {
   #if DEBUG
     debugLogger.log("Enter: replaceSomePuncs")
@@ -153,7 +173,7 @@ func replaceSomePuncs(_ line: String) -> String {
     .replacingOccurrences(of: "^", with: " caret ")
 }
 
-// this is used for "all" puncts
+/* this is used for "all" puncts */
 func replaceAllPuncs(_ line: String) -> String {
   #if DEBUG
     debugLogger.log("Enter: replaceAllPuncs")
@@ -373,7 +393,7 @@ func queueCode(_ line: String) async {
   ss.pushBacklog(p, code: true)
 }
 
-// Does the same thing as "p " so route it over to playSound
+/* Does the same thing as "p " so route it over to playSound */
 func playAudioIcon(_ line: String) async {
   #if DEBUG
     debugLogger.log("Enter: playAudioIcon")
@@ -471,9 +491,9 @@ func stripSpecialEmbeds(_ line: String) -> String {
     with: "", options: .regularExpression)
 }
 
-// So, it turns out we get spammed with voice often as a form of a
-// reset of the voice engine, good news is we have that command
-// built right in
+/* So, it turns out we get spammed with voice often as a form of a
+   reset of the voice engine, good news is we have that command
+   built right in */
 func voiceToReset(_ line: String) -> String {
   #if DEBUG
     debugLogger.log("Enter: voiceToReset")

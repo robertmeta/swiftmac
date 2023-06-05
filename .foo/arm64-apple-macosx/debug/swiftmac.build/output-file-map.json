@@ -1,0 +1,29 @@
+{
+  "": {
+    "swift-dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/master.swiftdeps"
+  },
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/logger.swift": {
+    "dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/logger.d",
+    "object": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/logger.swift.o",
+    "swiftmodule": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/logger~partial.swiftmodule",
+    "swift-dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/logger.swiftdeps"
+  },
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/main.swift": {
+    "dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/main.d",
+    "object": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/main.swift.o",
+    "swiftmodule": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/main.swiftdeps"
+  },
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/playpuretone.swift": {
+    "dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/playpuretone.d",
+    "object": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/playpuretone.swift.o",
+    "swiftmodule": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/playpuretone~partial.swiftmodule",
+    "swift-dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/playpuretone.swiftdeps"
+  },
+  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/statestore.swift": {
+    "dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/statestore.d",
+    "object": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/statestore.swift.o",
+    "swiftmodule": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/statestore~partial.swiftmodule",
+    "swift-dependencies": "/Users/rmelton/projects/swiftmac/.build/arm64-apple-macosx/debug/swiftmac.build/statestore.swiftdeps"
+  }
+}

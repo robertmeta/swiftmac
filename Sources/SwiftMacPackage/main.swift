@@ -13,8 +13,8 @@ let defaultVoice = NSSpeechSynthesizer.defaultVoice
 let defaultPunct = "all"
 let defaultSplitCaps = false
 let defaultBeepCaps = false
-var soundVolume: Float = 0.1
-var toneVolume: Float = 0.1
+var soundVolume: Float = 1.0
+var toneVolume: Float = 1.0
 var voiceVolume: Float = 1.0
 
 func getEnvironmentVariable(_ variable: String) -> String {
@@ -232,9 +232,13 @@ func sayLetter(_ line: String) async {
   #endif
   let letter = await isolateParams(line)
   let charRate = speaker.rate * ss.getCharScale()
+  var pitchShift = 0
+  if let singleChar = letter.first, singleChar.isUppercase {
+    pitchShift = 15
+  }
 
   await say(
-    "[[rate \(charRate)]][[char ltrl]]\(letter)[[rset 0]]",
+    "[[rate \(charRate)]][[pbas +\(pitchShift)]][[char ltrl]]\(letter)[[rset 0]]",
     interupt: true,
     code: true
   )

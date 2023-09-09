@@ -1,6 +1,0 @@
-version: "Apple Swift version 5.8 (swiftlang-5.8.0.124.2 clang-1403.0.22.11.100)"
-options: "db39a58e7a87505338a327c105db4e8c49d53f967a8653b72c36acf40f4f5b5c"
-build_start_time: [1680639332, 700514000]
-build_end_time: [1680639337, 836893000]
-inputs:
-  "/Users/rmelton/projects/swiftmac/Sources/SwiftMacPackage/swiftmac.swift": [1680634285, 21805479]

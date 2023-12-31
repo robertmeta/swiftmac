@@ -5,6 +5,9 @@ import Foundation
 
 let audioPlayer = AVAudioPlayerNode()
 let audioEngine = AVAudioEngine()
+let toneQueue = DispatchQueue(
+  label: "org.emacspeak.server.swiftmac.tone", qos: .userInteractive)
+let semaphore = DispatchSemaphore(value: 1)
 
 /* Generates a tone in pure swift */
 func playPureTone(
@@ -14,9 +17,6 @@ func playPureTone(
   #if DEBUG
     debugLogger.log("in playPureTone")
   #endif
-  let toneQueue = DispatchQueue(
-    label: "org.emacspeak.server.swiftmac.tone", qos: .userInteractive)
-  let semaphore = DispatchSemaphore(value: 1)
   toneQueue.async {
     semaphore.wait()
     audioEngine.attach(audioPlayer)
@@ -73,6 +73,7 @@ func playPureTone(
       }
     }
     semaphore.wait()
+    
     semaphore.signal()
   }
 }

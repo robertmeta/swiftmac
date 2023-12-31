@@ -3,8 +3,20 @@ import AppKit
 import Darwin
 import Foundation
 
+let audioEngine = AVAudioEngine() 
+
 let audioPlayer = AVAudioPlayerNode()
-let audioEngine = AVAudioEngine()
+
+let mixer = audioEngine.mainMixerNode
+let sampleRateHz = Float(mixer.outputFormat(forBus: 0).sampleRate) 
+
+let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, 
+                           sampleRate: Double(sampleRateHz), 
+                           channels: 1, interleaved: false)!
+                           
+
+let toneQueue = DispatchQueue(label: "toneQueue")
+let semaphore = DispatchSemaphore(value: 1)
 
 /* Generates a tone in pure swift */
 func playPureTone(
@@ -14,24 +26,9 @@ func playPureTone(
   #if DEBUG
     debugLogger.log("in playPureTone")
   #endif
-  let toneQueue = DispatchQueue(
-    label: "org.emacspeak.server.swiftmac.tone", qos: .userInteractive)
-  let semaphore = DispatchSemaphore(value: 1)
   toneQueue.async {
     semaphore.wait()
     audioEngine.attach(audioPlayer)
-    let mixer = audioEngine.mainMixerNode
-    let sampleRateHz = Float(mixer.outputFormat(forBus: 0).sampleRate)
-
-    guard
-      let format = AVAudioFormat(
-        commonFormat: AVAudioCommonFormat.pcmFormatFloat32,
-        sampleRate: Double(sampleRateHz),
-        channels: AVAudioChannelCount(1), interleaved: false)
-    else {
-      return
-    }
-
     audioEngine.connect(audioPlayer, to: mixer, format: format)
 
     let numberOfSamples = AVAudioFrameCount(

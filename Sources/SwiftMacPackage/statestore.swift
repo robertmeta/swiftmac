@@ -11,7 +11,8 @@ class StateStore {
   // private var voiceq = defaultVoice
   private var splitCaps: Bool = defaultSplitCaps
   private var voice = defaultVoice
-  private var beepCaps: Bool = defaultBeepCaps
+  // private var beepCaps: Bool = defaultBeepCaps
+  private var beepCaps: Bool = false
   private var charScale: Float = defaultCharScale
   private var punct: String = defaultPunct
   private let queue = DispatchQueue(

@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Debug swiftmac",
+            "program": "${workspaceFolder:swiftmac}/.build/debug/swiftmac",
+            "args": [],
+            "cwd": "${workspaceFolder:swiftmac}",
+            "preLaunchTask": "swift: Build Debug swiftmac"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Release swiftmac",
+            "program": "${workspaceFolder:swiftmac}/.build/release/swiftmac",
+            "args": [],
+            "cwd": "${workspaceFolder:swiftmac}",
+            "preLaunchTask": "swift: Build Release swiftmac"
+        }
+    ]
+}

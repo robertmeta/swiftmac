@@ -1,11 +1,26 @@
 swiftmac
 ========
-This is a drop in replacement for the python "mac" server that comes 
-with emacspeak. The goal is to get it mainlined into Emacspeak once
-it is feature complete.
 
-You can look at open github issues to see if it is 
-missing critical features for your use case.
+TODO
+-----------
+1. Find the heavy use bug in the tone generation code, it seems to only happen 
+rarely when doing stuff like riding the backspace key to delete a lot of text. 
+2. Fix behavior of stop to NOT stop audio-icons. 
+3. Fix "overloaded" delay, when massive amounts of text or events are sent to
+the server it will lag hard sometimes, eventually it will recover, but ugly. 
+4. Currently, I treat a and p the same, when a should be queued and p instantly
+played.
+5. Beepcaps currently are not support, but the route to support them is custom
+callback injection, totally doable, just need to do it. 
+6. Setup the error handling delegate for logging.
+7. Fix lag when queueing lots of text at once, maybe by chunking or some other 
+technique. 
+
+NOT IMPLEMENTING 
+----------------
+1. Effects: echo, panning, etc. These are going into swiftmac 2, which is a 
+rewrite using different libraries with longer term future support. 
+2. Mono-Mode: 
 
 Quick Install (no prerequisites)
 --------------------------------
@@ -32,17 +47,3 @@ Recommended Settings
   (require 'emacspeak-setup)
   (dtk-set-rate 275 t)
 ```
-
-Motivation
-----------
- I wanted a mac experience with a few things that are presently not 
- possible in the mac python server. 
- 1. No deps except swift
- 2. Compiled and multithread for complete non-blocking operations 
- 3. Highly reliable, will never corrupt speech on MacOS
- 4. Drop in (no configuration or special setup required in Eamcs or 
-    the operating system.
- 5. Feature complete support of all emacs speech server commands
- 6. With a separate test script to confirm all features work 
- 
- Not there yet, but getting close.

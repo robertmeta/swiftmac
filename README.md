@@ -1,6 +1,6 @@
 swiftmac
 ========
-Version 1 was integrated into the emacspeak project. 
+This repo has been a bit rebooted and will be adapted to make it easy to keep 
+it contributed to the main emacspeak project. 
 
-This will be transitioning to version 2, so I will be clearing issues and 
-cleaning up this repo. New code will be online as soon as it is runnable. 
+Bugs can still be reported here. 

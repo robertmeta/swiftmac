@@ -44,25 +44,26 @@ if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
 
 /* Used in the class below, so defiend here */
 func splitStringBySpaceAfterLimit(_ str: String, limit: Int) -> (before: String, after: String) {
-    if str.count <= limit {
-        return (str, "")
-    } else {
-        var limitIndex = str.index(str.startIndex, offsetBy: limit)
-        while limitIndex < str.endIndex {
-            if str[limitIndex] == " " {
-                let before = String(str[str.startIndex..<limitIndex])
-                let after = String(str[limitIndex..<str.endIndex])
-                return (before, after)
-            }
-            limitIndex = str.index(after: limitIndex)
-        }
-    }
+  if str.count <= limit {
     return (str, "")
-} 
+  } else {
+    var limitIndex = str.index(str.startIndex, offsetBy: limit)
+    while limitIndex < str.endIndex {
+      if str[limitIndex] == " " {
+        let before = String(str[str.startIndex..<limitIndex])
+        let after = String(str[limitIndex..<str.endIndex])
+        return (before, after)
+      }
+      limitIndex = str.index(after: limitIndex)
+    }
+  }
+  return (str, "")
+}
 
 /* This delegate class lets us continue speaking with queued data
    after a speech chunk is completed */
 class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
+  @MainActor
   func speechSynthesizer(
     _ sender: NSSpeechSynthesizer,
     didFinishSpeaking finishedSpeaking: Bool
@@ -70,11 +71,11 @@ class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
     if finishedSpeaking {
       let s = ss.popBacklog()
       #if DEBUG
-      debugLogger.log("didFinishSpeaking:startSpeaking: \(s)")
+        debugLogger.log("didFinishSpeaking:startSpeaking: \(s)")
       #endif
       speaker.startSpeaking(s)
       #if DEBUG
-      debugLogger.log("Enter: startSpeaking")
+        debugLogger.log("Enter: startSpeaking")
       #endif
     }
   }
@@ -190,6 +191,7 @@ func replaceAllPuncs(_ line: String) -> String {
 
 }
 
+@MainActor
 func ttsSplitCaps(_ line: String) async {
   #if DEBUG
     debugLogger.log("Enter: ttsSplitCaps")
@@ -202,7 +204,7 @@ func ttsSplitCaps(_ line: String) async {
   }
 }
 
-func ttsReset() async {
+@MainActor func ttsReset() async {
   #if DEBUG
     debugLogger.log("Enter: ttsReset")
   #endif
@@ -226,7 +228,7 @@ func sayVersion() async {
   await say("Running \(name) version \(version)", interupt: true)
 }
 
-func sayLetter(_ line: String) async {
+@MainActor func sayLetter(_ line: String) async {
   #if DEBUG
     debugLogger.log("Enter: sayLetter")
   #endif
@@ -251,14 +253,14 @@ func saySilence(_ line: String, duration: Int = 50) async {
   await say("[[slnc \(duration)]]", interupt: false)
 }
 
-func ttsPause() async {
+@MainActor func ttsPause() async {
   #if DEBUG
     debugLogger.log("Enter: ttsPause")
   #endif
   speaker.pauseSpeaking(at: .immediateBoundary)
 }
 
-func ttsResume() async {
+@MainActor func ttsResume() async {
   #if DEBUG
     debugLogger.log("Enter: ttsResume")
   #endif
@@ -283,7 +285,7 @@ func ttsSetPunctuations(_ line: String) async {
   ss.setPunct(l)
 }
 
-func ttsSetRate(_ line: String) async {
+@MainActor func ttsSetRate(_ line: String) async {
   #if DEBUG
     debugLogger.log("Enter: ttsSetRate")
   #endif
@@ -317,6 +319,7 @@ func ttsAllCapsBeep(_ line: String) async {
   }
 }
 
+@MainActor
 func ttsSyncState(_ line: String) async {
   #if DEBUG
     debugLogger.log("Enter: ttsSyncState")
@@ -544,5 +547,4 @@ await main()
 // local variables:
 // mode: swift
 // swift-mode:basic-offset: 2
-// compile-command: "swift build"
 // end:

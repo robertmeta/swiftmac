@@ -527,8 +527,10 @@ func isolateParams(_ line: String) async -> String {
   #if DEBUG
     debugLogger.log("Enter: isolateParams")
   #endif
-  let cmd = await isolateCommand(line) + " "
-  var params = line.replacingOccurrences(of: cmd, with: "")
+  let justCmd = await isolateCommand(line)
+  let cmd = justCmd + " "
+
+  var params = line.replacingOccurrences(of: "^"+cmd, with: "", options: .regularExpression)
   params = params.trimmingCharacters(in: .whitespacesAndNewlines)
   if params.hasPrefix("{") && params.hasSuffix("}") {
     if let lastIndex = params.lastIndex(of: "}") {
@@ -538,6 +540,9 @@ func isolateParams(_ line: String) async -> String {
       params.replaceSubrange(firstIndex...firstIndex, with: "")
     }
   }
+  #if DEBUG
+    debugLogger.log("Exit: isolateParams: \(params)")
+  #endif
   return params
 }
 

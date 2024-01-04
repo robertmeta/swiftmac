@@ -543,7 +543,7 @@ func isolateParams(_ line: String) async -> String {
   #if DEBUG
     debugLogger.log("Exit: isolateParams: \(params)")
   #endif
-  return params
+  return " "+params+" "
 }
 
 await ttsReset()

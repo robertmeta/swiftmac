@@ -4,7 +4,7 @@ import Darwin
 import Foundation
 
 /* Global Constants */
-let version = "0.3"
+let version = "1.0.3"
 let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
 let defaultRate: Float = 200
@@ -91,9 +91,9 @@ func main() async {
     debugLogger.log("Enter: main")
   #endif
   #if DEBUG
-    await say("Debugging swift mac server for e mac speak", interupt: true)
+    await say("Debugging swift mac server for e mac speak \(version)", interupt: true)
   #else
-    await say("welcome to e mac speak with swift mac", interupt: true)
+    await say("welcome to e mac speak with swift mac \(version)", interupt: true)
   #endif
   while let l = readLine() {
     #if DEBUG

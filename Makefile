@@ -53,9 +53,15 @@ install-binary-debug: support_files backup_if_exists
 test: release
 	python3 test-server.py .build/release/swiftmac
 
-format:
+tidy:
 	swift-format Package.swift > temp
 	cp temp Package.swift
-	swift-format Sources/SwiftMacPackage/swiftmac.swift > temp
-	cp temp Sources/SwiftMacPackage/swiftmac.swift
+	swift-format Sources/SwiftMacPackage/logger.swift > temp
+	cp temp Sources/SwiftMacPackage/logger.swift 
+	swift-format Sources/SwiftMacPackage/main.swift > temp
+	cp temp Sources/SwiftMacPackage/main.swift 
+	swift-format Sources/SwiftMacPackage/playpuretone.swift > temp
+	cp temp Sources/SwiftMacPackage/playpuretone.swift 
+	swift-format Sources/SwiftMacPackage/statestore.swift > temp
+	cp temp Sources/SwiftMacPackage/statestore.swift 
 	rm temp

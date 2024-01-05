@@ -530,7 +530,7 @@ func isolateParams(_ line: String) async -> String {
   let justCmd = await isolateCommand(line)
   let cmd = justCmd + " "
 
-  var params = line.replacingOccurrences(of: "^"+cmd, with: "", options: .regularExpression)
+  var params = line.replacingOccurrences(of: "^" + cmd, with: "", options: .regularExpression)
   params = params.trimmingCharacters(in: .whitespacesAndNewlines)
   if params.hasPrefix("{") && params.hasSuffix("}") {
     if let lastIndex = params.lastIndex(of: "}") {
@@ -543,7 +543,7 @@ func isolateParams(_ line: String) async -> String {
   #if DEBUG
     debugLogger.log("Exit: isolateParams: \(params)")
   #endif
-  return " "+params+" "
+  return " " + params + " "
 }
 
 await ttsReset()

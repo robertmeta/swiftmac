@@ -30,23 +30,24 @@ support_files:
 	echo "cloud-swiftmac" >> $(SERVERS)/.servers
 	sort -o $(SERVERS)/.servers $(SERVERS)/.servers
 
-install: release support_files
-	cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version
+install: release support_files backup_if_exists
 	cp .build/release/swiftmac $(SERVERS)/swiftmac
 
-install-debug: debug support_files
-	cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version
+backup_if_exists:
+	if [ -f $(SERVERS)/swiftmac ]; then \
+	    cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version; \
+	fi
+
+install-debug: debug support_files backup_if_exists
 	cp .build/debug/swiftmac $(SERVERS)/swiftmac
 
 
-install-binary: support_files
+install-binary: support_files backup_if_exists
 	curl -L https://github.com/robertmeta/swiftmac/releases/download/alpha0.3/swiftmac --output $(SERVERS)/swiftmac
-	cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version
 	chmod +x $(SERVERS)/swiftmac
 
-install-binary-debug: support_files
+install-binary-debug: support_files backup_if_exists
 	curl -L https://github.com/robertmeta/swiftmac/releases/download/alpha0.3/swiftmac-debug --output  $(SERVERS)/swiftmac
-	cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version
 	chmod +x $(SERVERS)/swiftmac
 
 test: release

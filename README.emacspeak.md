@@ -4,13 +4,14 @@ This is a drop in replacement for the python "mac" server.
 
 Quick Install (requires swift compiler)
 ------------------------------------------------------------------------------
- - make (note: emits warnings)
+ - make swiftmac (note: emits warnings)
  - Change the server in your configuration to "swiftmac"
  - Restart emacs
 
 Recommended Settings
 ------------------------------------------------------------------------------
 ```
+  (setq mac-ignore-accessibility 't)
   (setq dtk-program "swiftmac")
   (setenv "SWIFTMAC_TONE_VOLUME" "0.5")
   (setenv "SWIFTMAC_SOUND_VOLUME" "0.5")

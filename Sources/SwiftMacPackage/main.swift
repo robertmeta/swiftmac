@@ -233,10 +233,15 @@ func sayVersion() async {
     debugLogger.log("Enter: sayLetter")
   #endif
   let letter = await isolateParams(line)
+  let trimmedLetter = letter.trimmingCharacters(in: .whitespacesAndNewlines)
+
   let charRate = speaker.rate * ss.getCharScale()
   var pitchShift = 0
-  if let singleChar = letter.first, singleChar.isUppercase {
+  if let singleChar = trimmedLetter.first, singleChar.isUppercase {
     pitchShift = 15
+    #if DEBUG
+      debugLogger.log("PitchShift ON")
+    #endif
   }
 
   await say(

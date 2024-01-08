@@ -21,17 +21,6 @@ Recommended Settings
   (dtk-set-rate 250 t)
 ```
 
-Known Issues
+Bugs?
 ------------------------------------------------------------------------------
- 1. Stop is too aggressive (stops audio icons)
- 2. Protocol "a" and "p" conflated, need to follow DTK model, a is queue and 
-    p means play instantly
- 4. Extremely long speaking blocks can choke server, implement internal chunking
-
-Ignored Issues
-------------------------------------------------------------------------------
-Due to implementation choices, many things will not be fixed until swiftmac v2
-
- 1. Effects (reverb, single-ear mode, differential volume, mono-mode)
- 2. Beepcaps support
-
+ - https://github.com/robertmeta/swiftmac/issues

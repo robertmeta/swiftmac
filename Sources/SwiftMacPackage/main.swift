@@ -382,7 +382,7 @@ func dispatchSpeaker() async {
   #if DEBUG
     debugLogger.log("Enter: dispatchSpeaker")
   #endif
-  let s = " "+ss.popBacklog()+" "
+  let s = " " + ss.popBacklog() + " "
   #if DEBUG
     debugLogger.log("speaking: \(s)")
   #endif

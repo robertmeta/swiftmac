@@ -7,13 +7,6 @@ debug:
 release:
 	swift build -c release
 
-fat-debug:
-	swift build -c debug --triple arm64-apple-macosx
-	swift build -c debug --triple x86_64-apple-macosx
-	mkdir -p universal
-	lipo -create .build/arm64-apple-macosx/debug/swiftmac .build/x86_64-apple-macosx/debug/swiftmac -output universal/swiftmac-debug
-	lipo -info universal/swiftmac-debug
-
 fat-release:
 	swift build -c release --triple arm64-apple-macosx
 	swift build -c release --triple x86_64-apple-macosx
@@ -43,11 +36,7 @@ install-debug: debug support_files backup_if_exists
 
 
 install-binary: support_files backup_if_exists
-	curl -L https://github.com/robertmeta/swiftmac/releases/download/alpha0.3/swiftmac --output $(SERVERS)/swiftmac
-	chmod +x $(SERVERS)/swiftmac
-
-install-binary-debug: support_files backup_if_exists
-	curl -L https://github.com/robertmeta/swiftmac/releases/download/alpha0.3/swiftmac-debug --output  $(SERVERS)/swiftmac
+	curl -L https://github.com/robertmeta/swiftmac/releases/download/latest/swiftmac --output $(SERVERS)/swiftmac
 	chmod +x $(SERVERS)/swiftmac
 
 test: release

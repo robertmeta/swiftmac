@@ -14,6 +14,7 @@ Bugs can still be reported here.
 ### Build
 
  - ```make install```
+ - OR ```make install-binary``` (to download the latest fat binary)
 
 ### Setup (recommended settings)
 

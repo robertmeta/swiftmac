@@ -1,35 +1,30 @@
 # swiftmac
 
-## Updates 
+## Introduction 
 
-### 2024-01-01
+This is an emacspeak server written in swift intended to be as async as 
+reasonable, fast and responsive.
 
-This repo has been a bit rebooted and will be adapted to make it easy to keep 
-it contributed to the main emacspeak project. 
+Unless you are a developer or interested in becoming one, you probably 
+want to use the version bundled with emacspeak, I keep that copy up to 
+date with this one fairly consistently. 
 
-Bugs can still be reported here. 
+## Hacking
 
-## Quickstart
+The recommended workflow is to symlink the swiftmac binary under either
+.build/release/swiftmac or ./build/debug/swiftmac (depending which you are building) to your emacspeak servers directory. 
 
-### Build
+then just ```make``` for debug or ```make release``` to build a fresh binary.
 
- - ```make install```
- - OR ```make install-binary``` (to download the latest fat binary)
-
-### Setup (recommended settings)
-
-```
-  (setq mac-ignore-accessibility 't)
-  (setq dtk-program "swiftmac")
-  (setenv "SWIFTMAC_TONE_VOLUME" "0.5")
-  (setenv "SWIFTMAC_SOUND_VOLUME" "0.5")
-  (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")
-  (defvar emacspeak-auditory-icon-function #'emacspeak-serve-auditory-icon)
-  (require 'emacspeak-setup)
-  (dtk-set-rate 250 t)
-```
+I will likely remove make install in the future, as it is a bit fidgety, but I 
+will leave it in for now. 
 
 ## Having Trouble?
+
+### It emits warnings and notes
+
+I am aware of the current warnings, it is a goal to get it to build completely 
+clean but tthat is not a priority right now, getting to v2 is the priority.
 
 ### Double-Speaking
 

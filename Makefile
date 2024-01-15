@@ -26,6 +26,9 @@ support_files:
 install: release support_files backup_if_exists
 	cp .build/release/swiftmac $(SERVERS)/swiftmac
 
+install-debug: debug support_files backup_if_exists
+	cp .build/debug/swiftmac $(SERVERS)/swiftmac
+
 backup_if_exists:
 	if [ -f $(SERVERS)/swiftmac ]; then \
 	    cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version; \
@@ -54,3 +57,9 @@ tidy:
 	swift-format Sources/SwiftMacPackage/statestore.swift > temp
 	cp temp Sources/SwiftMacPackage/statestore.swift 
 	rm temp
+
+contribute: tidy
+	cp -Rvf Sources ~/Projects/others/emacspeak/servers/mac-swiftmac
+	cp Makefile.emacspeak ~/Projects/others/emacspeak/servers/mac-swiftmac/Makefile
+	cp README.emacspeak.md ~/Projects/others/emacspeak/servers/mac-swiftmac/README.md
+

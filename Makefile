@@ -34,16 +34,9 @@ backup_if_exists:
 	    cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version; \
 	fi
 
-install-debug: debug support_files backup_if_exists
-	cp .build/debug/swiftmac $(SERVERS)/swiftmac
-
-
 install-binary: support_files backup_if_exists
 	curl -L https://github.com/robertmeta/swiftmac/releases/download/latest/swiftmac --output $(SERVERS)/swiftmac
 	chmod +x $(SERVERS)/swiftmac
-
-test: release
-	python3 test-server.py .build/release/swiftmac
 
 tidy:
 	swift-format Package.swift > temp
@@ -60,6 +53,8 @@ tidy:
 
 contribute: tidy
 	cp -Rvf Sources ~/Projects/others/emacspeak/servers/mac-swiftmac
-	cp Makefile.emacspeak ~/Projects/others/emacspeak/servers/mac-swiftmac/Makefile
-	cp README.emacspeak.md ~/Projects/others/emacspeak/servers/mac-swiftmac/README.md
+	cp -f Makefile.emacspeak ~/Projects/others/emacspeak/servers/mac-swiftmac/Makefile
+	cp -f README.emacspeak.md ~/Projects/others/emacspeak/servers/mac-swiftmac/README.md
+	cp -f cloud-swiftmac ~/Projects/others/emacspeak/servers/cloud-swiftmac
+	cp -f log-swiftmac ~/Projects/others/emacspeak/servers/log-swiftmac
 

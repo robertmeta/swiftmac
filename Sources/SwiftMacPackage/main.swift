@@ -387,7 +387,10 @@ func dispatchSpeaker() async {
   #if DEBUG
     debugLogger.log("speaking: \(s)")
   #endif
-  speaker.startSpeaking(s)
+  let isAllWhitespace = s.allSatisfy { $0.isWhitespace }
+  if !isAllWhitespace {
+    speaker.startSpeaking(s)
+  }
 }
 
 func queueSpeaker(_ line: String) async {

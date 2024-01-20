@@ -1,11 +1,11 @@
 EMACSPEAK := $(shell ./get-emacspeak-path.sh)
 SERVERS := $(EMACSPEAK)/servers
 
-debug:
-	swift build
-
 release:
 	swift build -c release
+
+debug:
+	swift build
 
 fat-release:
 	swift build -c release --triple arm64-apple-macosx
@@ -14,7 +14,7 @@ fat-release:
 	lipo -create .build/arm64-apple-macosx/release/swiftmac .build/x86_64-apple-macosx/release/swiftmac -output universal/swiftmac
 	lipo -info universal/swiftmac
 
-support_files:
+support-files:
 	cp cloud-swiftmac $(SERVERS)/cloud-swiftmac
 	cp log-swiftmac $(SERVERS)/log-swiftmac
 	sed -i '' '/swiftmac/d' $(SERVERS)/.servers
@@ -23,18 +23,18 @@ support_files:
 	echo "cloud-swiftmac" >> $(SERVERS)/.servers
 	sort -o $(SERVERS)/.servers $(SERVERS)/.servers
 
-install: release support_files backup_if_exists
+install: release support-files backup-if-exists
 	cp .build/release/swiftmac $(SERVERS)/swiftmac
 
-install-debug: debug support_files backup_if_exists
+install-debug: debug support-files backup-if-exists
 	cp .build/debug/swiftmac $(SERVERS)/swiftmac
 
-backup_if_exists:
+backup-if-exists:
 	if [ -f $(SERVERS)/swiftmac ]; then \
 	    cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version; \
 	fi
 
-install-binary: support_files backup_if_exists
+install-binary: support-files backup-if-exists
 	curl -L https://github.com/robertmeta/swiftmac/releases/download/latest/swiftmac --output $(SERVERS)/swiftmac
 	chmod +x $(SERVERS)/swiftmac
 

@@ -205,7 +205,8 @@ func ttsSplitCaps(_ line: String) async {
   }
 }
 
-@MainActor func ttsReset() async {
+@MainActor
+func ttsReset() async {
   #if DEBUG
     debugLogger.log("Enter: ttsReset")
   #endif
@@ -229,7 +230,8 @@ func sayVersion() async {
   await say("Running \(name) version \(version)", interupt: true)
 }
 
-@MainActor func sayLetter(_ line: String) async {
+@MainActor
+func sayLetter(_ line: String) async {
   #if DEBUG
     debugLogger.log("Enter: sayLetter")
   #endif
@@ -259,14 +261,16 @@ func saySilence(_ line: String, duration: Int = 50) async {
   await say("[[slnc \(duration)]]", interupt: false)
 }
 
-@MainActor func ttsPause() async {
+@MainActor
+func ttsPause() async {
   #if DEBUG
     debugLogger.log("Enter: ttsPause")
   #endif
   speaker.pauseSpeaking(at: .immediateBoundary)
 }
 
-@MainActor func ttsResume() async {
+@MainActor
+func ttsResume() async {
   #if DEBUG
     debugLogger.log("Enter: ttsResume")
   #endif
@@ -291,7 +295,8 @@ func ttsSetPunctuations(_ line: String) async {
   ss.setPunct(l)
 }
 
-@MainActor func ttsSetRate(_ line: String) async {
+@MainActor
+func ttsSetRate(_ line: String) async {
   #if DEBUG
     debugLogger.log("Enter: ttsSetRate")
   #endif
@@ -383,13 +388,15 @@ func dispatchSpeaker() async {
   #if DEBUG
     debugLogger.log("Enter: dispatchSpeaker")
   #endif
-  let s = " " + ss.popBacklog() + " "
-  #if DEBUG
-    debugLogger.log("speaking: \(s)")
-  #endif
-  let isAllWhitespace = s.allSatisfy { $0.isWhitespace }
-  if !isAllWhitespace {
-    speaker.startSpeaking(s)
+  if !speaker.isSpeaking {
+    let s = " " + ss.popBacklog() + " "
+    #if DEBUG
+        debugLogger.log("speaking: \(s)")
+    #endif
+    let isAllWhitespace = s.allSatisfy { $0.isWhitespace }
+    if !isAllWhitespace {
+        speaker.startSpeaking(s)
+    }
   }
 }
 

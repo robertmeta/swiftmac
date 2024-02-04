@@ -2,6 +2,7 @@ import AVFoundation
 import AppKit
 import Darwin
 import Foundation
+import OggDecoder
 
 /* Global Constants */
 let version = "1.0.5"
@@ -391,11 +392,11 @@ func dispatchSpeaker() async {
   if !speaker.isSpeaking {
     let s = " " + ss.popBacklog() + " "
     #if DEBUG
-        debugLogger.log("speaking: \(s)")
+      debugLogger.log("speaking: \(s)")
     #endif
     let isAllWhitespace = s.allSatisfy { $0.isWhitespace }
     if !isAllWhitespace {
-        speaker.startSpeaking(s)
+      speaker.startSpeaking(s)
     }
   }
 }
@@ -422,7 +423,7 @@ func playAudioIcon(_ line: String) async {
     debugLogger.log("Enter: playAudioIcon")
   #endif
   #if DEBUG
-    debugLogger.log("Playing audio icon: " + line)
+    debugLogger.log("Playing audio icon: '\(line)'")
   #endif
   await playSound(line)
 }
@@ -431,10 +432,29 @@ func playSound(_ line: String) async {
   #if DEBUG
     debugLogger.log("Enter: playSound")
   #endif
+
   let p = await isolateParams(line)
-  let soundURL = URL(fileURLWithPath: p)
-  let sound = NSSound(contentsOf: soundURL, byReference: true)
-  sound?.volume = await soundVolume
+  let trimmedP = p.trimmingCharacters(in: .whitespacesAndNewlines)
+  let soundURL = URL(fileURLWithPath: trimmedP)
+
+  let savedWavUrl: URL? = await withCheckedContinuation { continuation in
+    if soundURL.pathExtension.lowercased() == "ogg" {
+      let decoder = OGGDecoder()
+      decoder.decode(soundURL) { savedWavUrl in
+        continuation.resume(returning: savedWavUrl)
+      }
+    } else {
+      continuation.resume(returning: soundURL)  // Directly use the provided URL for non-OGG files
+    }
+  }
+
+  guard let url = savedWavUrl else {
+    print("Failed to get audio file URL")
+    return
+  }
+
+  let sound = NSSound(contentsOf: url, byReference: true)
+  sound?.volume = await soundVolume  // Make sure `soundVolume` is accessible here.
   sound?.play()
 }
 

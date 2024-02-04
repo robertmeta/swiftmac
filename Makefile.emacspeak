@@ -15,11 +15,11 @@ all:   $(TTS)
 $(TTS): $(RELEASE)
 	cp $(RELEASE) $(TTS)
 
-$(RELEASE):
+$(RELEASE): clean
 	$(SWIFT) build -c release
 
 clean:
-	rm -rf .build
+	$(SWIFT) package clean
 
 tidy:
 	swift-format Package.swift > temp

@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "OggDecoder",
+        "repositoryURL": "https://github.com/arkasas/OggDecoder.git",
+        "state": {
+          "branch": "main",
+          "revision": "65e1465e593d2b0be6ac12256f2866a18d26e211",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -25,8 +25,8 @@ support-files:
 
 install: release support-files backup-if-exists
 	cp .build/release/swiftmac $(SERVERS)/swiftmac
-	cp .build/release/ogg.framework $(SERVERS)/ogg.framework
-	cp .build/release/vorbis.framework $(SERVERS)/vorbis.framework
+	cp -rf .build/release/ogg.framework $(SERVERS)/ogg.framework
+	cp -rf .build/release/vorbis.framework $(SERVERS)/vorbis.framework
 
 install-debug: debug support-files backup-if-exists
 	cp .build/debug/swiftmac $(SERVERS)/swiftmac
@@ -81,3 +81,4 @@ build-app: release
 	cp -Rf ./.build/release/ogg.framework swiftmac.app/Contents/Frameworks
 	cp -Rf ./.build/release/vorbis.framework swiftmac.app/Contents/Frameworks
 	chmod +x swiftmac.app
+	chmod +x swiftmac.app/Contents/Frameworks

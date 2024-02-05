@@ -7,9 +7,9 @@
     <key>CFBundleName</key>
     <string>swiftmac</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>1.1.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.5</string>
+    <string>1.1.0</string>
     <key>CFBundleExecutable</key>
     <string>swiftmac</string>
     <key>CFBundlePackageType</key>

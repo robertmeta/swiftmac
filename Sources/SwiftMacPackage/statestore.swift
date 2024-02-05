@@ -6,7 +6,7 @@ import Foundation
 // Due to being fully async, handling the state is a bit of a pain,
 // we have to store it all in a class and gate access to it, the good
 // news is the only syncronise bits are on reading the data out.
-class StateStore {
+actor StateStore {
   private var backlog: String = ""
   // private var voiceq = defaultVoice
   private var splitCaps: Bool = defaultSplitCaps

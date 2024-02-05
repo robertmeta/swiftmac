@@ -1,14 +1,13 @@
 import AVFoundation
 import AppKit
-import Darwin
 import Foundation
 import OggDecoder
 
 /* Global Constants */
-let version = "1.0.5"
+let version = "1.1.0"
 let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
-let defaultRate: Float = 200
+let defaultRate: Float = 220
 let defaultCharScale: Float = 1.1
 let defaultVoice = NSSpeechSynthesizer.defaultVoice
 let defaultPunct = "all"
@@ -63,7 +62,7 @@ func splitStringBySpaceAfterLimit(_ str: String, limit: Int) -> (before: String,
 
 /* This delegate class lets us continue speaking with queued data
    after a speech chunk is completed */
-class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
+actor DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
   @MainActor
   func speechSynthesizer(
     _ sender: NSSpeechSynthesizer,
@@ -470,6 +469,7 @@ func ttsSay(_ line: String) async {
 
 }
 
+@MainActor
 func say(
   _ what: String,
   interupt: Bool = false,

@@ -1,11 +1,10 @@
-import AVFoundation
+/*import AVFoundation
 import AppKit
 import Darwin
 import Foundation
 
-class Logger {
+actor Logger {
   private let fileURL: URL
-  private let backgroundQueue: DispatchQueue
 
   init(fileName: String) {
     let fileManager = FileManager.default
@@ -18,13 +17,11 @@ class Logger {
       fileManager.createFile(atPath: fileURL.path, contents: nil, attributes: nil)
     }
 
-    backgroundQueue = DispatchQueue(label: "org.emacspeak.server.swiftmac.logger", qos: .background)
   }
 
   func log(_ m: String) {
+    #if DEBUG
     let message = m + "\n"
-    backgroundQueue.async { [weak self] in
-      guard let self = self else { return }
 
       do {
         let fileHandle = try FileHandle(forWritingTo: self.fileURL)
@@ -37,6 +34,7 @@ class Logger {
       } catch {
         print("Error writing to log file: \(error)")
       }
+    #endif
     }
   }
-}
+*/

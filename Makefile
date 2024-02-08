@@ -2,10 +2,10 @@ EMACSPEAK := $(shell ./get-emacspeak-path.sh)
 SERVERS := $(EMACSPEAK)/servers
 
 release:
-	swift build -c release
+	swift build -c release -Xlinker -rpath -Xlinker @executable_path/../Frameworks
 
 debug:
-	swift build
+	swift build -Xlinker -rpath -Xlinker @executable_path/../Frameworks
 
 fat-release:
 	swift build -c release --triple arm64-apple-macosx
@@ -25,6 +25,8 @@ support-files:
 
 install: release support-files backup-if-exists
 	cp .build/release/swiftmac $(SERVERS)/swiftmac
+	cp -rf .build/release/ogg.framework $(SERVERS)/ogg.framework
+	cp -rf .build/release/vorbis.framework $(SERVERS)/vorbis.framework
 
 install-debug: debug support-files backup-if-exists
 	cp .build/debug/swiftmac $(SERVERS)/swiftmac
@@ -33,6 +35,12 @@ backup-if-exists:
 	if [ -f $(SERVERS)/swiftmac ]; then \
 	    cp $(SERVERS)/swiftmac $(SERVERS)/swiftmac.last_version; \
 	fi
+
+restore-from-backup:
+	if [ -f $(SERVERS)/swiftmac.last_version ]; then \
+	    cp $(SERVERS)/swiftmac.last_version $(SERVERS)/swiftmac
+	fi
+
 
 install-binary: support-files backup-if-exists
 	curl -L https://github.com/robertmeta/swiftmac/releases/download/latest/swiftmac --output $(SERVERS)/swiftmac
@@ -58,3 +66,19 @@ contribute: tidy
 	cp -f cloud-swiftmac ~/Projects/others/emacspeak/servers/cloud-swiftmac
 	cp -f log-swiftmac ~/Projects/others/emacspeak/servers/log-swiftmac
 
+clean:
+	rm -rf swiftmac.app
+	rm -rf .build
+	rm Package.resolved
+
+build-app: release
+	mkdir -p swiftmac.app
+	mkdir -p swiftmac.app/Contents
+	mkdir -p swiftmac.app/Contents/MacOS
+	mkdir -p swiftmac.app/Contents/Frameworks
+	cp Info.plist swiftmac.app/Contents
+	cp ./.build/release/swiftmac swiftmac.app/Contents/MacOS
+	cp -Rf ./.build/release/ogg.framework swiftmac.app/Contents/Frameworks
+	cp -Rf ./.build/release/vorbis.framework swiftmac.app/Contents/Frameworks
+	chmod +x swiftmac.app
+	chmod +x swiftmac.app/Contents/Frameworks

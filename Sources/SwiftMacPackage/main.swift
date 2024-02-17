@@ -175,6 +175,8 @@ func replaceSomePuncs(_ line: String) -> String {
     .replacingOccurrences(of: "!", with: " exclamation ")
     .replacingOccurrences(of: "^", with: " caret ")
 }
+// a change
+
 
 /* this is used for "all" puncts */
 func replaceAllPuncs(_ line: String) -> String {

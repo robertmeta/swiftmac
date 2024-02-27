@@ -5,7 +5,7 @@ import Foundation
 import OggDecoder
 
 /* Global Constants */
-let version = "1.0.7"
+let version = "1.0.8"
 let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
 let defaultRate: Float = 200
@@ -21,12 +21,15 @@ var voiceVolume: Float = 1.0
 func getEnvironmentVariable(_ variable: String) -> String {
   return ProcessInfo.processInfo.environment[variable] ?? ""
 }
+
 if let f = Float(getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
   soundVolume = f
 }
+
 if let f = Float(getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
   toneVolume = f
 }
+
 if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
   voiceVolume = f
 }
@@ -70,9 +73,9 @@ class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
   func speechSynthesizer(
     _ sender: NSSpeechSynthesizer,
     didFinishSpeaking finishedSpeaking: Bool
-  ) {
+  ) async {
     if finishedSpeaking {
-      let s = ss.popBacklog()
+      let s = await ss.popBacklog()
       debugLogger.log("didFinishSpeaking:startSpeaking: \(s)")
       speaker.startSpeaking(s)
       debugLogger.log("Enter: startSpeaking")
@@ -184,9 +187,9 @@ func ttsSplitCaps(_ line: String) async {
   debugLogger.log("Enter: ttsSplitCaps")
   let l = await isolateCommand(line)
   if l == "1" {
-    ss.setSplitCaps(true)
+    await ss.setSplitCaps(true)
   } else {
-    ss.setSplitCaps(false)
+    await ss.setSplitCaps(false)
   }
 }
 
@@ -194,7 +197,7 @@ func ttsSplitCaps(_ line: String) async {
 func ttsReset() async {
   debugLogger.log("Enter: ttsReset")
   speaker.stopSpeaking()
-  ss.clearBacklog()
+  await ss.clearBacklog()
   let voice = NSSpeechSynthesizer.VoiceName(
     rawValue: "com.apple.speech.synthesis.voice.Alex")
   if !speaker.setVoice(voice) {
@@ -202,8 +205,8 @@ func ttsReset() async {
   }
   speaker.rate = defaultRate
   speaker.volume = await voiceVolume
-  ss.setCharScale(defaultCharScale)
-  ss.setPunct(defaultPunct)
+  await ss.setCharScale(defaultCharScale)
+  await ss.setPunct(defaultPunct)
 }
 
 func sayVersion() async {
@@ -216,8 +219,8 @@ func sayLetter(_ line: String) async {
   debugLogger.log("Enter: sayLetter")
   let letter = await isolateParams(line)
   let trimmedLetter = letter.trimmingCharacters(in: .whitespacesAndNewlines)
-
-  let charRate = speaker.rate * ss.getCharScale()
+  let cs = await ss.getCharScale()
+  let charRate = speaker.rate * cs
   var pitchShift = 0
   if let singleChar = trimmedLetter.first, singleChar.isUppercase {
     pitchShift = 15
@@ -252,14 +255,14 @@ func ttsSetCharacterScale(_ line: String) async {
   debugLogger.log("Enter: ttsSetCharacterScale")
   let l = await isolateParams(line)
   if let fl = Float(l) {
-    ss.setCharScale(fl)
+    await ss.setCharScale(fl)
   }
 }
 
 func ttsSetPunctuations(_ line: String) async {
   debugLogger.log("Enter: ttsSetPunctuations")
   let l = await isolateParams(line)
-  ss.setPunct(l)
+  await ss.setPunct(l)
 }
 
 @MainActor
@@ -275,9 +278,9 @@ func ttSplitCaps(_ line: String) async {
   debugLogger.log("Enter: ttSplitCaps")
   let l = await isolateParams(line)
   if l == "1" {
-    ss.setSplitCaps(true)
+    await ss.setSplitCaps(true)
   } else {
-    ss.setSplitCaps(false)
+    await ss.setSplitCaps(false)
   }
 }
 
@@ -285,9 +288,9 @@ func ttsAllCapsBeep(_ line: String) async {
   debugLogger.log("Enter: ttsAllCapsBeep")
   let l = await isolateParams(line)
   if l == "1" {
-    ss.setBeepCaps(true)
+    await ss.setBeepCaps(true)
   } else {
-    ss.setBeepCaps(false)
+    await ss.setBeepCaps(false)
   }
 }
 
@@ -303,19 +306,19 @@ func ttsSyncState(_ line: String) async {
 
     let beepCaps = ps[2]
     if beepCaps == "1" {
-      ss.setBeepCaps(true)
+      await ss.setBeepCaps(true)
     } else {
-      ss.setBeepCaps(false)
+      await ss.setBeepCaps(false)
     }
 
     let splitCaps = ps[1]
     if splitCaps == "1" {
-      ss.setSplitCaps(true)
+      await ss.setSplitCaps(true)
     } else {
-      ss.setSplitCaps(false)
+      await ss.setSplitCaps(false)
     }
     let punct = ps[0]
-    ss.setPunct(String(punct))
+    await ss.setPunct(String(punct))
   }
 }
 
@@ -334,14 +337,15 @@ func playTone(_ line: String) async {
 
 func stopSpeaker() async {
   debugLogger.log("Enter: stopSpeaker")
-  ss.clearBacklog()
+  await ss.clearBacklog()
   speaker.stopSpeaking()
 }
 
 func dispatchSpeaker() async {
   debugLogger.log("Enter: dispatchSpeaker")
   if !speaker.isSpeaking {
-    let s = " " + ss.popBacklog() + " "
+    let pb = await ss.popBacklog()
+    let s = " " + pb + " "
     debugLogger.log("speaking: \(s)")
     let isAllWhitespace = s.allSatisfy { $0.isWhitespace }
     if !isAllWhitespace {
@@ -353,13 +357,13 @@ func dispatchSpeaker() async {
 func queueSpeaker(_ line: String) async {
   debugLogger.log("Enter: queueSpeaker")
   let p = await isolateParams(line)
-  ss.pushBacklog(p)
+  await ss.pushBacklog(p)
 }
 
 func queueCode(_ line: String) async {
   debugLogger.log("Enter: queueCode")
   let p = await isolateParams(line)
-  ss.pushBacklog(p, code: true)
+  await ss.pushBacklog(p, code: true)
 }
 
 /* Does the same thing as "p " so route it over to playSound */
@@ -412,7 +416,7 @@ func say(
   debugLogger.log("Enter: say")
   var w = stripSpecialEmbeds(what)
   if !code {
-    switch ss.getPunct().lowercased() {
+    switch await ss.getPunct().lowercased() {
     case "all":
       w = replaceAllPuncs(w)
     case "some":
@@ -428,7 +432,7 @@ func say(
     speaker.startSpeaking(w)
   } else {
     if speaker.isSpeaking {
-      ss.pushBacklog(w)
+      await ss.pushBacklog(w)
     } else {
       debugLogger.log("say:startSpeaking: \(w)")
       speaker.startSpeaking(w)

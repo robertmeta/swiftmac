@@ -3,9 +3,8 @@ import AppKit
 import Darwin
 import Foundation
 
-// Use `actor` keyword to define a concurrent type
 actor StateStore {
-  private var backlog: String = ""
+  private var backlog: [String] = []  // Now a vector (array) of strings
   // Assume default values are defined somewhere else
   private var splitCaps: Bool = defaultSplitCaps
   private var voice = defaultVoice
@@ -15,7 +14,7 @@ actor StateStore {
 
   func clearBacklog() {
     debugLogger.log("Enter: clearBacklog")
-    self.backlog = ""
+    self.backlog = []
   }
 
   func pushBacklog(_ with: String, code: Bool = false) {
@@ -34,12 +33,13 @@ actor StateStore {
         w = replaceCore(w)
       }
     }
-    self.backlog += w
+    self.backlog.append(w)  // Append the processed string as a new element
   }
 
   func popBacklog() -> String {
     debugLogger.log("Enter: popBacklog")
-    let result = self.backlog
+    guard !self.backlog.isEmpty else { return "" }
+    let result = self.backlog.joined(separator: " ") // Join elements to form a single string
     self.clearBacklog()
     return result
   }

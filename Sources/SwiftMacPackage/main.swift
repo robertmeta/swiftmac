@@ -5,11 +5,11 @@ import Foundation
 import OggDecoder
 
 /* Global Constants */
-let version = "1.0.8"
+let version = "1.0.9"
 let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
 let defaultRate: Float = 200
-let defaultCharScale: Float = 1.1
+let defaultCharScale: Float = 1.2
 let defaultVoice = NSSpeechSynthesizer.defaultVoice
 let defaultPunct = "all"
 let defaultSplitCaps = false
@@ -40,13 +40,13 @@ if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
   dateFormatter.dateFormat = "yyyy-MM-dd_HH_mm_ss"
   let timestamp = dateFormatter.string(from: currentDate)
   let debugLogger = Logger(fileName: "swiftmac-debug-\(timestamp).log")
-
-  debugLogger.log("soundVolume \(soundVolume)")
-  debugLogger.log("toneVolume \(toneVolume)")
-  debugLogger.log("voiceVolume \(voiceVolume)")
 #else
   let debugLogger = Logger()
 #endif
+
+debugLogger.log("soundVolume \(soundVolume)")
+debugLogger.log("toneVolume \(toneVolume)")
+debugLogger.log("voiceVolume \(voiceVolume)")
 
 /* Used in the class below, so defiend here */
 func splitStringBySpaceAfterLimit(_ str: String, limit: Int) -> (before: String, after: String) {

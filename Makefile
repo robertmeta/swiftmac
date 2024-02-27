@@ -1,10 +1,10 @@
 EMACSPEAK := $(shell ./get-emacspeak-path.sh)
 SERVERS := $(EMACSPEAK)/servers
 
-release:
+release: clean
 	swift build -c release -Xlinker -rpath -Xlinker @executable_path/../Frameworks
 
-debug:
+debug: clean
 	swift build -Xlinker -rpath -Xlinker @executable_path/../Frameworks
 
 fat-release:
@@ -67,9 +67,8 @@ contribute: tidy
 	cp -f log-swiftmac ~/Projects/others/emacspeak/servers/log-swiftmac
 
 clean:
+	swift package clean
 	rm -rf swiftmac.app
-	rm -rf .build
-	rm Package.resolved
 
 build-app: release
 	mkdir -p swiftmac.app

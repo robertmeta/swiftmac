@@ -41,6 +41,8 @@ if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
   debugLogger.log("soundVolume \(soundVolume)")
   debugLogger.log("toneVolume \(toneVolume)")
   debugLogger.log("voiceVolume \(voiceVolume)")
+#else
+  let debugLogger = Logger()
 #endif
 
 /* Used in the class below, so defiend here */
@@ -71,13 +73,9 @@ class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
   ) {
     if finishedSpeaking {
       let s = ss.popBacklog()
-      #if DEBUG
-        debugLogger.log("didFinishSpeaking:startSpeaking: \(s)")
-      #endif
+      debugLogger.log("didFinishSpeaking:startSpeaking: \(s)")
       speaker.startSpeaking(s)
-      #if DEBUG
-        debugLogger.log("Enter: startSpeaking")
-      #endif
+      debugLogger.log("Enter: startSpeaking")
     }
   }
 }
@@ -88,18 +86,14 @@ let ss = StateStore()
 
 /* Entry point and main loop */
 func main() async {
-  #if DEBUG
-    debugLogger.log("Enter: main")
-  #endif
+  debugLogger.log("Enter: main")
   #if DEBUG
     await say("Debugging swift mac server for e mac speak \(version)", interupt: true)
   #else
     await say("welcome to e mac speak with swift mac \(version)", interupt: true)
   #endif
   while let l = readLine() {
-    #if DEBUG
-      debugLogger.log("got line \(l)")
-    #endif
+    debugLogger.log("got line \(l)")
     let cmd = await isolateCommand(l)
     switch cmd {
     case "a": await playAudioIcon(l)
@@ -131,9 +125,7 @@ func main() async {
 /* This is replacements that always must happen when doing
    replaceements like [*] -> slnc */
 func replaceCore(_ line: String) -> String {
-  #if DEBUG
-    debugLogger.log("Enter: replaceCore")
-  #endif
+  debugLogger.log("Enter: replaceCore")
   return
     line
     .replacingOccurrences(of: "[*]", with: " [[slnc 50]] ")
@@ -141,9 +133,7 @@ func replaceCore(_ line: String) -> String {
 
 /* This is used for "none" puncts */
 func replaceBasePuncs(_ line: String) -> String {
-  #if DEBUG
-    debugLogger.log("Enter: replaceBasePuncs")
-  #endif
+  debugLogger.log("Enter: replaceBasePuncs")
   let l = replaceCore(line)
   return replaceCore(l)
     .replacingOccurrences(of: "%", with: " percent ")
@@ -153,9 +143,7 @@ func replaceBasePuncs(_ line: String) -> String {
 
 /* this is used for "some" puncts */
 func replaceSomePuncs(_ line: String) -> String {
-  #if DEBUG
-    debugLogger.log("Enter: replaceSomePuncs")
-  #endif
+  debugLogger.log("Enter: replaceSomePuncs")
   return replaceBasePuncs(line)
     .replacingOccurrences(of: "#", with: " pound ")
     .replacingOccurrences(of: "-", with: " dash ")
@@ -175,14 +163,10 @@ func replaceSomePuncs(_ line: String) -> String {
     .replacingOccurrences(of: "!", with: " exclamation ")
     .replacingOccurrences(of: "^", with: " caret ")
 }
-// a change
-
 
 /* this is used for "all" puncts */
 func replaceAllPuncs(_ line: String) -> String {
-  #if DEBUG
-    debugLogger.log("Enter: replaceAllPuncs")
-  #endif
+  debugLogger.log("Enter: replaceAllPuncs")
   return replaceSomePuncs(line)
     .replacingOccurrences(of: "<", with: " less than ")
     .replacingOccurrences(of: ">", with: " greater than ")
@@ -197,9 +181,7 @@ func replaceAllPuncs(_ line: String) -> String {
 
 @MainActor
 func ttsSplitCaps(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsSplitCaps")
-  #endif
+  debugLogger.log("Enter: ttsSplitCaps")
   let l = await isolateCommand(line)
   if l == "1" {
     ss.setSplitCaps(true)
@@ -210,9 +192,7 @@ func ttsSplitCaps(_ line: String) async {
 
 @MainActor
 func ttsReset() async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsReset")
-  #endif
+  debugLogger.log("Enter: ttsReset")
   speaker.stopSpeaking()
   ss.clearBacklog()
   let voice = NSSpeechSynthesizer.VoiceName(
@@ -227,17 +207,13 @@ func ttsReset() async {
 }
 
 func sayVersion() async {
-  #if DEBUG
-    debugLogger.log("Enter: sayVersion")
-  #endif
+  debugLogger.log("Enter: sayVersion")
   await say("Running \(name) version \(version)", interupt: true)
 }
 
 @MainActor
 func sayLetter(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: sayLetter")
-  #endif
+  debugLogger.log("Enter: sayLetter")
   let letter = await isolateParams(line)
   let trimmedLetter = letter.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -245,9 +221,7 @@ func sayLetter(_ line: String) async {
   var pitchShift = 0
   if let singleChar = trimmedLetter.first, singleChar.isUppercase {
     pitchShift = 15
-    #if DEBUG
-      debugLogger.log("PitchShift ON")
-    #endif
+    debugLogger.log("PitchShift ON")
   }
 
   await say(
@@ -258,32 +232,24 @@ func sayLetter(_ line: String) async {
 }
 
 func saySilence(_ line: String, duration: Int = 50) async {
-  #if DEBUG
-    debugLogger.log("Enter: saySilence")
-  #endif
+  debugLogger.log("Enter: saySilence")
   await say("[[slnc \(duration)]]", interupt: false)
 }
 
 @MainActor
 func ttsPause() async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsPause")
-  #endif
+  debugLogger.log("Enter: ttsPause")
   speaker.pauseSpeaking(at: .immediateBoundary)
 }
 
 @MainActor
 func ttsResume() async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsResume")
-  #endif
+  debugLogger.log("Enter: ttsResume")
   speaker.continueSpeaking()
 }
 
 func ttsSetCharacterScale(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsSetCharacterScale")
-  #endif
+  debugLogger.log("Enter: ttsSetCharacterScale")
   let l = await isolateParams(line)
   if let fl = Float(l) {
     ss.setCharScale(fl)
@@ -291,18 +257,14 @@ func ttsSetCharacterScale(_ line: String) async {
 }
 
 func ttsSetPunctuations(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsSetPunctuations")
-  #endif
+  debugLogger.log("Enter: ttsSetPunctuations")
   let l = await isolateParams(line)
   ss.setPunct(l)
 }
 
 @MainActor
 func ttsSetRate(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsSetRate")
-  #endif
+  debugLogger.log("Enter: ttsSetRate")
   let l = await isolateParams(line)
   if let fl = Float(l) {
     speaker.rate = fl
@@ -310,9 +272,7 @@ func ttsSetRate(_ line: String) async {
 }
 
 func ttSplitCaps(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: ttSplitCaps")
-  #endif
+  debugLogger.log("Enter: ttSplitCaps")
   let l = await isolateParams(line)
   if l == "1" {
     ss.setSplitCaps(true)
@@ -322,9 +282,7 @@ func ttSplitCaps(_ line: String) async {
 }
 
 func ttsAllCapsBeep(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsAllCapsBeep")
-  #endif
+  debugLogger.log("Enter: ttsAllCapsBeep")
   let l = await isolateParams(line)
   if l == "1" {
     ss.setBeepCaps(true)
@@ -335,9 +293,7 @@ func ttsAllCapsBeep(_ line: String) async {
 
 @MainActor
 func ttsSyncState(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsSyncState")
-  #endif
+  debugLogger.log("Enter: ttsSyncState")
   let l = await isolateParams(line)
   let ps = l.split(separator: " ")
   if ps.count == 4 {
@@ -364,38 +320,29 @@ func ttsSyncState(_ line: String) async {
 }
 
 func playTone(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: playTone")
-  #endif
+  debugLogger.log("Enter: playTone")
   let p = await isolateParams(line)
   let ps = p.split(separator: " ")
-  await playPureTone(
+  let apa = AudioPlayerActor()
+  await apa.playPureTone(
     frequencyInHz: Int(ps[0]) ?? 500,
     amplitude: toneVolume,
     durationInMillis: Int(ps[1]) ?? 75
   )
-  #if DEBUG
-    debugLogger.log("playTone failure")
-  #endif
+  debugLogger.log("playTone failure")
 }
 
 func stopSpeaker() async {
-  #if DEBUG
-    debugLogger.log("Enter: stopSpeaker")
-  #endif
+  debugLogger.log("Enter: stopSpeaker")
   ss.clearBacklog()
   speaker.stopSpeaking()
 }
 
 func dispatchSpeaker() async {
-  #if DEBUG
-    debugLogger.log("Enter: dispatchSpeaker")
-  #endif
+  debugLogger.log("Enter: dispatchSpeaker")
   if !speaker.isSpeaking {
     let s = " " + ss.popBacklog() + " "
-    #if DEBUG
-      debugLogger.log("speaking: \(s)")
-    #endif
+    debugLogger.log("speaking: \(s)")
     let isAllWhitespace = s.allSatisfy { $0.isWhitespace }
     if !isAllWhitespace {
       speaker.startSpeaking(s)
@@ -404,36 +351,26 @@ func dispatchSpeaker() async {
 }
 
 func queueSpeaker(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: queueSpeaker")
-  #endif
+  debugLogger.log("Enter: queueSpeaker")
   let p = await isolateParams(line)
   ss.pushBacklog(p)
 }
 
 func queueCode(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: queueCode")
-  #endif
+  debugLogger.log("Enter: queueCode")
   let p = await isolateParams(line)
   ss.pushBacklog(p, code: true)
 }
 
 /* Does the same thing as "p " so route it over to playSound */
 func playAudioIcon(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: playAudioIcon")
-  #endif
-  #if DEBUG
-    debugLogger.log("Playing audio icon: " + line)
-  #endif
+  debugLogger.log("Enter: playAudioIcon")
+  debugLogger.log("Playing audio icon: " + line)
   await playSound(line)
 }
 
 func playSound(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: playSound")
-  #endif
+  debugLogger.log("Enter: playSound")
   let p = await isolateParams(line)
   let trimmedP = p.trimmingCharacters(in: .whitespacesAndNewlines)
   let soundURL = URL(fileURLWithPath: trimmedP)
@@ -460,12 +397,8 @@ func playSound(_ line: String) async {
 }
 
 func ttsSay(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsSay")
-  #endif
-  #if DEBUG
-    debugLogger.log("ttsSay: " + line)
-  #endif
+  debugLogger.log("Enter: ttsSay")
+  debugLogger.log("ttsSay: " + line)
   let p = await isolateParams(line)
   await say(p, interupt: true)
 
@@ -476,9 +409,7 @@ func say(
   interupt: Bool = false,
   code: Bool = false
 ) async {
-  #if DEBUG
-    debugLogger.log("Enter: say")
-  #endif
+  debugLogger.log("Enter: say")
   var w = stripSpecialEmbeds(what)
   if !code {
     switch ss.getPunct().lowercased() {
@@ -493,42 +424,30 @@ func say(
     }
   }
   if interupt {
-    #if DEBUG
-      debugLogger.log("speaking: \(w)")
-    #endif
+    debugLogger.log("speaking: \(w)")
     speaker.startSpeaking(w)
   } else {
     if speaker.isSpeaking {
       ss.pushBacklog(w)
     } else {
-      #if DEBUG
-        debugLogger.log("say:startSpeaking: \(w)")
-      #endif
+      debugLogger.log("say:startSpeaking: \(w)")
       speaker.startSpeaking(w)
     }
   }
 }
 
 func unknownLine(_ line: String) async {
-  #if DEBUG
-    debugLogger.log("Enter: unknownLine")
-  #endif
-  #if DEBUG
-    debugLogger.log("Unknown command: " + line)
-  #endif
+  debugLogger.log("Enter: unknownLine")
+  debugLogger.log("Unknown command: " + line)
 }
 
 func ttsExit() async {
-  #if DEBUG
-    debugLogger.log("Enter: ttsExit")
-  #endif
+  debugLogger.log("Enter: ttsExit")
   exit(0)
 }
 
 func stripSpecialEmbeds(_ line: String) -> String {
-  #if DEBUG
-    debugLogger.log("Enter: stripSpecialEmbeds")
-  #endif
+  debugLogger.log("Enter: stripSpecialEmbeds")
   let specialEmbedRegexp = #"\[\{.*?\}\]"#
   return voiceToReset(line).replacingOccurrences(
     of: specialEmbedRegexp,
@@ -539,9 +458,7 @@ func stripSpecialEmbeds(_ line: String) -> String {
    reset of the voice engine, good news is we have that command
    built right in */
 func voiceToReset(_ line: String) -> String {
-  #if DEBUG
-    debugLogger.log("Enter: voiceToReset")
-  #endif
+  debugLogger.log("Enter: voiceToReset")
   let specialEmbedRegexp = #"\[\{voice.*?\}\]"#
   return line.replacingOccurrences(
     of: specialEmbedRegexp,
@@ -549,9 +466,7 @@ func voiceToReset(_ line: String) -> String {
 }
 
 func isolateCommand(_ line: String) async -> String {
-  #if DEBUG
-    debugLogger.log("Enter: isolateCommand")
-  #endif
+  debugLogger.log("Enter: isolateCommand")
   var cmd = line.trimmingCharacters(in: .whitespacesAndNewlines)
   if let firstIndex = cmd.firstIndex(of: " ") {
     cmd.replaceSubrange(firstIndex..<cmd.endIndex, with: "")
@@ -561,9 +476,7 @@ func isolateCommand(_ line: String) async -> String {
 }
 
 func isolateParams(_ line: String) async -> String {
-  #if DEBUG
-    debugLogger.log("Enter: isolateParams")
-  #endif
+  debugLogger.log("Enter: isolateParams")
   let justCmd = await isolateCommand(line)
   let cmd = justCmd + " "
 
@@ -577,9 +490,7 @@ func isolateParams(_ line: String) async -> String {
       params.replaceSubrange(firstIndex...firstIndex, with: "")
     }
   }
-  #if DEBUG
-    debugLogger.log("Exit: isolateParams: \(params)")
-  #endif
+  debugLogger.log("Exit: isolateParams: \(params)")
   return params
 }
 

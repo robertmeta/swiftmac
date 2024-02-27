@@ -19,9 +19,7 @@ class StateStore {
     qos: .userInteractive)
 
   func clearBacklog() {
-    #if DEBUG
-      debugLogger.log("Enter: clearBacklog")
-    #endif
+    debugLogger.log("Enter: clearBacklog")
 
     queue.async {
       self.backlog = ""
@@ -29,9 +27,7 @@ class StateStore {
   }
 
   func pushBacklog(_ with: String, code: Bool = false) {
-    #if DEBUG
-      debugLogger.log("Enter: pushBacklog")
-    #endif
+    debugLogger.log("Enter: pushBacklog")
     let punct = self.getPunct().lowercased()
     queue.async { [weak self] in
       guard let self = self else { return }
@@ -53,9 +49,7 @@ class StateStore {
   }
 
   func popBacklog() -> String {
-    #if DEBUG
-      debugLogger.log("Enter: popBacklog")
-    #endif
+    debugLogger.log("Enter: popBacklog")
     var result: String = ""
     queue.sync {
       result = self.backlog
@@ -65,72 +59,56 @@ class StateStore {
   }
 
   func setCharScale(_ r: Float) {
-    #if DEBUG
-      debugLogger.log("Enter: setCharScale")
-    #endif
+    debugLogger.log("Enter: setCharScale")
     queue.async {
       self.charScale = r
     }
   }
 
   func getCharScale() -> Float {
-    #if DEBUG
-      debugLogger.log("Enter: getCharScale")
-    #endif
+    debugLogger.log("Enter: getCharScale")
     return queue.sync {
       return self.charScale
     }
   }
 
   func setPunct(_ s: String) {
-    #if DEBUG
-      debugLogger.log("Enter: setPunct")
-    #endif
+    debugLogger.log("Enter: setPunct")
     queue.async {
       self.punct = s
     }
   }
 
   func getPunct() -> String {
-    #if DEBUG
-      debugLogger.log("Enter: getPunct")
-    #endif
+    debugLogger.log("Enter: getPunct")
     return queue.sync {
       return self.punct
     }
   }
 
   func setSplitCaps(_ b: Bool) {
-    #if DEBUG
-      debugLogger.log("Enter: setSplitCaps")
-    #endif
+    debugLogger.log("Enter: setSplitCaps")
     queue.async {
       self.splitCaps = b
     }
   }
 
   func getSplitCaps() -> Bool {
-    #if DEBUG
-      debugLogger.log("Enter: getSplitCaps")
-    #endif
+    debugLogger.log("Enter: getSplitCaps")
     return queue.sync {
       return self.splitCaps
     }
   }
 
   func setBeepCaps(_ b: Bool) {
-    #if DEBUG
-      debugLogger.log("Enter: setBeepCaps")
-    #endif
+    debugLogger.log("Enter: setBeepCaps")
     queue.async {
       self.beepCaps = b
     }
   }
 
   func getBeepCaps() -> Bool {
-    #if DEBUG
-      debugLogger.log("Enter: getBeepCaps")
-    #endif
+    debugLogger.log("Enter: getBeepCaps")
     return queue.sync {
       return self.beepCaps
     }

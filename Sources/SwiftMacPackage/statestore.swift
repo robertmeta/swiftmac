@@ -17,11 +17,53 @@ actor StateStore {
     self.backlog = []
   }
 
+  func removePmodPatterns(_ inputString: String) -> String {
+    // Define the regular expression pattern to match `[[pmod .*?]]`
+    let pattern = "\\[\\[pmod .*?\\]\\]"
+
+    // Attempt to create a regular expression
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+      print("Invalid regular expression.")
+      return inputString
+    }
+
+    // Perform the replacement - replace occurrences of the pattern with an empty string
+    let range = NSRange(location: 0, length: inputString.utf16.count)
+    let modifiedString = regex.stringByReplacingMatches(
+      in: inputString, options: [], range: range, withTemplate: "")
+
+    return modifiedString
+  }
+
+  func fixupCodes(_ inputString: String) -> String {
+    // Regular expression pattern to match `[[pmod <digits>]]`
+    let pattern = "\\[\\[pbas (\\d+)\\]\\]"
+
+    // Replacement template adds a plus sign before the digits
+    let replacementTemplate = "[[pbas +$1]]"
+
+    // Attempt to create a regular expression
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+      print("Invalid regular expression.")
+      return inputString
+    }
+
+    // Perform the replacement
+    let range = NSRange(location: 0, length: inputString.utf16.count)
+    let modifiedString = regex.stringByReplacingMatches(
+      in: inputString, options: [], range: range, withTemplate: replacementTemplate)
+
+    return modifiedString
+  }
+
   func pushBacklog(_ with: String, code: Bool = false) {
     debugLogger.log("Enter: pushBacklog")
     let punct = self.getPunct().lowercased()
     var w = stripSpecialEmbeds(with)
-    if !code {
+    if code {
+      w = fixupCodes(w)
+      w = removePmodPatterns(w)
+    } else {
       switch punct {
       case "all":
         w = replaceAllPuncs(w)
@@ -39,7 +81,7 @@ actor StateStore {
   func popBacklog() -> String {
     debugLogger.log("Enter: popBacklog")
     guard !self.backlog.isEmpty else { return "" }
-    let result = self.backlog.joined(separator: " ") // Join elements to form a single string
+    let result = self.backlog.joined(separator: " ")  // Join elements to form a single string
     self.clearBacklog()
     return result
   }

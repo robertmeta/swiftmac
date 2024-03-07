@@ -5,7 +5,7 @@ import Foundation
 import OggDecoder
 
 /* Global Constants */
-let version = "1.0.9"
+let version = "1.1.0"
 let name = "swiftmac"
 let speaker = NSSpeechSynthesizer()
 let defaultRate: Float = 200
@@ -187,9 +187,9 @@ func ttsSplitCaps(_ line: String) async {
   debugLogger.log("Enter: ttsSplitCaps")
   let l = await isolateCommand(line)
   if l == "1" {
-    await ss.setSplitCaps(true)
+    await setSplitCaps = true
   } else {
-    await ss.setSplitCaps(false)
+    await sssetSplitCaps = false
   }
 }
 
@@ -205,14 +205,14 @@ func ttsReset() async {
   }
   speaker.rate = defaultRate
   speaker.volume = await voiceVolume
-  await ss.setCharScale(defaultCharScale)
+  await ss.setCharScale = defaultCharScale
   await ss.setPunct(defaultPunct)
 }
 
 func sayVersion() async {
   debugLogger.log("Enter: sayVersion")
   await say("Running \(name) version \(version)", interupt: true)
-}
+ }
 
 @MainActor
 func sayLetter(_ line: String) async {

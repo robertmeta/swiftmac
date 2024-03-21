@@ -4,209 +4,165 @@ import Darwin
 import Foundation
 import OggDecoder
 
-actor StateStore {
-  private var backlog: [String] = []  // Now a vector (array) of strings
-  // Assume default values are defined somewhere else
-  public var splitCaps: Bool = defaultSplitCaps
-  public var voice = defaultVoice
-  public var beepCaps: Bool = defaultBeepCaps
-  public var charScale: Float = defaultCharScale
-  public var punct: String = defaultPunct
+public actor SpeechState {
+    public var allCapsBeep: Bool = false
+    public var characterScale: Float = 1.2
+    public var deadpanMode: Bool = false
+    public var pendingQueue: [String] = []
+    public var pitchModification: Float = 1.0
+    public var postDelay: Float = 0
+    public var preDelay: Float = 0
+    public var punctuations: String = "all"
+    public var soundVolume: Float = 1
+    public var speechRate: Int = 200
+    public var splitCaps: Bool = false
+    public var toneVolume: Float = 1
+    public var ttsDiscard: Bool = false
+    public var voice: String = "default"
+    public var voiceVolume: Float = 1
+    
+    public init() {
+        if let f = Float(getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
+          ss.soundVolume = f
+        }
 
-  func clearBacklog() {
-    debugLogger.log("Enter: clearBacklog")
-    self.backlog = []
-  }
+        if let f = Float(getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
+          ss.toneVolume = f
+        }
 
-  func removePmodPatterns(_ inputString: String) -> String {
-    // Define the regular expression pattern to match `[[pmod .*?]]`
-    let pattern = "\\[\\[pmod .*?\\]\\]"
+        if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
+          ss.voiceVolume = f
+        }
 
-    // Attempt to create a regular expression
-    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-      print("Invalid regular expression.")
-      return inputString
+        if let f = Bool(getEnvironmentVariable("SWIFTMAC_DEADPAN_MODE")) {
+          ss.deadpanMode = f
+        }
+
+        debugLogger.log("soundVolume \(ss.soundVolume)")
+        debugLogger.log("toneVolume \(ss.toneVolume)")
+        debugLogger.log("voiceVolume \(ss.voiceVolume)")
+        debugLogger.log("deadpanMode \(ss.deadpanMode)")
+        
+        // Example: Print a message when a new instance is created
+        print("SpeechState initialized")
     }
-
-    // Perform the replacement - replace occurrences of the pattern with an empty string
-    let range = NSRange(location: 0, length: inputString.utf16.count)
-    let modifiedString = regex.stringByReplacingMatches(
-      in: inputString, options: [], range: range, withTemplate: "")
-
-    return modifiedString
-  }
-
-  func fixupCodes(_ inputString: String) -> String {
-    // Regular expression pattern to match `[[pmod <digits>]]`
-    let pattern = "\\[\\[pbas (\\d+)\\]\\]"
-
-    // Replacement template adds a plus sign before the digits
-    let replacementTemplate = "[[pbas +$1]]"
-
-    // Attempt to create a regular expression
-    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-      print("Invalid regular expression.")
-      return inputString
+    
+    public func getCharacterRate() -> Int {
+        return Int(Float(self.speechRate) * self.characterScale)
     }
-
-    // Perform the replacement
-    let range = NSRange(location: 0, length: inputString.utf16.count)
-    let modifiedString = regex.stringByReplacingMatches(
-      in: inputString, options: [], range: range, withTemplate: replacementTemplate)
-
-    return modifiedString
-  }
-
-  func pushBacklog(_ with: String, code: Bool = false) {
-    debugLogger.log("Enter: pushBacklog")
-    let punct = self.getPunct().lowercased()
-    var w = stripSpecialEmbeds(with)
-    if code {
-      w = fixupCodes(w)
-      w = removePmodPatterns(w)
-    } else {
-      switch punct {
-      case "all":
-        w = replaceAllPuncs(w)
-      case "some":
-        w = replaceSomePuncs(w)
-      case "none":
-        w = replaceBasePuncs(w)
-      default:
-        w = replaceCore(w)
-      }
-    }
-    self.backlog.append(w)  // Append the processed string as a new element
-  }
-
-  func popBacklog() -> String {
-    debugLogger.log("Enter: popBacklog")
-    guard !self.backlog.isEmpty else { return "" }
-    let result = self.backlog.joined(separator: " ")  // Join elements to form a single string
-    self.clearBacklog()
-    return result
-  }
 }
-
-/* Global Constants */
-let version = "1.1.0"
+/* Globals */
+let version = "2.0.0"
 let name = "swiftmac"
-let speaker = NSSpeechSynthesizer()
-let defaultRate: Float = 200
-let defaultCharScale: Float = 1.2
-let defaultVoice = NSSpeechSynthesizer.defaultVoice
-let defaultPunct = "all"
-let defaultSplitCaps = false
-let defaultBeepCaps = false
-var soundVolume: Float = 1.0
-var toneVolume: Float = 1.0
-var voiceVolume: Float = 1.0
-
-func getEnvironmentVariable(_ variable: String) -> String {
-  return ProcessInfo.processInfo.environment[variable] ?? ""
-}
-
-if let f = Float(getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
-  soundVolume = f
-}
-
-if let f = Float(getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
-  toneVolume = f
-}
-
-if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
-  voiceVolume = f
-}
-
-#if DEBUG
+var ss = SpeechState() // just create new one to reset
+let speaker = AVSpeechSynthesizer()
+ #if DEBUG
   let currentDate = Date()
   let dateFormatter = DateFormatter()
   dateFormatter.dateFormat = "yyyy-MM-dd_HH_mm_ss"
   let timestamp = dateFormatter.string(from: currentDate)
   let debugLogger = Logger(fileName: "swiftmac-debug-\(timestamp).log")
 #else
-  let debugLogger = Logger()
+  let debugLogger = Logger()  // No-Op
 #endif
 
-debugLogger.log("soundVolume \(soundVolume)")
-debugLogger.log("toneVolume \(toneVolume)")
-debugLogger.log("voiceVolume \(voiceVolume)")
-
-/* Used in the class below, so defiend here */
-func splitStringBySpaceAfterLimit(_ str: String, limit: Int) -> (before: String, after: String) {
-  if str.count <= limit {
-    return (str, "")
-  } else {
-    var limitIndex = str.index(str.startIndex, offsetBy: limit)
-    while limitIndex < str.endIndex {
-      if str[limitIndex] == " " {
-        let before = String(str[str.startIndex..<limitIndex])
-        let after = String(str[limitIndex..<str.endIndex])
-        return (before, after)
-      }
-      limitIndex = str.index(after: limitIndex)
-    }
-  }
-  return (str, "")
-}
-
-/* This delegate class lets us continue speaking with queued data
-   after a speech chunk is completed */
-class DelegateHandler: NSObject, NSSpeechSynthesizerDelegate {
-  @MainActor
-  func speechSynthesizer(
-    _ sender: NSSpeechSynthesizer,
-    didFinishSpeaking finishedSpeaking: Bool
-  ) async {
-    if finishedSpeaking {
-      let s = await ss.popBacklog()
-      debugLogger.log("didFinishSpeaking:startSpeaking: \(s)")
-      speaker.startSpeaking(s)
-      debugLogger.log("Enter: startSpeaking")
-    }
-  }
-}
-let dh = DelegateHandler()
-speaker.delegate = dh
-
-let ss = StateStore()
-
-/* Entry point and main loop */
+/* EntryPoint */
 func main() async {
   debugLogger.log("Enter: main")
   #if DEBUG
-    await say("Debugging swift mac server for e mac speak \(version)", interupt: true)
+    await instantSay("Debugging \(name) server for e mac speak \(version)", interupt: true)
   #else
-    await say("welcome to e mac speak with swift mac \(version)", interupt: true)
+    await instantSay("welcome to e mac speak with \(name) \(version)", interupt: true)
   #endif
+
+
+  await mainLoop()
+  print("Exiting \(name) \(version)")
+}
+
+func mainLoop() async {
   while let l = readLine() {
     debugLogger.log("got line \(l)")
     let cmd = await isolateCommand(l)
+    // TODO: if tts_discard and! tts_discard command
+    // log and continue 
     switch cmd {
-    case "a": await playAudioIcon(l)
-    case "c": await queueCode(l)
-    case "d": await dispatchSpeaker()
-    case "l": await sayLetter(l)
-    case "p": await playSound(l)
-    case "q": await queueSpeaker(l)
-    case "s": await stopSpeaker()
-    case "sh": await saySilence(l)
-    case "t": await playTone(l)
-    case "version": await sayVersion()
-    case "tts_exit": await ttsExit()
-    case "tts_pause": await ttsPause()
-    case "tts_reset": await ttsReset()
-    case "tts_resume": await ttsResume()
-    case "tts_say": await ttsSay(l)
-    case "tts_set_character_scale": await ttsSetCharacterScale(l)
-    case "tts_set_punctuations": await ttsSetPunctuations(l)
-    case "tts_set_speech_rate": await ttsSetRate(l)
-    case "tts_split_caps": await ttsSplitCaps(l)
-    case "tts_sync_state": await ttsSyncState(l)
-    case "tts_allcaps_beep": await ttsAllCapsBeep(l)
-    default: await unknownLine(l)
+    case "a": await processAndQueueAudioIcon(l)
+    case "c": await processAndQueueCodes(l)
+    case "d": await dispatchPendingQueue()
+    case "l": await instantSayLetter(l)
+    case "p": await doPlaySound(l)
+    case "q": await queueLine(l)
+    case "s": await queueLine(l)
+    case "sh": await queueLine(l)
+    case "t": await queueLine(l)
+    case "version": await instantSayVersion()
+    case "tts_exit": await instantTtsExit()
+    case "tts_pause": await instantTtsPause()
+    case "tts_reset": await queueTtsReset()
+    case "tts_resume": await instantTtsResume()
+    case "tts_say": await instantTtsSay(l)
+    case "tts_set_character_scale": await queueLine(l)
+    case "tts_set_punctuations": await queueLine(l)
+    case "tts_set_speech_rate": await queueLine(l)
+    case "tts_split_caps": await queueLine(l)
+    case "tts_set_discard": await queueLine(l)
+    case "tts_sync_state": await processAndQueueSync(l)
+    case "tts_allcaps_beep": await queueLine(l)
+    default: unknownLine(l) 
     }
   }
+}
+
+func dispatchPendingQueue() async {
+  for l in pendingQueue {
+    debugLogger.log("got queued \(l)")
+    let cmd = await isolateCommand(l)
+    switch cmd {
+    case "a": await doPlaySound(l) // just like p in mainloop
+    case "c": await impossibleQueue(l)
+    case "d": await impossibleQueue(l)
+    case "l": await doSayLetter(l)
+    case "p": await impossibleQueue(l)
+    case "q": await impossibleQueue(l)
+    case "s": await doStopAll(l)
+    case "sh": await doSilence(l)
+    case "t": await doPlaySound(l)
+    case "version": await impossibleQueue(l)
+    case "tts_exit": await impossibleQueue(l)
+     case "tts_pause": await impossibleQueue(l)
+    case "tts_reset": await doTtsReset()
+    case "tts_resume": await impossibleQueue(l)
+    case "tts_say": await impossibleQueue(l)
+    case "tts_set_character_scale": await setCharScale(l)
+    case "tts_set_punctuations": await setPunct(l)
+    case "tts_set_speech_rate": await setSpeechRate(l)
+    case "tts_split_caps": await setSplitCaps(l)
+    case "tts_set_discard": await setDiscard(l)
+    case "tts_sync_state": impossibleQueue()
+    case "tts_allcaps_beep": await setBeepCaps(l)
+    default: unknownLine(l) 
+    }
+  }
+}
+
+func queueLine(l) async {
+  debugLogger.log("Enter: queueLine")
+  ss.pendingQueue.append(l)
+}
+
+func processAndQueueCodes(l) async {
+  debugLogger.log("Enter: processAndQueueCodes")
+
+}
+
+func impossibleQueue(l) async {
+  debugLogger.log("Enter: impossibleQueue")
+}
+
+func getEnvironmentVariable(_ variable: String) -> String {
+  debugLogger.log("Enter: getEnvironmentVariable")
+  return ProcessInfo.processInfo.environment[variable] ?? ""
 }
 
 /* This is replacements that always must happen when doing
@@ -266,7 +222,7 @@ func replaceAllPuncs(_ line: String) -> String {
 
 }
 
-@MainActor
+
 func ttsSplitCaps(_ line: String) async {
   debugLogger.log("Enter: ttsSplitCaps")
   let l = await isolateCommand(line)
@@ -277,20 +233,11 @@ func ttsSplitCaps(_ line: String) async {
   }
 }
 
-@MainActor
-func ttsReset() async {
+
+func doTtsReset() async {
   debugLogger.log("Enter: ttsReset")
-  speaker.stopSpeaking()
-  await ss.clearBacklog()
-  let voice = NSSpeechSynthesizer.VoiceName(
-    rawValue: "com.apple.speech.synthesis.voice.Alex")
-  if !speaker.setVoice(voice) {
-    speaker.setVoice(defaultVoice)
-  }
-  speaker.rate = defaultRate
-  speaker.volume = await voiceVolume
-  await ss.setCharScale = defaultCharScale
-  await ss.setPunct(defaultPunct)
+  stopAll()
+  ss = SpeechState()
 }
 
 func sayVersion() async {
@@ -298,12 +245,11 @@ func sayVersion() async {
   await say("Running \(name) version \(version)", interupt: true)
 }
 
-@MainActor
 func sayLetter(_ line: String) async {
   debugLogger.log("Enter: sayLetter")
   let letter = await isolateParams(line)
   let trimmedLetter = letter.trimmingCharacters(in: .whitespacesAndNewlines)
-  let cs = await ss
+  let cs = await ss.getCharacterRate()
   let charRate = speaker.rate * cs
   var pitchShift = 0
   if let singleChar = trimmedLetter.first, singleChar.isUppercase {
@@ -323,13 +269,13 @@ func saySilence(_ line: String, duration: Int = 50) async {
   await say("[[slnc \(duration)]]", interupt: false)
 }
 
-@MainActor
+
 func ttsPause() async {
   debugLogger.log("Enter: ttsPause")
   speaker.pauseSpeaking(at: .immediateBoundary)
 }
 
-@MainActor
+
 func ttsResume() async {
   debugLogger.log("Enter: ttsResume")
   speaker.continueSpeaking()
@@ -349,7 +295,7 @@ func ttsSetPunctuations(_ line: String) async {
   await ss.setPunct(l)
 }
 
-@MainActor
+
 func ttsSetRate(_ line: String) async {
   debugLogger.log("Enter: ttsSetRate")
   let l = await isolateParams(line)
@@ -378,7 +324,7 @@ func ttsAllCapsBeep(_ line: String) async {
   }
 }
 
-@MainActor
+
 func ttsSyncState(_ line: String) async {
   debugLogger.log("Enter: ttsSyncState")
   let l = await isolateParams(line)
@@ -406,59 +352,32 @@ func ttsSyncState(_ line: String) async {
   }
 }
 
-func playTone(_ line: String) async {
-  debugLogger.log("Enter: playTone")
+func doPlayTone(_ line: String) async {
+  debugLogger.log("Enter: doPlayTone")
   let p = await isolateParams(line)
   let ps = p.split(separator: " ")
   let apa = AudioPlayerActor()
   await apa.playPureTone(
     frequencyInHz: Int(ps[0]) ?? 500,
-    amplitude: toneVolume,
+    amplitude: await ss.toneVolume,
     durationInMillis: Int(ps[1]) ?? 75
   )
   debugLogger.log("playTone failure")
 }
 
-func stopSpeaker() async {
-  debugLogger.log("Enter: stopSpeaker")
-  await ss.clearBacklog()
-  speaker.stopSpeaking()
+func doStopAll() async {
+  debugLogger.log("Enter: doStopAll")
+  ss.pendingQueue = []
+  await doStopSpeaking()
 }
 
-func dispatchSpeaker() async {
-  debugLogger.log("Enter: dispatchSpeaker")
-  if !speaker.isSpeaking {
-    let pb = await ss.popBacklog()
-    let s = " " + pb + " "
-    debugLogger.log("speaking: \(s)")
-    let isAllWhitespace = s.allSatisfy { $0.isWhitespace }
-    if !isAllWhitespace {
-      speaker.startSpeaking(s)
-    }
-  }
+func doStopSpeaking() async {
+  debugLogger.log("Enter: doStopSpeaking")
+  // TODO Stop Speaking
 }
 
-func queueSpeaker(_ line: String) async {
-  debugLogger.log("Enter: queueSpeaker")
-  let p = await isolateParams(line)
-  await ss.pushBacklog(p)
-}
-
-func queueCode(_ line: String) async {
-  debugLogger.log("Enter: queueCode")
-  let p = await isolateParams(line)
-  await ss.pushBacklog(p, code: true)
-}
-
-/* Does the same thing as "p " so route it over to playSound */
-func playAudioIcon(_ line: String) async {
-  debugLogger.log("Enter: playAudioIcon")
-  debugLogger.log("Playing audio icon: " + line)
-  await playSound(line)
-}
-
-func playSound(_ line: String) async {
-  debugLogger.log("Enter: playSound")
+func doPlaySound(_ line: String) async {
+  debugLogger.log("Enter: doPlaySound")
   let p = await isolateParams(line)
   let trimmedP = p.trimmingCharacters(in: .whitespacesAndNewlines)
   let soundURL = URL(fileURLWithPath: trimmedP)
@@ -480,27 +399,22 @@ func playSound(_ line: String) async {
   }
 
   let sound = NSSound(contentsOf: url, byReference: true)
-  sound?.volume = await soundVolume
+  sound?.volume = await ss.soundVolume
   sound?.play()
 }
 
-func ttsSay(_ line: String) async {
-  debugLogger.log("Enter: ttsSay")
+func instantSay(_ line: String) async {
+  debugLogger.log("Enter: instantSay")
   debugLogger.log("ttsSay: " + line)
   let p = await isolateParams(line)
-  await say(p, interupt: true)
-
+  await doStopAll()
 }
 
-func say(
+func doSay(
   _ what: String,
-  interupt: Bool = false,
-  code: Bool = false
 ) async {
-  debugLogger.log("Enter: say")
-  var w = stripSpecialEmbeds(what)
-  if !code {
-    switch await ss.getPunct().lowercased() {
+  debugLogger.log("Enter: doSay")
+  switch await ss.getPunct().lowercased() {
     case "all":
       w = replaceAllPuncs(w)
     case "some":
@@ -511,26 +425,16 @@ func say(
       w = replaceCore(w)
     }
   }
-  if interupt {
-    debugLogger.log("speaking: \(w)")
-    speaker.startSpeaking(w)
-  } else {
-    if speaker.isSpeaking {
-      await ss.pushBacklog(w)
-    } else {
-      debugLogger.log("say:startSpeaking: \(w)")
-      speaker.startSpeaking(w)
-    }
-  }
+  # TODO Speak w
 }
 
 func unknownLine(_ line: String) async {
   debugLogger.log("Enter: unknownLine")
-  debugLogger.log("Unknown command: " + line)
+  debugLogger.log("Unknown command: \(line)")
 }
 
-func ttsExit() async {
-  debugLogger.log("Enter: ttsExit")
+func instantTtsExit() async {
+  debugLogger.log("Enter: instantTtsExit")
   exit(0)
 }
 
@@ -540,17 +444,6 @@ func stripSpecialEmbeds(_ line: String) -> String {
   return voiceToReset(line).replacingOccurrences(
     of: specialEmbedRegexp,
     with: "", options: .regularExpression)
-}
-
-/* So, it turns out we get spammed with voice often as a form of a
-   reset of the voice engine, good news is we have that command
-   built right in */
-func voiceToReset(_ line: String) -> String {
-  debugLogger.log("Enter: voiceToReset")
-  let specialEmbedRegexp = #"\[\{voice.*?\}\]"#
-  return line.replacingOccurrences(
-    of: specialEmbedRegexp,
-    with: " [[rset 0]] ", options: .regularExpression)
 }
 
 func isolateCommand(_ line: String) async -> String {
@@ -582,9 +475,7 @@ func isolateParams(_ line: String) async -> String {
   return params
 }
 
-await ttsReset()
 await main()
-
 // local variables:
 // mode: swift
 // swift-mode:basic-offset: 2

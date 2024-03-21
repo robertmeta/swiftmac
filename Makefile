@@ -46,8 +46,6 @@ tidy:
 	cp temp Sources/SwiftMacPackage/main.swift 
 	swift-format Sources/SwiftMacPackage/playpuretone.swift > temp
 	cp temp Sources/SwiftMacPackage/playpuretone.swift 
-	swift-format Sources/SwiftMacPackage/statestore.swift > temp
-	cp temp Sources/SwiftMacPackage/statestore.swift 
 	rm temp
 
 contribute: tidy

@@ -2,6 +2,9 @@ EMACSPEAK := $(shell ./get-emacspeak-path.sh)
 SERVERS := $(EMACSPEAK)/servers
 LISP := $(EMACSPEAK)/lisp
 
+quick:
+	swift build
+
 release: clean
 	swift build -c release 
 

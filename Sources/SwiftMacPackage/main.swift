@@ -4,58 +4,10 @@ import Darwin
 import Foundation
 import OggDecoder
 
-public actor SpeechState {
-    public var allCapsBeep: Bool = false
-    public var characterScale: Float = 1.2
-    public var deadpanMode: Bool = false
-    public var pendingQueue: [String] = []
-    public var pitchModification: Float = 1.0
-    public var postDelay: Float = 0
-    public var preDelay: Float = 0
-    public var punctuations: String = "all"
-    public var soundVolume: Float = 1
-    public var speechRate: Int = 200
-    public var splitCaps: Bool = false
-    public var toneVolume: Float = 1
-    public var ttsDiscard: Bool = false
-    public var voice: String = "default"
-    public var voiceVolume: Float = 1
-    
-    public init() {
-        if let f = Float(getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
-          ss.soundVolume = f
-        }
-
-        if let f = Float(getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
-          ss.toneVolume = f
-        }
-
-        if let f = Float(getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
-          ss.voiceVolume = f
-        }
-
-        if let f = Bool(getEnvironmentVariable("SWIFTMAC_DEADPAN_MODE")) {
-          ss.deadpanMode = f
-        }
-
-        debugLogger.log("soundVolume \(ss.soundVolume)")
-        debugLogger.log("toneVolume \(ss.toneVolume)")
-        debugLogger.log("voiceVolume \(ss.voiceVolume)")
-        debugLogger.log("deadpanMode \(ss.deadpanMode)")
-        
-        // Example: Print a message when a new instance is created
-        print("SpeechState initialized")
-    }
-    
-    public func getCharacterRate() -> Int {
-        return Int(Float(self.speechRate) * self.characterScale)
-    }
-}
-
 /* Globals */
 let version = "2.0.0"
 let name = "swiftmac"
-var ss = SpeechState() // just create new one to reset
+var ss = await StateStore() // just create new one to reset
 let speaker = AVSpeechSynthesizer()
  #if DEBUG
   let currentDate = Date()
@@ -71,9 +23,9 @@ let speaker = AVSpeechSynthesizer()
 func main() async {
   debugLogger.log("Enter: main")
   #if DEBUG
-    await instantSay("Debugging \(name) server for e mac speak \(version)", interupt: true)
+    await instantSay("Debugging \(name) server for e mac speak \(version)")
   #else
-    await instantSay("welcome to e mac speak with \(name) \(version)", interupt: true)
+    await instantSay("welcome to e mac speak with \(name) \(version)")
   #endif
 
 
@@ -134,14 +86,14 @@ func dispatchPendingQueue() async {
     // case "tts_set_discard": await setDiscard(l)
     // case "tts_sync_state": impossibleQueue()
     // case "tts_allcaps_beep": await setBeepCaps(l)
-    default: impossibleQueue(l) 
+    default: await impossibleQueue(l) 
     }
   }
 }
 
-func queueLine(_ l) async {
+func queueLine(_ line: String) async {
   debugLogger.log("Enter: queueLine")
-  ss.pendingQueue.append(l)
+  await ss.appendToPendingQueue(line)
 }
 
 func unknownLine(_ line: String) async {
@@ -149,21 +101,20 @@ func unknownLine(_ line: String) async {
   debugLogger.log("Unknown command: \(line)")
 }
 
-func impossibleQueue(_ l) async {
+func impossibleQueue(_ l: String) async {
   debugLogger.log("Enter: impossibleQueue")
   print("Impossible queue item \(l)")
 }
 
+func processAndQueueAudioIcon(_ l: String) async {
+  debugLogger.log("Enter: processAndQueueAudioIcon")
+}
 
 // func processAndQueueCodes(l) async {
 //   debugLogger.log("Enter: processAndQueueCodes")
 
 // }
 
-// func getEnvironmentVariable(_ variable: String) -> String {
-//   debugLogger.log("Enter: getEnvironmentVariable")
-//   return ProcessInfo.processInfo.environment[variable] ?? ""
-// }
 
 // /* This is replacements that always must happen when doing
 //    replaceements like [*] -> slnc */
@@ -237,7 +188,7 @@ func impossibleQueue(_ l) async {
 // func doTtsReset() async {
 //   debugLogger.log("Enter: ttsReset")
 //   stopAll()
-//   ss = SpeechState()
+//   ss = StateStore()
 // }
 
 // func sayVersion() async {
@@ -392,6 +343,7 @@ func doPlaySound(_ line: String) async {
       continuation.resume(returning: soundURL)
     }
   }
+}
 
 //   guard let url = savedWavUrl else {
 //     print("Failed to get audio file URL")
@@ -403,12 +355,13 @@ func doPlaySound(_ line: String) async {
 //   sound?.play()
 // }
 
-// func instantSay(_ line: String) async {
-//   debugLogger.log("Enter: instantSay")
-//   debugLogger.log("ttsSay: " + line)
-//   let p = await isolateParams(line)
-//   await doStopAll()
-// }
+func instantSay(_ line: String) async {
+  debugLogger.log("Enter: instantSay")
+  debugLogger.log("ttsSay: " + line)
+  let p = await isolateParams(line)
+  //await doStopAll()
+  print("instantSay")
+}
 
 // func doSay(
 //   _ what: String,

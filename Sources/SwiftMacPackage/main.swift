@@ -36,11 +36,11 @@ func main() async {
 func mainLoop() async {
   while let l = readLine() {
     debugLogger.log("got line \(l)")
-    let cmd = await isolateCommand(l)
+    let (cmd, params) = await isolateCmdAndParams(l)
     // TODO: if tts_discard and! tts_discard command
     // log and continue 
     switch cmd {
-    case "a": await processAndQueueAudioIcon(l)
+    case "a": await processAndQueueAudioIcon(params)
     // case "c": await processAndQueueCodes(l)
     // case "d": await dispatchPendingQueue()
     // case "l": await instantSayLetter(l)
@@ -71,9 +71,9 @@ func dispatchPendingQueue() async {
   let sspq = await ss.pendingQueue
   for l in sspq {
     debugLogger.log("got queued \(l)")
-    let cmd = await isolateCommand(l)
+    let (cmd, params) = await isolateCmdAndParams(l)
     switch cmd {
-    case "a": await doPlaySound(l) // just like p in mainloop
+    case "p": await instantPlaySound(params) // just like p in mainloop
     // case "l": await doSayLetter(l)
     // case "s": await doStopAll(l)
     // case "sh": await doSilence(l)
@@ -106,8 +106,9 @@ func impossibleQueue(_ l: String) async {
   print("Impossible queue item \(l)")
 }
 
-func processAndQueueAudioIcon(_ l: String) async {
+func processAndQueueAudioIcon(_ p: String) async {
   debugLogger.log("Enter: processAndQueueAudioIcon")
+  await ss.appendToPendingQueue("p \(p)")
 }
 
 // func processAndQueueCodes(l) async {
@@ -327,9 +328,8 @@ func processAndQueueAudioIcon(_ l: String) async {
 //   // TODO Stop Speaking
 // }
 
-func doPlaySound(_ line: String) async {
+func instantPlaySound(_ p: String) async {
   debugLogger.log("Enter: doPlaySound")
-  let p = await isolateParams(line)
   let trimmedP = p.trimmingCharacters(in: .whitespacesAndNewlines)
   let soundURL = URL(fileURLWithPath: trimmedP)
 
@@ -358,7 +358,6 @@ func doPlaySound(_ line: String) async {
 func instantSay(_ line: String) async {
   debugLogger.log("Enter: instantSay")
   debugLogger.log("ttsSay: " + line)
-  let p = await isolateParams(line)
   //await doStopAll()
   print("instantSay")
 }
@@ -404,7 +403,7 @@ func isolateCommand(_ line: String) async -> String {
   return cmd
 }
 
-func isolateParams(_ line: String) async -> String {
+func isolateCmdAndParams(_ line: String) async -> (String, String) {
   debugLogger.log("Enter: isolateParams")
   let justCmd = await isolateCommand(line)
   let cmd = justCmd + " "
@@ -420,7 +419,7 @@ func isolateParams(_ line: String) async -> String {
     }
   }
   debugLogger.log("Exit: isolateParams: \(params)")
-  return params
+  return (cmd, params)
 }
 
 // await main()

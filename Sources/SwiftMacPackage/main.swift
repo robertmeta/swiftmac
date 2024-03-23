@@ -23,24 +23,14 @@ let tonePlayer = TonePlayerActor()
 /* EntryPoint */
 func main() async {
   debugLogger.log("Enter: main")
-
-  #if DEBUG
-    await instantTtsSay("Debugging \(name) server for e mac speak \(version)")
-  #else
-    await instantTtsSay("welcome to e mac speak with \(name) \(version)")
-  #endif
-
-  print("Entering mainloop")
+  await instantSayVersion()
   await mainLoop()
-  print("Exiting \(name) \(version)")
 }
 
 func mainLoop() async {
   while let l = readLine() {
     debugLogger.log("got line \(l)")
     let (cmd, params) = await isolateCmdAndParams(l)
-    // TODO: if tts_discard and! tts_discard command
-    // log and continue
     switch cmd {
     case "a": await processAndQueueAudioIcon(params)
     // case "c": await processAndQueueCodes(l)
@@ -51,7 +41,7 @@ func mainLoop() async {
     case "s": await queueLine(cmd, params)
     case "sh": await queueLine(cmd, params)
     case "t": await queueLine(cmd, params)
-    // case "version": await instantTtsSayVersion()
+    case "version": await instantSayVersion()
     case "tts_exit": await instantTtsExit()
     case "tts_pause": await instantTtsPause()
     case "tts_reset": await queueLine(cmd, params)
@@ -61,9 +51,11 @@ func mainLoop() async {
     case "tts_set_punctuations": await queueLine(cmd, params)
     case "tts_set_speech_rate": await queueLine(cmd, params)
     case "tts_split_caps": await queueLine(cmd, params)
-    case "tts_set_discard": await queueLine(cmd, params)
     // case "tts_sync_state": await processAndQueueSync(l)
     case "tts_allcaps_beep": await queueLine(cmd, params)
+    case "tts_set_voice": await queueLine(cmd, params)
+    case "tts_set_pitch_multiplier": await queueLine(cmd, params)
+    case "tts_discard": await queueLine(cmd, params)
     default: await unknownLine(l)
     }
   }
@@ -81,9 +73,9 @@ func dispatchPendingQueue() async {
     // case "tts_set_character_scale": await setCharScale(l)
     // case "tts_set_punctuations": await setPunct(l)
     // case "tts_set_speech_rate": await setSpeechRate(l)
-    // case "tts_split_caps": await setSplitCaps(l)
-    // case "tts_set_discard": await setDiscard(l)
-    // case "tts_sync_state": impossibleQueue()
+    // case "tts_set_voice: [engine specific] queue voice change
+    // case "tts_set_pitch_multiplier": [engine specific] +- pitch modulation
+    case "tts_split_caps": await setSplitCaps(params)
     case "tts_allcaps_beep": await setAllCapsBeep(params)
     default: await impossibleQueue(cmd, params)
     }
@@ -93,6 +85,17 @@ func dispatchPendingQueue() async {
 func queueLine(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: queueLine")
   await ss.appendToPendingQueue((cmd, params))
+}
+
+func instantSayVersion() async {
+    let sayVersion = version.replacingOccurrences(of: ".", with: " dot ")
+
+  await doStopAll()
+  #if DEBUG
+  await instantTtsSay("\(name) \(sayVersion): debug mode")
+  #else
+    await instantTtsSay("\(name) \(sayVersion)")
+  #endif
 }
 
 func instantTtsResume() async {
@@ -112,13 +115,16 @@ func instantSayLetter(_ p: String) async {
   }
   let oldSpeechRate = await ss.speechRate
   await ss.setSpeechRate(await ss.getCharacterRate())
-  speaker.stopSpeaking(at: .immediate)
+  await stopSpeaking()
   await doSpeak(p.lowercased())
   await ss.setPitchMultiplier(oldPitchMultiplier)
   await ss.setSpeechRate(oldSpeechRate)
   await ss.setPreDelay(oldPreDelay)
 }
   
+func stopSpeaking() async {
+  speaker.stopSpeaking(at: .immediate)
+}
 
 func isCapitalLetter(_ str: String) -> Bool {
     guard str.count == 1 else {
@@ -141,6 +147,20 @@ func unknownLine(_ line: String) async {
 func impossibleQueue(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: impossibleQueue")
   print("Impossible queue item \(cmd) \(params)")
+}
+
+func extractVoice(from string: String) -> String? {
+    let pattern = "\\[\\{voice\\s+([^\\}]+)\\}\\]"
+    let regex = try! NSRegularExpression(pattern: pattern, options: [])
+    
+    let matches = regex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+    
+    guard let match = matches.first else {
+        return nil
+    }
+    
+    let range = Range(match.range(at: 1), in: string)!
+    return String(string[range])
 }
 
 func processAndQueueAudioIcon(_ p: String) async {
@@ -296,6 +316,17 @@ func processAndQueueAudioIcon(_ p: String) async {
 //     await ss.setSplitCaps(false)
 //   }
 // }
+
+func setSplitCaps(_ p: String) async {
+  debugLogger.log("Enter: setSplitCaps")
+  print(p)
+  if p == "1" {
+    await ss.setSplitCaps(true)
+  } else {
+    await ss.setSplitCaps(false)
+  }
+}
+
 
 func setAllCapsBeep(_ p: String) async {
   debugLogger.log("Enter: setAllCapsBeep")

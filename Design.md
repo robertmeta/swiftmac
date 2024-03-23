@@ -16,7 +16,7 @@ These are the commands sent via stdin and on thier own line.
 - s: stop all (confirm with list)_
 - sh: queue silence
 - t: queue tone
-- tts_version: [decomp] say tts version
+- version: [decomp] say tts version
 - tts_pause: instant pause speech engine (should stop?)
 - tts_reset: queue reset (to defaults?)
 - tts_resume: instant resume speech engine
@@ -24,13 +24,13 @@ These are the commands sent via stdin and on thier own line.
 - tts_set_character_scale: queue char scale change
 - tts_set_punctuations: queue punct change
 - tts_set_speech_rate: queue rate change
-- tts_discard: queue discard setting update
 - tts_split_caps: queue split caps change
 - tts_allcaps_beep: queue caps beep change
 - tts_sync_state: [decomp] queue multiple settings change
 - tts_exit: [engine specific] instant exit
 - tts_set_voice: [engine specific] queue voice change
 - tts_set_pitch_multiplier: [engine specific] +- pitch modulation
+- tts_discard: [engine specific] queue discard setting update
 
 
 ## Supported Embeddings
@@ -40,6 +40,7 @@ These are converted by the preprocessor into tts_ commands.
 - [{voice Foo}] - queue switch to voice best attempt (default fallback)
 - [[pmod ##]] - queue (+,-)## pitch modification + by default, can be + or -
 - [[rate ##]] - queue ## rate setting
+- [*] - queue silence in place of this
 
 
 ## Flow

@@ -4,12 +4,9 @@ import Darwin
 import Foundation
 import OggDecoder
 
+
 /* Globals */
-let version = "2.0.0"
-let name = "swiftmac"
-var ss = await StateStore() // just create new one to reset
-let speaker = AVSpeechSynthesizer()
- #if DEBUG
+#if DEBUG
   let currentDate = Date()
   let dateFormatter = DateFormatter()
   dateFormatter.dateFormat = "yyyy-MM-dd_HH_mm_ss"
@@ -18,6 +15,10 @@ let speaker = AVSpeechSynthesizer()
 #else
   let debugLogger = Logger()  // No-Op
 #endif
+let version = "2.0.0"
+let name = "swiftmac"
+var ss = StateStore() // just create new one to reset
+let speaker = AVSpeechSynthesizer()
 
 /* EntryPoint */
 func main() async {
@@ -29,10 +30,12 @@ func main() async {
   #endif
 
 
+  print("Entering mainloop")
   await mainLoop()
   print("Exiting \(name) \(version)")
 }
 
+@MainActor
 func mainLoop() async {
   while let l = readLine() {
     debugLogger.log("got line \(l)")
@@ -42,7 +45,7 @@ func mainLoop() async {
     switch cmd {
     case "a": await processAndQueueAudioIcon(params)
     // case "c": await processAndQueueCodes(l)
-    // case "d": await dispatchPendingQueue()
+    case "d": await dispatchPendingQueue()
     // case "l": await instantSayLetter(l)
     // case "p": await doPlaySound(l)
     // case "q": await queueLine(l)
@@ -73,7 +76,7 @@ func dispatchPendingQueue() async {
     debugLogger.log("got queued \(l)")
     let (cmd, params) = await isolateCmdAndParams(l)
     switch cmd {
-    case "p": await instantPlaySound(params) // just like p in mainloop
+    case "p": await doPlaySound(params) // just like p in mainloop
     // case "l": await doSayLetter(l)
     // case "s": await doStopAll(l)
     // case "sh": await doSilence(l)
@@ -328,7 +331,7 @@ func processAndQueueAudioIcon(_ p: String) async {
 //   // TODO Stop Speaking
 // }
 
-func instantPlaySound(_ p: String) async {
+func doPlaySound(_ p: String) async {
   debugLogger.log("Enter: doPlaySound")
   let trimmedP = p.trimmingCharacters(in: .whitespacesAndNewlines)
   let soundURL = URL(fileURLWithPath: trimmedP)
@@ -343,17 +346,17 @@ func instantPlaySound(_ p: String) async {
       continuation.resume(returning: soundURL)
     }
   }
+
+  guard let url = savedWavUrl else {
+    print("Failed to get audio file URL")
+    return
+  }
+
+  let sound = NSSound(contentsOf: url, byReference: true)
+  sound?.volume = await ss.soundVolume
+  sound?.play()
 }
 
-//   guard let url = savedWavUrl else {
-//     print("Failed to get audio file URL")
-//     return
-//   }
-
-//   let sound = NSSound(contentsOf: url, byReference: true)
-//   sound?.volume = await ss.soundVolume
-//   sound?.play()
-// }
 
 func instantSay(_ line: String) async {
   debugLogger.log("Enter: instantSay")
@@ -419,10 +422,10 @@ func isolateCmdAndParams(_ line: String) async -> (String, String) {
     }
   }
   debugLogger.log("Exit: isolateParams: \(params)")
-  return (cmd, params)
+  return (justCmd, params)
 }
 
-// await main()
+await main()
 // // local variables:
 // // mode: swift
 // // swift-mode:basic-offset: 2

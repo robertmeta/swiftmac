@@ -112,23 +112,28 @@ public actor StateStore {
         set { _voiceVolume = newValue }
     }
     
-    public init() async {
-        if let f = Float(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
-            self.soundVolume = f
-        }
+    public  init() {
+        print("E")
+        print(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME"))
+        self.toneVolume = 1.0
+        print("F")
         if let f = Float(self.getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
             self.toneVolume = f
         }
+        print("G")
         if let f = Float(self.getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
             self.voiceVolume = f
         }
+        print("H")
         if let f = Bool(self.getEnvironmentVariable("SWIFTMAC_DEADPAN_MODE")) {
             self.deadpanMode = f
         }
-        debugLogger.log("soundVolume \(await self.soundVolume)")
-        debugLogger.log("toneVolume \(await self.toneVolume)")
-        debugLogger.log("voiceVolume \(await self.voiceVolume)")
-        debugLogger.log("deadpanMode \(await self.deadpanMode)")
+        debugLogger.log("TEST")
+        print("I")
+        debugLogger.log("soundVolume \(self.soundVolume)")
+        debugLogger.log("toneVolume \(self.toneVolume)")
+        debugLogger.log("voiceVolume \(self.voiceVolume)")
+        debugLogger.log("deadpanMode \(self.deadpanMode)")
         
         // Example: Print a message when a new instance is created
         print("SpeechState initialized")
@@ -139,7 +144,6 @@ public actor StateStore {
     }
     
     public func getEnvironmentVariable(_ variable: String) -> String {
-        debugLogger.log("Enter: getEnvironmentVariable")
         return ProcessInfo.processInfo.environment[variable] ?? ""
     }
 }

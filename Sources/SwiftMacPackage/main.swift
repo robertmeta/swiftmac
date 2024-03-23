@@ -24,10 +24,7 @@ let tonePlayer = TonePlayerActor()
 func main() async {
   debugLogger.log("Enter: main")
   await instantSayVersion()
-  await mainLoop()
-}
 
-func mainLoop() async {
   while let l = readLine() {
     debugLogger.log("got line \(l)")
     let (cmd, params) = await isolateCmdAndParams(l)
@@ -55,7 +52,6 @@ func mainLoop() async {
     case "tts_allcaps_beep": await queueLine(cmd, params)
     case "tts_set_voice": await queueLine(cmd, params)
     case "tts_set_pitch_multiplier": await queueLine(cmd, params)
-    case "tts_discard": await queueLine(cmd, params)
     default: await unknownLine(l)
     }
   }

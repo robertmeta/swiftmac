@@ -30,7 +30,6 @@ These are the commands sent via stdin and on thier own line.
 - tts_exit: [engine specific] instant exit
 - tts_set_voice: [engine specific] queue voice change
 - tts_set_pitch_multiplier: [engine specific] +- pitch modulation
-- tts_discard: [engine specific] queue discard setting update
 
 
 ## Supported Embeddings

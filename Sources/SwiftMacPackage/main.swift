@@ -87,30 +87,29 @@ func queueLine(_ cmd: String, _ params: String) async {
 }
 
 @MainActor func instantTtsReset() async {
-    await doStopAll()
-    ss = await StateStore()
+  await doStopAll()
+  ss = await StateStore()
 }
 
 func instantSayVersion() async {
-    let sayVersion = version.replacingOccurrences(of: ".", with: " dot ")
+  let sayVersion = version.replacingOccurrences(of: ".", with: " dot ")
 
   await doStopAll()
   #if DEBUG
-  await instantTtsSay("\(name) \(sayVersion): debug mode")
+    await instantTtsSay("\(name) \(sayVersion): debug mode")
   #else
     await instantTtsSay("\(name) \(sayVersion)")
   #endif
 }
 
 func doSilence(_ p: String) async {
-    let oldPostDelay = await ss.postDelay
-        if let timeInterval = TimeInterval(p) {
-            await ss.setPostDelay(timeInterval / 1000)
-        }
-    await doSpeak("")
-    await ss.setPostDelay(oldPostDelay)
+  let oldPostDelay = await ss.postDelay
+  if let timeInterval = TimeInterval(p) {
+    await ss.setPostDelay(timeInterval / 1000)
+  }
+  await doSpeak("")
+  await ss.setPostDelay(oldPostDelay)
 }
-
 
 func instantTtsResume() async {
   speaker.continueSpeaking()
@@ -122,9 +121,9 @@ func instantSayLetter(_ p: String) async {
   print("acb: ", await ss.allCapsBeep)
   if isCapitalLetter(p) {
     if await ss.allCapsBeep {
-        await doPlayTone("500 50")
+      await doPlayTone("500 50")
     } else {
-        await ss.setPitchMultiplier(1.5)
+      await ss.setPitchMultiplier(1.5)
     }
   }
   let oldSpeechRate = await ss.speechRate
@@ -135,18 +134,18 @@ func instantSayLetter(_ p: String) async {
   await ss.setSpeechRate(oldSpeechRate)
   await ss.setPreDelay(oldPreDelay)
 }
-  
+
 func stopSpeaking() async {
   speaker.stopSpeaking(at: .immediate)
 }
 
 func isCapitalLetter(_ str: String) -> Bool {
-    guard str.count == 1 else {
-        return false
-    }
-    
-    let firstChar = str.first!
-    return firstChar.isUppercase && firstChar.isLetter
+  guard str.count == 1 else {
+    return false
+  }
+
+  let firstChar = str.first!
+  return firstChar.isUppercase && firstChar.isLetter
 }
 
 func instantTtsPause() async {
@@ -159,22 +158,22 @@ func unknownLine(_ line: String) async {
 }
 
 func getVoiceIdentifier(voiceName: String) -> String {
-    let defaultVoiceIdentifier = "com.apple.speech.voice.Alex"
-    
-    let voices = AVSpeechSynthesisVoice.speechVoices()
-    
-    // Check if the voiceName is in the long format (e.g., com.apple.ttsbundle.Samantha-compact)
-    if let voice = voices.first(where: { $0.identifier == voiceName }) {
-        return voice.identifier
-    }
-    
-    // Check if the voiceName is in the short format (e.g., Samantha)
-    if let voice = voices.first(where: { $0.name == voiceName }) {
-        return voice.identifier
-    }
-    
-    // If the voiceName is not found, return the default voice identifier
-    return defaultVoiceIdentifier
+  let defaultVoiceIdentifier = "com.apple.speech.voice.Alex"
+
+  let voices = AVSpeechSynthesisVoice.speechVoices()
+
+  // Check if the voiceName is in the long format (e.g., com.apple.ttsbundle.Samantha-compact)
+  if let voice = voices.first(where: { $0.identifier == voiceName }) {
+    return voice.identifier
+  }
+
+  // Check if the voiceName is in the short format (e.g., Samantha)
+  if let voice = voices.first(where: { $0.name == voiceName }) {
+    return voice.identifier
+  }
+
+  // If the voiceName is not found, return the default voice identifier
+  return defaultVoiceIdentifier
 }
 
 func impossibleQueue(_ cmd: String, _ params: String) async {
@@ -183,17 +182,18 @@ func impossibleQueue(_ cmd: String, _ params: String) async {
 }
 
 func extractVoice(from string: String) -> String? {
-    let pattern = "\\[\\{voice\\s+([^\\}]+)\\}\\]"
-    let regex = try! NSRegularExpression(pattern: pattern, options: [])
-    
-    let matches = regex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
-    
-    guard let match = matches.first else {
-        return nil
-    }
-    
-    let range = Range(match.range(at: 1), in: string)!
-    return String(string[range])
+  let pattern = "\\[\\{voice\\s+([^\\}]+)\\}\\]"
+  let regex = try! NSRegularExpression(pattern: pattern, options: [])
+
+  let matches = regex.matches(
+    in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+
+  guard let match = matches.first else {
+    return nil
+  }
+
+  let range = Range(match.range(at: 1), in: string)!
+  return String(string[range])
 }
 
 func processAndQueueAudioIcon(_ p: String) async {
@@ -360,7 +360,6 @@ func setSplitCaps(_ p: String) async {
   }
 }
 
-
 func setAllCapsBeep(_ p: String) async {
   debugLogger.log("Enter: setAllCapsBeep")
   print(p)
@@ -404,9 +403,9 @@ func doPlayTone(_ p: String) async {
   let ps = p.split(separator: " ")
   Task {
     await tonePlayer.playPureTone(
-        frequencyInHz: Int(ps[0]) ?? 500,
-        amplitude: await ss.toneVolume,
-        durationInMillis: Int(ps[1]) ?? 75
+      frequencyInHz: Int(ps[0]) ?? 500,
+      amplitude: await ss.toneVolume,
+      durationInMillis: Int(ps[1]) ?? 75
     )
   }
 }
@@ -473,7 +472,7 @@ func doSpeak(_ what: String) async {
   let voiceIdentifier = getVoiceIdentifier(voiceName: await ss.voice)
   if let voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier) {
     utterance.voice = voice
-  } 
+  }
 
   // Start speaking
   speaker.speak(utterance)

@@ -352,22 +352,22 @@ func doSpeak(_ what: String) async {
   let utterance = AVSpeechUtterance(string: what)
 
   // Set the rate of speech (0.5 to 1.0)
-  utterance.rate = 0.7
+  utterance.rate = ss.speechRate
 
   // Set the pitch multiplier (0.5 to 2.0)
-  utterance.pitchMultiplier = 1.2
+  utterance.pitchMultiplier = ss.pitchMultiplier
 
   // Set the volume (0.0 to 1.0)
-  utterance.volume = 0.8
+  utterance.volume = await ss.voiceVolume
 
   // Set the pre-utterance delay (in seconds)
-  utterance.preUtteranceDelay = 0.5
+  utterance.preUtteranceDelay = await ss.preDelay
 
   // Set the post-utterance delay (in seconds)
-  utterance.postUtteranceDelay = 0.5
+  utterance.postUtteranceDelay = await ss.postDelay
 
   // Set the voice
-  let voice = AVSpeechSynthesisVoice(language: "en-US")
+  let voice = AVSpeechSynthesisVoice()
   utterance.voice = voice
 
   // Start speaking

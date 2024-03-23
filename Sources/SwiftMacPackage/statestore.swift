@@ -76,8 +76,8 @@ public actor StateStore {
     set { _soundVolume = newValue }
   }
 
-  private var _speechRate: Int = 200
-  public var speechRate: Int {
+  private var _speechRate: Float = 0.5
+  public var speechRate: Float {
     get { _speechRate }
     set { _speechRate = newValue }
   }

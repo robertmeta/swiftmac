@@ -47,7 +47,7 @@ func mainLoop() async {
     // case "c": await processAndQueueCodes(l)
     case "d": await dispatchPendingQueue()
     // case "l": await instantSayLetter(l)
-    // case "p": await doPlaySound(l)
+    case "p": await doPlaySound(params)
     // case "q": await queueLine(l)
     // case "s": await queueLine(l)
     // case "sh": await queueLine(l)

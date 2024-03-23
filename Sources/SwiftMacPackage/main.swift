@@ -100,8 +100,24 @@ func instantTtsResume() async {
 }
 
 func instantSayLetter(_ p: String) async {
-  await ss.setPitchMultiplier(1.2)
+  let oldPitchMultiplier = await ss.pitchMultiplier
+  if isCapitalLetter(p) {
+    await ss.setPitchMultiplier(1.5)
+  }
+  let oldSpeechRate = await ss.speechRate
+  await ss.setSpeechRate(await ss.getCharacterRate())
   await instantTtsSay(p.lowercased())
+  await ss.setPitchMultiplier(oldPitchMultiplier)
+  await ss.setSpeechRate(oldSpeechRate)
+}
+
+func isCapitalLetter(_ str: String) -> Bool {
+    guard str.count == 1 else {
+        return false
+    }
+    
+    let firstChar = str.first!
+    return firstChar.isUppercase && firstChar.isLetter
 }
 
 func instantTtsPause() async {
@@ -366,6 +382,7 @@ func doSpeak(_ what: String) async {
 
   // Set the pitch multiplier (0.5 to 2.0)
   utterance.pitchMultiplier = await ss.pitchMultiplier
+  print("Utterance pm: \(utterance.pitchMultiplier)")
 
   // Set the volume (0.0 to 1.0)
   utterance.volume = await ss.voiceVolume

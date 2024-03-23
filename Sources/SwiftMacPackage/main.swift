@@ -53,9 +53,9 @@ func mainLoop() async {
     case "t": await queueLine(cmd, params)
     // case "version": await instantTtsSayVersion()
     case "tts_exit": await instantTtsExit()
-    // case "tts_pause": await instantTtsPause()
+    case "tts_pause": await instantTtsPause()
     case "tts_reset": await queueLine(cmd, params)
-    // case "tts_resume": await instantTtsResume()
+    case "tts_resume": await instantTtsResume()
     case "tts_say": await instantTtsSay(params)
     case "tts_set_character_scale": await queueLine(cmd, params)
     case "tts_set_punctuations": await queueLine(cmd, params)
@@ -74,7 +74,7 @@ func dispatchPendingQueue() async {
     debugLogger.log("got queued \(cmd) \(params)")
     switch cmd {
     case "p": await doPlaySound(params)  // just like p in mainloop
-    // case "s": await doStopAll(l)
+    case "s": await doStopAll()
     // case "sh": await doSilence(l)
     case "t": await doPlayTone(params)
     // case "tts_reset": await doTtsReset()
@@ -94,6 +94,15 @@ func queueLine(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: queueLine")
   await ss.appendToPendingQueue((cmd, params))
 }
+
+func instantTtsResume() {
+  speaker.continueSpeaking()
+}
+
+func instantTtsPause() {
+  speaker.pauseSpeaking(at: .immediate)
+}
+
 
 func unknownLine(_ line: String) async {
   debugLogger.log("Enter: unknownLine")
@@ -311,7 +320,6 @@ func doPlaySound(_ p: String) async {
   debugLogger.log("Enter: doPlaySound")
   let soundURL = URL(fileURLWithPath: p)
 
-  // TODO: hash and cache the wavs
   let savedWavUrl: URL? = await withCheckedContinuation { continuation in
     if soundURL.pathExtension.lowercased() == "ogg" {
       let decoder = OGGDecoder()
@@ -323,7 +331,6 @@ func doPlaySound(_ p: String) async {
     }
   }
 
-  // TODO: Modernize to AVFoundation playback
   guard let url = savedWavUrl else {
     print("Failed to get audio file URL")
     return
@@ -341,8 +348,9 @@ func instantTtsSay(_ p: String) async {
 }
 
 func doStopAll() async {
-  await tonePlayer.stop()
   speaker.stopSpeaking(at: .immediate)
+  await tonePlayer.stop()
+  await SoundManager.shared.stopCurrentSound()
 
 }
 

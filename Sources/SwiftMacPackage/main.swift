@@ -17,7 +17,7 @@ import OggDecoder
 #endif
 let version = "2.0.0"
 let name = "swiftmac"
-var ss = StateStore() // just create new one to reset
+var ss = await StateStore() // just create new one to reset
 let speaker = AVSpeechSynthesizer()
 
 /* EntryPoint */
@@ -333,9 +333,9 @@ func processAndQueueAudioIcon(_ p: String) async {
 
 func doPlaySound(_ p: String) async {
   debugLogger.log("Enter: doPlaySound")
-  let trimmedP = p.trimmingCharacters(in: .whitespacesAndNewlines)
-  let soundURL = URL(fileURLWithPath: trimmedP)
+  let soundURL = URL(fileURLWithPath: p)
 
+  // TODO: hash and cache the wavs 
   let savedWavUrl: URL? = await withCheckedContinuation { continuation in
     if soundURL.pathExtension.lowercased() == "ogg" {
       let decoder = OGGDecoder()
@@ -426,7 +426,3 @@ func isolateCmdAndParams(_ line: String) async -> (String, String) {
 }
 
 await main()
-// // local variables:
-// // mode: swift
-// // swift-mode:basic-offset: 2
-// // end:

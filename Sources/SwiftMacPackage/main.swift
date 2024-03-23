@@ -105,7 +105,6 @@ func instantSayLetter(_ p: String) async {
   print("acb: ", await ss.allCapsBeep)
   if isCapitalLetter(p) {
     if await ss.allCapsBeep {
-        await ss.setPreDelay(.05)
         await doPlayTone("500 50")
     } else {
         await ss.setPitchMultiplier(1.5)
@@ -118,6 +117,7 @@ func instantSayLetter(_ p: String) async {
   await ss.setPitchMultiplier(oldPitchMultiplier)
   await ss.setSpeechRate(oldSpeechRate)
   await ss.setPreDelay(oldPreDelay)
+}
   
 
 func isCapitalLetter(_ str: String) -> Bool {
@@ -338,12 +338,13 @@ func doPlayTone(_ p: String) async {
   print("Enter: doPlayTone")
   debugLogger.log("Enter: doPlayTone")
   let ps = p.split(separator: " ")
-  await tonePlayer.playPureTone(
-    frequencyInHz: Int(ps[0]) ?? 500,
-    amplitude: await ss.toneVolume,
-    durationInMillis: Int(ps[1]) ?? 75
-  )
-  debugLogger.log("playTone failure")
+  Task {
+    await tonePlayer.playPureTone(
+        frequencyInHz: Int(ps[0]) ?? 500,
+        amplitude: await ss.toneVolume,
+        durationInMillis: Int(ps[1]) ?? 75
+    )
+  }
 }
 
 func doPlaySound(_ p: String) async {

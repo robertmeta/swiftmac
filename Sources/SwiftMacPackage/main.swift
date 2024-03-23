@@ -76,7 +76,7 @@ func dispatchPendingQueue() async {
     case "p": await doPlaySound(params)  // just like p in mainloop
     // case "s": await doStopAll(l)
     // case "sh": await doSilence(l)
-    // case "t": await doPlaySound(l)
+    case "t": await doPlayTone(params)
     // case "tts_reset": await doTtsReset()
     // case "tts_set_character_scale": await setCharScale(l)
     // case "tts_set_punctuations": await setPunct(l)
@@ -296,18 +296,16 @@ func processAndQueueAudioIcon(_ p: String) async {
 //   }
 // }
 
-// func doPlayTone(_ line: String) async {
-//   debugLogger.log("Enter: doPlayTone")
-//   let p = await isolateParams(line)
-//   let ps = p.split(separator: " ")
-//   let apa = AudioPlayerActor()
-//   await apa.playPureTone(
-//     frequencyInHz: Int(ps[0]) ?? 500,
-//     amplitude: await ss.toneVolume,
-//     durationInMillis: Int(ps[1]) ?? 75
-//   )
-//   debugLogger.log("playTone failure")
-// }
+func doPlayTone(_ p: String) async {
+  debugLogger.log("Enter: doPlayTone")
+  let ps = p.split(separator: " ")
+  await tonePlayer.playPureTone(
+    frequencyInHz: Int(ps[0]) ?? 500,
+    amplitude: await ss.toneVolume,
+    durationInMillis: Int(ps[1]) ?? 75
+  )
+  debugLogger.log("playTone failure")
+}
 
 func doPlaySound(_ p: String) async {
   debugLogger.log("Enter: doPlaySound")
@@ -352,10 +350,10 @@ func doSpeak(_ what: String) async {
   let utterance = AVSpeechUtterance(string: what)
 
   // Set the rate of speech (0.5 to 1.0)
-  utterance.rate = ss.speechRate
+  utterance.rate = await ss.speechRate
 
   // Set the pitch multiplier (0.5 to 2.0)
-  utterance.pitchMultiplier = ss.pitchMultiplier
+  utterance.pitchMultiplier = await ss.pitchMultiplier
 
   // Set the volume (0.0 to 1.0)
   utterance.volume = await ss.voiceVolume

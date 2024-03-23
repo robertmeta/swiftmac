@@ -46,20 +46,20 @@ public actor StateStore {
     _pendingQueue.removeAll()
   }
 
-  private var _pitchModification: Float = 1.0
-  public var pitchModification: Float {
-    get { _pitchModification }
-    set { _pitchModification = newValue }
+  private var _pitchMultiplier: Float = 1.0
+  public var pitchMultiplier: Float {
+    get { _pitchMultiplier }
+    set { _pitchMultiplier = newValue }
   }
 
-  private var _postDelay: Float = 0
-  public var postDelay: Float {
+  private var _postDelay: TimeInterval = 0
+  public var postDelay: TimeInterval {
     get { _postDelay }
     set { _postDelay = newValue }
   }
 
-  private var _preDelay: Float = 0
-  public var preDelay: Float {
+  private var _preDelay: TimeInterval = 0
+  public var preDelay: TimeInterval {
     get { _preDelay }
     set { _preDelay = newValue }
   }
@@ -129,8 +129,8 @@ public actor StateStore {
     debugLogger.log("deadpanMode \(self.deadpanMode)")
   }
 
-  public func getCharacterRate() async -> Int {
-    return Int(Float(self.speechRate) * self.characterScale)
+  public func getCharacterRate() async -> Float {
+    return Float(Float(self.speechRate) * self.characterScale)
   }
 
   private func getEnvironmentVariable(_ variable: String) async -> String {

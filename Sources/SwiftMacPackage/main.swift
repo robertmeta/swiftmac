@@ -67,7 +67,7 @@ func dispatchPendingQueue() async {
     switch cmd {
     case "p": await doPlaySound(params)  // just like p in mainloop
     case "s": await doStopAll()
-    // case "sh": await doSilence(l)
+    case "sh": await doSilence(params)
     case "t": await doPlayTone(params)
     // case "tts_reset": await doTtsReset()
     // case "tts_set_character_scale": await setCharScale(l)
@@ -97,6 +97,16 @@ func instantSayVersion() async {
     await instantTtsSay("\(name) \(sayVersion)")
   #endif
 }
+
+func doSilence(_ p: String) async {
+    let oldPostDelay = await ss.postDelay
+        if let timeInterval = TimeInterval(p) {
+            await ss.setPostDelay(timeInterval / 1000)
+        }
+    await doSpeak("")
+    await ss.setPostDelay(oldPostDelay)
+}
+
 
 func instantTtsResume() async {
   speaker.continueSpeaking()
@@ -144,9 +154,28 @@ func unknownLine(_ line: String) async {
   debugLogger.log("Unknown command: \(line)")
 }
 
+func getVoiceIdentifier(voiceName: String) -> String {
+    let defaultVoiceIdentifier = "com.apple.speech.voice.Alex"
+    
+    let voices = AVSpeechSynthesisVoice.speechVoices()
+    
+    // Check if the voiceName is in the long format (e.g., com.apple.ttsbundle.Samantha-compact)
+    if let voice = voices.first(where: { $0.identifier == voiceName }) {
+        return voice.identifier
+    }
+    
+    // Check if the voiceName is in the short format (e.g., Samantha)
+    if let voice = voices.first(where: { $0.name == voiceName }) {
+        return voice.identifier
+    }
+    
+    // If the voiceName is not found, return the default voice identifier
+    return defaultVoiceIdentifier
+}
+
 func impossibleQueue(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: impossibleQueue")
-  print("Impossible queue item \(cmd) \(params)")
+  print("Impossible queue item '\(cmd)' '\(params)'")
 }
 
 func extractVoice(from string: String) -> String? {
@@ -436,8 +465,11 @@ func doSpeak(_ what: String) async {
   utterance.postUtteranceDelay = await ss.postDelay
 
   // Set the voice
-  let voice = AVSpeechSynthesisVoice()
-  utterance.voice = voice
+  // TODO: Move this to statestore and change type to a voice
+  let voiceIdentifier = getVoiceIdentifier(voiceName: await ss.voice)
+  if let voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier) {
+    utterance.voice = voice
+  } 
 
   // Start speaking
   speaker.speak(utterance)

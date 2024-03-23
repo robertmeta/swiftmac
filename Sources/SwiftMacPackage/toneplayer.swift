@@ -21,7 +21,6 @@ actor TonePlayerActor {
     let totalDurationSeconds = Float(durationInMillis) / 1000
     let fadeDurationSeconds = totalDurationSeconds / 5
     let numberOfSamples = AVAudioFrameCount(sampleRateHz * totalDurationSeconds)
-    let fadeSamplesCount = Int(sampleRateHz * fadeDurationSeconds)
 
     guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: numberOfSamples) else {
       return
@@ -49,7 +48,8 @@ actor TonePlayerActor {
     do {
       try audioEngine.start()
       audioPlayer.play()
-      audioPlayer.scheduleBuffer(buffer, at: nil, options: []) {
+      audioPlayer.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
+
         // Execution continues after the buffer is fully played
       }
     } catch {

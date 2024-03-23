@@ -84,7 +84,7 @@ func dispatchPendingQueue() async {
     // case "tts_split_caps": await setSplitCaps(l)
     // case "tts_set_discard": await setDiscard(l)
     // case "tts_sync_state": impossibleQueue()
-    // case "tts_allcaps_beep": await setBeepCaps(l)
+    case "tts_allcaps_beep": await setAllCapsBeep(params)
     default: await impossibleQueue(cmd, params)
     }
   }
@@ -101,12 +101,18 @@ func instantTtsResume() async {
 
 func instantSayLetter(_ p: String) async {
   let oldPitchMultiplier = await ss.pitchMultiplier
+  print("acb: ", await ss.allCapsBeep)
   if isCapitalLetter(p) {
-    await ss.setPitchMultiplier(1.5)
+    if await ss.allCapsBeep {
+        await doPlayTone("500 50")
+    } else {
+        await ss.setPitchMultiplier(1.5)
+    }
   }
   let oldSpeechRate = await ss.speechRate
   await ss.setSpeechRate(await ss.getCharacterRate())
-  await instantTtsSay(p.lowercased())
+  speaker.stopSpeaking(at: .immediate)
+  await doSpeak(p.lowercased())
   await ss.setPitchMultiplier(oldPitchMultiplier)
   await ss.setSpeechRate(oldSpeechRate)
 }
@@ -288,15 +294,15 @@ func processAndQueueAudioIcon(_ p: String) async {
 //   }
 // }
 
-// func ttsAllCapsBeep(_ line: String) async {
-//   debugLogger.log("Enter: ttsAllCapsBeep")
-//   let l = await isolateParams(line)
-//   if l == "1" {
-//     await ss.setBeepCaps(true)
-//   } else {
-//     await ss.setBeepCaps(false)
-//   }
-// }
+func setAllCapsBeep(_ p: String) async {
+  debugLogger.log("Enter: setAllCapsBeep")
+  print(p)
+  if p == "1" {
+    await ss.setAllCapsBeep(true)
+  } else {
+    await ss.setAllCapsBeep(false)
+  }
+}
 
 // func ttsSyncState(_ line: String) async {
 //   debugLogger.log("Enter: ttsSyncState")
@@ -326,6 +332,7 @@ func processAndQueueAudioIcon(_ p: String) async {
 // }
 
 func doPlayTone(_ p: String) async {
+  print("Enter: doPlayTone")
   debugLogger.log("Enter: doPlayTone")
   let ps = p.split(separator: " ")
   await tonePlayer.playPureTone(

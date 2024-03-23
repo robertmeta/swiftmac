@@ -44,7 +44,7 @@ func mainLoop() async {
     case "version": await instantSayVersion()
     case "tts_exit": await instantTtsExit()
     case "tts_pause": await instantTtsPause()
-    case "tts_reset": await queueLine(cmd, params)
+    case "tts_reset": await instantTtsReset()
     case "tts_resume": await instantTtsResume()
     case "tts_say": await instantTtsSay(params)
     case "tts_set_character_scale": await queueLine(cmd, params)
@@ -69,7 +69,6 @@ func dispatchPendingQueue() async {
     case "s": await doStopAll()
     case "sh": await doSilence(params)
     case "t": await doPlayTone(params)
-    // case "tts_reset": await doTtsReset()
     // case "tts_set_character_scale": await setCharScale(l)
     // case "tts_set_punctuations": await setPunct(l)
     // case "tts_set_speech_rate": await setSpeechRate(l)
@@ -85,6 +84,11 @@ func dispatchPendingQueue() async {
 func queueLine(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: queueLine")
   await ss.appendToPendingQueue((cmd, params))
+}
+
+@MainActor func instantTtsReset() async {
+    await doStopAll()
+    ss = await StateStore()
 }
 
 func instantSayVersion() async {

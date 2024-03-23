@@ -4,7 +4,6 @@ import Darwin
 import Foundation
 import OggDecoder
 
-
 /* Globals */
 #if DEBUG
   let currentDate = Date()
@@ -17,67 +16,64 @@ import OggDecoder
 #endif
 let version = "2.0.0"
 let name = "swiftmac"
-var ss = await StateStore() // just create new one to reset
+var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
+let tonePlayer = TonePlayerActor()
 
 /* EntryPoint */
 func main() async {
   debugLogger.log("Enter: main")
-  #if DEBUG
-    await instantSay("Debugging \(name) server for e mac speak \(version)")
-  #else
-    await instantSay("welcome to e mac speak with \(name) \(version)")
-  #endif
 
+  #if DEBUG
+    await instantTtsSay("Debugging \(name) server for e mac speak \(version)")
+  #else
+    await instantTtsSay("welcome to e mac speak with \(name) \(version)")
+  #endif
 
   print("Entering mainloop")
   await mainLoop()
   print("Exiting \(name) \(version)")
 }
 
-@MainActor
 func mainLoop() async {
   while let l = readLine() {
     debugLogger.log("got line \(l)")
     let (cmd, params) = await isolateCmdAndParams(l)
     // TODO: if tts_discard and! tts_discard command
-    // log and continue 
+    // log and continue
     switch cmd {
     case "a": await processAndQueueAudioIcon(params)
     // case "c": await processAndQueueCodes(l)
     case "d": await dispatchPendingQueue()
-    // case "l": await instantSayLetter(l)
+    // case "l": await instantTtsSayLetter(l)
     case "p": await doPlaySound(params)
-    // case "q": await queueLine(l)
-    // case "s": await queueLine(l)
-    // case "sh": await queueLine(l)
-    // case "t": await queueLine(l)
-    // case "version": await instantSayVersion()
-    // case "tts_exit": await instantTtsExit()
+    //case "q": await processAndQueueSpeech(cmd, params)
+    case "s": await queueLine(cmd, params)
+    case "sh": await queueLine(cmd, params)
+    case "t": await queueLine(cmd, params)
+    // case "version": await instantTtsSayVersion()
+    case "tts_exit": await instantTtsExit()
     // case "tts_pause": await instantTtsPause()
-    // case "tts_reset": await queueTtsReset()
+    case "tts_reset": await queueLine(cmd, params)
     // case "tts_resume": await instantTtsResume()
-    // case "tts_say": await instantTtsSay(l)
-    // case "tts_set_character_scale": await queueLine(l)
-    // case "tts_set_punctuations": await queueLine(l)
-    // case "tts_set_speech_rate": await queueLine(l)
-    // case "tts_split_caps": await queueLine(l)
-    // case "tts_set_discard": await queueLine(l)
+    case "tts_say": await instantTtsSay(params)
+    case "tts_set_character_scale": await queueLine(cmd, params)
+    case "tts_set_punctuations": await queueLine(cmd, params)
+    case "tts_set_speech_rate": await queueLine(cmd, params)
+    case "tts_split_caps": await queueLine(cmd, params)
+    case "tts_set_discard": await queueLine(cmd, params)
     // case "tts_sync_state": await processAndQueueSync(l)
-    // case "tts_allcaps_beep": await queueLine(l)
-    default: await unknownLine(l) 
+    case "tts_allcaps_beep": await queueLine(cmd, params)
+    default: await unknownLine(l)
     }
   }
 }
 
 func dispatchPendingQueue() async {
-  let sspq = await ss.pendingQueue
-  for l in sspq {
-    debugLogger.log("got queued \(l)")
-    let (cmd, params) = await isolateCmdAndParams(l)
+  while let (cmd, params) = await ss.popFromPendingQueue() {
+    debugLogger.log("got queued \(cmd) \(params)")
     switch cmd {
-    case "p": await doPlaySound(params) // just like p in mainloop
-    // case "l": await doSayLetter(l)
+    case "p": await doPlaySound(params)  // just like p in mainloop
     // case "s": await doStopAll(l)
     // case "sh": await doSilence(l)
     // case "t": await doPlaySound(l)
@@ -89,14 +85,14 @@ func dispatchPendingQueue() async {
     // case "tts_set_discard": await setDiscard(l)
     // case "tts_sync_state": impossibleQueue()
     // case "tts_allcaps_beep": await setBeepCaps(l)
-    default: await impossibleQueue(l) 
+    default: await impossibleQueue(cmd, params)
     }
   }
 }
 
-func queueLine(_ line: String) async {
+func queueLine(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: queueLine")
-  await ss.appendToPendingQueue(line)
+  await ss.appendToPendingQueue((cmd, params))
 }
 
 func unknownLine(_ line: String) async {
@@ -104,21 +100,20 @@ func unknownLine(_ line: String) async {
   debugLogger.log("Unknown command: \(line)")
 }
 
-func impossibleQueue(_ l: String) async {
+func impossibleQueue(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: impossibleQueue")
-  print("Impossible queue item \(l)")
+  print("Impossible queue item \(cmd) \(params)")
 }
 
 func processAndQueueAudioIcon(_ p: String) async {
   debugLogger.log("Enter: processAndQueueAudioIcon")
-  await ss.appendToPendingQueue("p \(p)")
+  await ss.appendToPendingQueue(("p", p))
 }
 
 // func processAndQueueCodes(l) async {
 //   debugLogger.log("Enter: processAndQueueCodes")
 
 // }
-
 
 // /* This is replacements that always must happen when doing
 //    replaceements like [*] -> slnc */
@@ -177,7 +172,6 @@ func processAndQueueAudioIcon(_ p: String) async {
 
 // }
 
-
 // func ttsSplitCaps(_ line: String) async {
 //   debugLogger.log("Enter: ttsSplitCaps")
 //   let l = await isolateParams(line)
@@ -187,7 +181,6 @@ func processAndQueueAudioIcon(_ p: String) async {
 //     await sssetSplitCaps = false
 //   }
 // }
-
 
 // func doTtsReset() async {
 //   debugLogger.log("Enter: ttsReset")
@@ -224,12 +217,10 @@ func processAndQueueAudioIcon(_ p: String) async {
 //   await say("[[slnc \(duration)]]", interupt: false)
 // }
 
-
 // func ttsPause() async {
 //   debugLogger.log("Enter: ttsPause")
 //   speaker.pauseSpeaking(at: .immediateBoundary)
 // }
-
 
 // func ttsResume() async {
 //   debugLogger.log("Enter: ttsResume")
@@ -249,7 +240,6 @@ func processAndQueueAudioIcon(_ p: String) async {
 //   let l = await isolateParams(line)
 //   await ss.setPunct(l)
 // }
-
 
 // func ttsSetRate(_ line: String) async {
 //   debugLogger.log("Enter: ttsSetRate")
@@ -278,7 +268,6 @@ func processAndQueueAudioIcon(_ p: String) async {
 //     await ss.setBeepCaps(false)
 //   }
 // }
-
 
 // func ttsSyncState(_ line: String) async {
 //   debugLogger.log("Enter: ttsSyncState")
@@ -320,22 +309,11 @@ func processAndQueueAudioIcon(_ p: String) async {
 //   debugLogger.log("playTone failure")
 // }
 
-// func doStopAll() async {
-//   debugLogger.log("Enter: doStopAll")
-//   ss.pendingQueue = []
-//   await doStopSpeaking()
-// }
-
-// func doStopSpeaking() async {
-//   debugLogger.log("Enter: doStopSpeaking")
-//   // TODO Stop Speaking
-// }
-
 func doPlaySound(_ p: String) async {
   debugLogger.log("Enter: doPlaySound")
   let soundURL = URL(fileURLWithPath: p)
 
-  // TODO: hash and cache the wavs 
+  // TODO: hash and cache the wavs
   let savedWavUrl: URL? = await withCheckedContinuation { continuation in
     if soundURL.pathExtension.lowercased() == "ogg" {
       let decoder = OGGDecoder()
@@ -347,22 +325,54 @@ func doPlaySound(_ p: String) async {
     }
   }
 
+  // TODO: Modernize to AVFoundation playback
   guard let url = savedWavUrl else {
     print("Failed to get audio file URL")
     return
   }
 
-  let sound = NSSound(contentsOf: url, byReference: true)
-  sound?.volume = await ss.soundVolume
-  sound?.play()
+  await SoundManager.shared.playSound(from: url, volume: await ss.soundVolume)
 }
 
+func instantTtsSay(_ p: String) async {
+  debugLogger.log("Enter: instantTtsSay")
+  debugLogger.log("ttsSay: \(p)")
+  await doStopAll()
+  await doSpeak(p)
+  print("instantTtsSay")
+}
 
-func instantSay(_ line: String) async {
-  debugLogger.log("Enter: instantSay")
-  debugLogger.log("ttsSay: " + line)
-  //await doStopAll()
-  print("instantSay")
+func doStopAll() async {
+  await tonePlayer.stop()
+  speaker.stopSpeaking(at: .immediate)
+
+}
+
+func doSpeak(_ what: String) async {
+  let utterance = AVSpeechUtterance(string: what)
+
+  // Set the rate of speech (0.5 to 1.0)
+  utterance.rate = 0.7
+
+  // Set the pitch multiplier (0.5 to 2.0)
+  utterance.pitchMultiplier = 1.2
+
+  // Set the volume (0.0 to 1.0)
+  utterance.volume = 0.8
+
+  // Set the pre-utterance delay (in seconds)
+  utterance.preUtteranceDelay = 0.5
+
+  // Set the post-utterance delay (in seconds)
+  utterance.postUtteranceDelay = 0.5
+
+  // Set the voice
+  let voice = AVSpeechSynthesisVoice(language: "en-US")
+  utterance.voice = voice
+
+  // Start speaking
+  speaker.speak(utterance)
+
 }
 
 // func doSay(
@@ -383,10 +393,10 @@ func instantSay(_ line: String) async {
 //   # TODO Speak w
 // }
 
-// func instantTtsExit() async {
-//   debugLogger.log("Enter: instantTtsExit")
-//   exit(0)
-// }
+func instantTtsExit() async {
+  debugLogger.log("Enter: instantTtsExit")
+  exit(0)
+}
 
 // func stripSpecialEmbeds(_ line: String) -> String {
 //   debugLogger.log("Enter: stripSpecialEmbeds")

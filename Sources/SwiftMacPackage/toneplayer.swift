@@ -1,7 +1,7 @@
 import AVFoundation
 import Foundation
 
-actor AudioPlayerActor {
+actor TonePlayerActor {
   private let audioPlayer = AVAudioPlayerNode()
   private let audioEngine = AVAudioEngine()
 

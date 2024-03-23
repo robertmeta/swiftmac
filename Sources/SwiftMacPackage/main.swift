@@ -101,9 +101,11 @@ func instantTtsResume() async {
 
 func instantSayLetter(_ p: String) async {
   let oldPitchMultiplier = await ss.pitchMultiplier
+  let oldPreDelay = await ss.preDelay
   print("acb: ", await ss.allCapsBeep)
   if isCapitalLetter(p) {
     if await ss.allCapsBeep {
+        await ss.setPreDelay(.05)
         await doPlayTone("500 50")
     } else {
         await ss.setPitchMultiplier(1.5)
@@ -115,7 +117,8 @@ func instantSayLetter(_ p: String) async {
   await doSpeak(p.lowercased())
   await ss.setPitchMultiplier(oldPitchMultiplier)
   await ss.setSpeechRate(oldSpeechRate)
-}
+  await ss.setPreDelay(oldPreDelay)
+  
 
 func isCapitalLetter(_ str: String) -> Bool {
     guard str.count == 1 else {

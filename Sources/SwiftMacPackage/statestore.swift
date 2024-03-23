@@ -136,4 +136,60 @@ public actor StateStore {
   private func getEnvironmentVariable(_ variable: String) async -> String {
     return ProcessInfo.processInfo.environment[variable] ?? ""
   }
+
+  public func setAllCapsBeep(_ value: Bool) {
+    self._allCapsBeep = value
+  }
+
+  public func setCharacterScale(_ value: Float) {
+    self._characterScale = value
+  }
+
+  public func setDeadpanMode(_ value: Bool) {
+    self._deadpanMode = value
+  }
+
+  public func setPitchMultiplier(_ value: Float) {
+    self._pitchMultiplier = value
+  }
+
+  public func setPostDelay(_ value: TimeInterval) {
+    self._postDelay = value
+  }
+
+  public func setPreDelay(_ value: TimeInterval) {
+    self._preDelay = value
+  }
+
+  public func setPunctuations(_ value: String) {
+    self._punctuations = value
+  }
+
+  public func setSoundVolume(_ value: Float) {
+    self._soundVolume = value
+  }
+
+  public func setSpeechRate(_ value: Float) {
+    self._speechRate = value
+  }
+
+  public func setSplitCaps(_ value: Bool) {
+    self._splitCaps = value
+  }
+
+  public func setToneVolume(_ value: Float) {
+    self._toneVolume = value
+  }
+
+  public func setTtsDiscard(_ value: Bool) {
+    self._ttsDiscard = value
+  }
+
+  public func setVoice(_ value: String) {
+    self._voice = value
+  }
+
+  public func setVoiceVolume(_ value: Float) {
+    self._voiceVolume = value
+  }
 }

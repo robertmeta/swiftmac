@@ -45,7 +45,7 @@ func mainLoop() async {
     case "a": await processAndQueueAudioIcon(params)
     // case "c": await processAndQueueCodes(l)
     case "d": await dispatchPendingQueue()
-    // case "l": await instantTtsSayLetter(l)
+    case "l": await instantSayLetter(params)
     case "p": await doPlaySound(params)
     //case "q": await processAndQueueSpeech(cmd, params)
     case "s": await queueLine(cmd, params)
@@ -95,14 +95,18 @@ func queueLine(_ cmd: String, _ params: String) async {
   await ss.appendToPendingQueue((cmd, params))
 }
 
-func instantTtsResume() {
+func instantTtsResume() async {
   speaker.continueSpeaking()
 }
 
-func instantTtsPause() {
-  speaker.pauseSpeaking(at: .immediate)
+func instantSayLetter(_ p: String) async {
+  await ss.setPitchMultiplier(1.2)
+  await instantTtsSay(p.lowercased())
 }
 
+func instantTtsPause() async {
+  speaker.pauseSpeaking(at: .immediate)
+}
 
 func unknownLine(_ line: String) async {
   debugLogger.log("Enter: unknownLine")

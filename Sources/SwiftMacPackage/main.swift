@@ -30,7 +30,7 @@ func main() async {
     let (cmd, params) = await isolateCmdAndParams(l)
     switch cmd {
     case "a": await processAndQueueAudioIcon(params)
-    // case "c": await processAndQueueCodes(l)
+    case "c": await processAndQueueCodes(l)
     case "d": await dispatchPendingQueue()
     case "l": await instantSayLetter(params)
     case "p": await doPlaySound(params)
@@ -175,10 +175,11 @@ func getVoiceIdentifier(voiceName: String) -> String {
 
 func impossibleQueue(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: impossibleQueue")
+  debugLogger.log("Impossible queue item '\(cmd)' '\(params)'")
   print("Impossible queue item '\(cmd)' '\(params)'")
 }
 
-func extractVoice(from string: String) -> String? {
+func extractVoice(_ string: String) -> String? {
   let pattern = "\\[\\{voice\\s+([^\\}]+)\\}\\]"
   let regex = try! NSRegularExpression(pattern: pattern, options: [])
 
@@ -198,10 +199,12 @@ func processAndQueueAudioIcon(_ p: String) async {
   await ss.appendToPendingQueue(("p", p))
 }
 
-// func processAndQueueCodes(l) async {
-//   debugLogger.log("Enter: processAndQueueCodes")
-
-// }
+func processAndQueueCodes(_ p: String) async {
+  debugLogger.log("Enter: processAndQueueCodes")
+  if let v = extractVoice(p) {
+      await ss.appendToPendingQueue(("tts_set_voice", v))
+  }
+}
 
 // /* This is replacements that always must happen when doing
 //    replaceements like [*] -> slnc */

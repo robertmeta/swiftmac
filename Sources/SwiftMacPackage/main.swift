@@ -62,6 +62,7 @@ func dispatchPendingQueue() async {
     debugLogger.log("got queued \(cmd) \(params)")
     switch cmd {
     case "p": await doPlaySound(params)  // just like p in mainloop
+    case "speak": await doSpeak(params)
     case "s": await doStopAll()
     case "sh": await doSilence(params)
     case "t": await doPlayTone(params)
@@ -83,12 +84,34 @@ func queueLine(_ cmd: String, _ params: String) async {
 }
 
 func processAndQueueSpeech(_ p: String) async {
+  var temp: String
   if await ss.splitCaps {
-    p = insertSpaceBeforeUppercase(p)
+    temp = insertSpaceBeforeUppercase(p)
+  } else {
+    temp = p
   }
+
   var parts: [String]
-  if await ss.allCapsBeep {
-   parts = p.split(whereSeparator: .isWhitespace).map(String.init)
+  let beepCaps = await ss.allCapsBeep 
+  print(beepCaps)
+  if beepCaps {
+    parts = temp.split(whereSeparator: \.isWhitespace).map(String.init)
+  } else {
+    parts = [temp]
+  }
+
+  for part in parts {
+      let speakPart = await replacePunctuations(part)
+      print(part)
+      print(isFirstLetterCapital (part))
+      if beepCaps && isFirstLetterCapital(part) {
+          await ss.appendToPendingQueue(("t", "500 50"))
+          await ss.appendToPendingQueue(("sh", "50"))
+          await ss.appendToPendingQueue(("speak", speakPart))
+      } else {
+          await ss.appendToPendingQueue(("speak", speakPart))
+      }
+          
   }
 
 
@@ -136,7 +159,7 @@ func instantSayLetter(_ p: String) async {
   let oldPitchMultiplier = await ss.pitchMultiplier
   let oldPreDelay = await ss.preDelay
   print("acb: ", await ss.allCapsBeep)
-  if isCapitalLetter(p) {
+  if isFirstLetterCapital(p) {
     // TODO: Remove this hardcoding
     if await ss.allCapsBeep {
       await doPlayTone("500 50")
@@ -157,8 +180,8 @@ func stopSpeaking() async {
   speaker.stopSpeaking(at: .immediate)
 }
 
-func isCapitalLetter(_ str: String) -> Bool {
-  guard str.count == 1 else {
+func isFirstLetterCapital(_ str: String) -> Bool {
+  guard str.count > 0 else {
     return false
   }
 
@@ -228,20 +251,20 @@ func processAndQueueCodes(_ p: String) async {
   }
 }
 
-/* This is replacements that always must happen when doing
-   replaceements like [*] -> slnc */
-func replaceCore(_ line: String) -> String {
-  debugLogger.log("Enter: replaceCore")
-  return
-    line
-    .replacingOccurrences(of: "[*]", with: " [[slnc 50]] ")
+func replacePunctuations(_ s: String) async -> String {
+    if await ss.punctuations == "all" {
+        return replaceAllPuncs(s)
+    } 
+    if await ss.punctuations == "come" {
+        return replaceSomePuncs(s)
+    }
+    return replaceBasePuncs(s)
 }
 
 /* This is used for "none" puncts */
 func replaceBasePuncs(_ line: String) -> String {
   debugLogger.log("Enter: replaceBasePuncs")
-  let l = replaceCore(line)
-  return replaceCore(l)
+  return line
     .replacingOccurrences(of: "%", with: " percent ")
     .replacingOccurrences(of: "$", with: " dollar ")
 

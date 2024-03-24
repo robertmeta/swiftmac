@@ -5,7 +5,6 @@ import Foundation
 import OggDecoder
 
 public actor StateStore {
-
   private var _allCapsBeep: Bool = false
   public var allCapsBeep: Bool {
     get { _allCapsBeep }
@@ -113,14 +112,20 @@ public actor StateStore {
   }
 
   public init() async {
+    self.soundVolume = 1.0
+    if let f = Float(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
+      self.soundVolume = f
+    }
+
     self.toneVolume = 1.0
-    if let f = Float(await self.getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
+    if let f = Float(self.getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
       self.toneVolume = f
     }
-    if let f = Float(await self.getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
+
+    if let f = Float(self.getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
       self.voiceVolume = f
     }
-    if let f = Bool(await self.getEnvironmentVariable("SWIFTMAC_DEADPAN_MODE")) {
+    if let f = Bool(self.getEnvironmentVariable("SWIFTMAC_DEADPAN_MODE")) {
       self.deadpanMode = f
     }
     debugLogger.log("soundVolume \(self.soundVolume)")
@@ -133,7 +138,7 @@ public actor StateStore {
     return Float(Float(self.speechRate) * self.characterScale)
   }
 
-  private func getEnvironmentVariable(_ variable: String) async -> String {
+  private func getEnvironmentVariable(_ variable: String) -> String {
     return ProcessInfo.processInfo.environment[variable] ?? ""
   }
 

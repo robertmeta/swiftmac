@@ -17,6 +17,7 @@ actor SoundManager {
         
         // Create a new sound instance
         let sound = NSSound(contentsOf: url, byReference: true)
+        print("vol: \(volume)")
         sound?.volume = volume
         
         // Play the new sound

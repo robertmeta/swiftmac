@@ -63,7 +63,7 @@ func dispatchPendingQueue() async {
     switch cmd {
     case "p": await doPlaySound(params)  // just like p in mainloop
     case "speak": await doSpeak(params)
-    case "s": await doStopAll()
+    case "s": await stopSpeaking()
     case "sh": await doSilence(params)
     case "t": await doPlayTone(params)
     case "tts_set_character_scale": await setCharacterScale(params)
@@ -91,40 +91,18 @@ func processAndQueueSpeech(_ p: String) async {
     temp = p
   }
 
-  var parts: [String]
-  let beepCaps = await ss.allCapsBeep 
-  print(beepCaps)
-  if beepCaps {
-    parts = temp.split(whereSeparator: \.isWhitespace).map(String.init)
-  } else {
-    parts = [temp]
-  }
-
-  for part in parts {
-      let speakPart = await replacePunctuations(part)
-      print(part)
-      print(isFirstLetterCapital (part))
-      if beepCaps && isFirstLetterCapital(part) {
-          await ss.appendToPendingQueue(("t", "500 50"))
-          await ss.appendToPendingQueue(("sh", "50"))
-          await ss.appendToPendingQueue(("speak", speakPart))
-      } else {
-          await ss.appendToPendingQueue(("speak", speakPart))
-      }
-          
-  }
-
-
+  let speakPart = await replacePunctuations(temp)
+  await ss.appendToPendingQueue(("speak", speakPart))
 }
 
 func insertSpaceBeforeUppercase(_ input: String) -> String {
-    let pattern = "(?<=[a-z])(?=[A-Z])"
-    let regex = try! NSRegularExpression(pattern: pattern, options: [])
-    let range = NSRange(input.startIndex..., in: input)
-    let modifiedString = regex.stringByReplacingMatches(in: input, options: [], range: range, withTemplate: " ")
-    return modifiedString
+  let pattern = "(?<=[a-z])(?=[A-Z])"
+  let regex = try! NSRegularExpression(pattern: pattern, options: [])
+  let range = NSRange(input.startIndex..., in: input)
+  let modifiedString = regex.stringByReplacingMatches(
+    in: input, options: [], range: range, withTemplate: " ")
+  return modifiedString
 }
-
 
 @MainActor func instantTtsReset() async {
   await doStopAll()
@@ -158,7 +136,6 @@ func instantTtsResume() async {
 func instantSayLetter(_ p: String) async {
   let oldPitchMultiplier = await ss.pitchMultiplier
   let oldPreDelay = await ss.preDelay
-  print("acb: ", await ss.allCapsBeep)
   if isFirstLetterCapital(p) {
     // TODO: Remove this hardcoding
     if await ss.allCapsBeep {
@@ -247,24 +224,25 @@ func processAndQueueAudioIcon(_ p: String) async {
 func processAndQueueCodes(_ p: String) async {
   debugLogger.log("Enter: processAndQueueCodes")
   if let v = extractVoice(p) {
-      await ss.appendToPendingQueue(("tts_set_voice", v))
+    await ss.appendToPendingQueue(("tts_set_voice", v))
   }
 }
 
 func replacePunctuations(_ s: String) async -> String {
-    if await ss.punctuations == "all" {
-        return replaceAllPuncs(s)
-    } 
-    if await ss.punctuations == "come" {
-        return replaceSomePuncs(s)
-    }
-    return replaceBasePuncs(s)
+  if await ss.punctuations == "all" {
+    return replaceAllPuncs(s)
+  }
+  if await ss.punctuations == "come" {
+    return replaceSomePuncs(s)
+  }
+  return replaceBasePuncs(s)
 }
 
 /* This is used for "none" puncts */
 func replaceBasePuncs(_ line: String) -> String {
   debugLogger.log("Enter: replaceBasePuncs")
-  return line
+  return
+    line
     .replacingOccurrences(of: "%", with: " percent ")
     .replacingOccurrences(of: "$", with: " dollar ")
 
@@ -335,7 +313,6 @@ func setPitchMultiplier(_ p: String) async {
     await ss.setPitchMultiplier(f)
   }
 }
-
 
 func setPunctuations(_ p: String) async {
   debugLogger.log("Enter: setPunctuations")
@@ -457,24 +434,6 @@ func doSpeak(_ what: String) async {
   speaker.speak(utterance)
 
 }
-
-// func doSay(
-//   _ what: String,
-// ) async {
-//   debugLogger.log("Enter: doSay")
-//   switch await ss.getPunct().lowercased() {
-//     case "all":
-//       w = replaceAllPuncs(w)
-//     case "some":
-//       w = replaceSomePuncs(w)
-//     case "none":
-//       w = replaceBasePuncs(w)
-//     default:
-//       w = replaceCore(w)
-//     }
-//   }
-//   # TODO Speak w
-// }
 
 func instantTtsExit() async {
   debugLogger.log("Enter: instantTtsExit")

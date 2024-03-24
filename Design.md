@@ -3,6 +3,13 @@
 The server intends to provide primitives to support all the features used by
 emacspeak and swiftmac-voices.el.
 
+## TODO
+
+- tts_set_tone_volume: 0 to 1 (1 being 100% tone volume)
+- tts_set_sound_volume: 0 to 1 (1 being 100% sound volume)
+- tts_set_voice_volume: 0 to 1 (1 being 100% voice volume)
+
+
 ## Supported Commands
 
 These are the commands sent via stdin and on thier own line.
@@ -25,11 +32,15 @@ These are the commands sent via stdin and on thier own line.
 - tts_set_punctuations: queue punct change
 - tts_set_speech_rate: queue rate change
 - tts_split_caps: queue split caps change
-- tts_allcaps_beep: queue caps beep change
 - tts_sync_state: [decomp] queue multiple settings change
-- tts_exit: [engine specific] instant exit
-- tts_set_voice: [engine specific] queue voice change
-- tts_set_pitch_multiplier: [engine specific] +- pitch modulation
+
+Engine Specific:
+- tts_exit:  instant exit
+- tts_set_voice: queue voice change
+- tts_set_pitch_multiplier: .5 to 2 pitch multiplier 
+
+Broken:
+- tts_allcaps_beep: queue caps beep change, setting only works on typing input
 
 
 ## Supported Embeddings

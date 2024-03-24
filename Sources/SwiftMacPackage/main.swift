@@ -34,7 +34,7 @@ func main() async {
     case "d": await dispatchPendingQueue()
     case "l": await instantSayLetter(params)
     case "p": await doPlaySound(params)
-    //case "q": await processAndQueueSpeech(cmd, params)
+    case "q": await processAndQueueSpeech(params)
     case "s": await queueLine(cmd, params)
     case "sh": await queueLine(cmd, params)
     case "t": await queueLine(cmd, params)
@@ -65,11 +65,11 @@ func dispatchPendingQueue() async {
     case "s": await doStopAll()
     case "sh": await doSilence(params)
     case "t": await doPlayTone(params)
-    // case "tts_set_character_scale": await setCharScale(l)
-    // case "tts_set_punctuations": await setPunct(l)
-    // case "tts_set_speech_rate": await setSpeechRate(l)
-    // case "tts_set_voice: [engine specific] queue voice change
-    // case "tts_set_pitch_multiplier": [engine specific] +- pitch modulation
+    case "tts_set_character_scale": await setCharacterScale(params)
+    case "tts_set_punctuations": await setPunctuations(params)
+    case "tts_set_speech_rate": await setSpeechRate(params)
+    case "tts_set_voice": await setVoice(params)
+    case "tts_set_pitch_multiplier": await setPitchMultiplier(params)
     case "tts_split_caps": await setSplitCaps(params)
     case "tts_allcaps_beep": await setAllCapsBeep(params)
     default: await impossibleQueue(cmd, params)
@@ -80,6 +80,10 @@ func dispatchPendingQueue() async {
 func queueLine(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: queueLine")
   await ss.appendToPendingQueue((cmd, params))
+}
+
+func processAndQueueSpeech(_ p: String) async {
+
 }
 
 @MainActor func instantTtsReset() async {
@@ -116,6 +120,7 @@ func instantSayLetter(_ p: String) async {
   let oldPreDelay = await ss.preDelay
   print("acb: ", await ss.allCapsBeep)
   if isCapitalLetter(p) {
+    // TODO: Remove this hardcoding
     if await ss.allCapsBeep {
       await doPlayTone("500 50")
     } else {
@@ -206,153 +211,65 @@ func processAndQueueCodes(_ p: String) async {
   }
 }
 
-// /* This is replacements that always must happen when doing
-//    replaceements like [*] -> slnc */
-// func replaceCore(_ line: String) -> String {
-//   debugLogger.log("Enter: replaceCore")
-//   return
-//     line
-//     .replacingOccurrences(of: "[*]", with: " [[slnc 50]] ")
-// }
+/* This is replacements that always must happen when doing
+   replaceements like [*] -> slnc */
+func replaceCore(_ line: String) -> String {
+  debugLogger.log("Enter: replaceCore")
+  return
+    line
+    .replacingOccurrences(of: "[*]", with: " [[slnc 50]] ")
+}
 
-// /* This is used for "none" puncts */
-// func replaceBasePuncs(_ line: String) -> String {
-//   debugLogger.log("Enter: replaceBasePuncs")
-//   let l = replaceCore(line)
-//   return replaceCore(l)
-//     .replacingOccurrences(of: "%", with: " percent ")
-//     .replacingOccurrences(of: "$", with: " dollar ")
+/* This is used for "none" puncts */
+func replaceBasePuncs(_ line: String) -> String {
+  debugLogger.log("Enter: replaceBasePuncs")
+  let l = replaceCore(line)
+  return replaceCore(l)
+    .replacingOccurrences(of: "%", with: " percent ")
+    .replacingOccurrences(of: "$", with: " dollar ")
 
-// }
+}
 
-// /* this is used for "some" puncts */
-// func replaceSomePuncs(_ line: String) -> String {
-//   debugLogger.log("Enter: replaceSomePuncs")
-//   return replaceBasePuncs(line)
-//     .replacingOccurrences(of: "#", with: " pound ")
-//     .replacingOccurrences(of: "-", with: " dash ")
-//     .replacingOccurrences(of: "\"", with: " quote ")
-//     .replacingOccurrences(of: "(", with: " leftParen ")
-//     .replacingOccurrences(of: ")", with: " rightParen ")
-//     .replacingOccurrences(of: "*", with: " star ")
-//     .replacingOccurrences(of: ";", with: " semi ")
-//     .replacingOccurrences(of: ":", with: " colon ")
-//     .replacingOccurrences(of: "\n", with: "")
-//     .replacingOccurrences(of: "\\", with: " backslash ")
-//     .replacingOccurrences(of: "/", with: " slash ")
-//     .replacingOccurrences(of: "+", with: " plus ")
-//     .replacingOccurrences(of: "=", with: " equals ")
-//     .replacingOccurrences(of: "~", with: " tilda ")
-//     .replacingOccurrences(of: "`", with: " backquote ")
-//     .replacingOccurrences(of: "!", with: " exclamation ")
-//     .replacingOccurrences(of: "^", with: " caret ")
-// }
+/* this is used for "some" puncts */
+func replaceSomePuncs(_ line: String) -> String {
+  debugLogger.log("Enter: replaceSomePuncs")
+  return replaceBasePuncs(line)
+    .replacingOccurrences(of: "#", with: " pound ")
+    .replacingOccurrences(of: "-", with: " dash ")
+    .replacingOccurrences(of: "\"", with: " quote ")
+    .replacingOccurrences(of: "(", with: " leftParen ")
+    .replacingOccurrences(of: ")", with: " rightParen ")
+    .replacingOccurrences(of: "*", with: " star ")
+    .replacingOccurrences(of: ";", with: " semi ")
+    .replacingOccurrences(of: ":", with: " colon ")
+    .replacingOccurrences(of: "\n", with: "")
+    .replacingOccurrences(of: "\\", with: " backslash ")
+    .replacingOccurrences(of: "/", with: " slash ")
+    .replacingOccurrences(of: "+", with: " plus ")
+    .replacingOccurrences(of: "=", with: " equals ")
+    .replacingOccurrences(of: "~", with: " tilda ")
+    .replacingOccurrences(of: "`", with: " backquote ")
+    .replacingOccurrences(of: "!", with: " exclamation ")
+    .replacingOccurrences(of: "^", with: " caret ")
+}
 
-// /* this is used for "all" puncts */
-// func replaceAllPuncs(_ line: String) -> String {
-//   debugLogger.log("Enter: replaceAllPuncs")
-//   return replaceSomePuncs(line)
-//     .replacingOccurrences(of: "<", with: " less than ")
-//     .replacingOccurrences(of: ">", with: " greater than ")
-//     .replacingOccurrences(of: "'", with: " apostrophe ")
-//     .replacingOccurrences(of: "*", with: " star ")
-//     .replacingOccurrences(of: "@", with: " at sign ")
-//     .replacingOccurrences(of: "_", with: " underline ")
-//     .replacingOccurrences(of: ".", with: " dot ")
-//     .replacingOccurrences(of: ",", with: " comma ")
+/* this is used for "all" puncts */
+func replaceAllPuncs(_ line: String) -> String {
+  debugLogger.log("Enter: replaceAllPuncs")
+  return replaceSomePuncs(line)
+    .replacingOccurrences(of: "<", with: " less than ")
+    .replacingOccurrences(of: ">", with: " greater than ")
+    .replacingOccurrences(of: "'", with: " apostrophe ")
+    .replacingOccurrences(of: "*", with: " star ")
+    .replacingOccurrences(of: "@", with: " at sign ")
+    .replacingOccurrences(of: "_", with: " underline ")
+    .replacingOccurrences(of: ".", with: " dot ")
+    .replacingOccurrences(of: ",", with: " comma ")
 
-// }
-
-// func ttsSplitCaps(_ line: String) async {
-//   debugLogger.log("Enter: ttsSplitCaps")
-//   let l = await isolateParams(line)
-//   if l == "1" {
-//     await setSplitCaps = true
-//   } else {
-//     await sssetSplitCaps = false
-//   }
-// }
-
-// func doTtsReset() async {
-//   debugLogger.log("Enter: ttsReset")
-//   stopAll()
-//   ss = StateStore()
-// }
-
-// func sayVersion() async {
-//   debugLogger.log("Enter: sayVersion")
-//   await say("Running \(name) version \(version)", interupt: true)
-// }
-
-// func sayLetter(_ line: String) async {
-//   debugLogger.log("Enter: sayLetter")
-//   let letter = await isolateParams(line)
-//   let trimmedLetter = letter.trimmingCharacters(in: .whitespacesAndNewlines)
-//   let cs = await ss.getCharacterRate()
-//   let charRate = speaker.rate * cs
-//   var pitchShift = 0
-//   if let singleChar = trimmedLetter.first, singleChar.isUppercase {
-//     pitchShift = 15
-//     debugLogger.log("PitchShift ON")
-//   }
-
-//   await say(
-//     "[[rate \(charRate)]][[pbas +\(pitchShift)]][[char ltrl]]\(letter)[[rset 0]]",
-//     interupt: true,
-//     code: true
-//   )
-// }
-
-// func saySilence(_ line: String, duration: Int = 50) async {
-//   debugLogger.log("Enter: saySilence")
-//   await say("[[slnc \(duration)]]", interupt: false)
-// }
-
-// func ttsPause() async {
-//   debugLogger.log("Enter: ttsPause")
-//   speaker.pauseSpeaking(at: .immediateBoundary)
-// }
-
-// func ttsResume() async {
-//   debugLogger.log("Enter: ttsResume")
-//   speaker.continueSpeaking()
-// }
-
-// func ttsSetCharacterScale(_ line: String) async {
-//   debugLogger.log("Enter: ttsSetCharacterScale")
-//   let l = await isolateParams(line)
-//   if let fl = Float(l) {
-//     await ss.setCharScale(fl)
-//   }
-// }
-
-// func ttsSetPunctuations(_ line: String) async {
-//   debugLogger.log("Enter: ttsSetPunctuations")
-//   let l = await isolateParams(line)
-//   await ss.setPunct(l)
-// }
-
-// func ttsSetRate(_ line: String) async {
-//   debugLogger.log("Enter: ttsSetRate")
-//   let l = await isolateParams(line)
-//   if let fl = Float(l) {
-//     speaker.rate = fl
-//   }
-// }
-
-// func ttSplitCaps(_ line: String) async {
-//   debugLogger.log("Enter: ttSplitCaps")
-//   let l = await isolateParams(line)
-//   if l == "1" {
-//     await ss.setSplitCaps(true)
-//   } else {
-//     await ss.setSplitCaps(false)
-//   }
-// }
+}
 
 func setSplitCaps(_ p: String) async {
   debugLogger.log("Enter: setSplitCaps")
-  print(p)
   if p == "1" {
     await ss.setSplitCaps(true)
   } else {
@@ -360,9 +277,40 @@ func setSplitCaps(_ p: String) async {
   }
 }
 
+func setVoice(_ p: String) async {
+  debugLogger.log("Enter: setVoice")
+  await ss.setVoice(p)
+}
+
+func setSpeechRate(_ p: String) async {
+  debugLogger.log("Enter: setSpeechRate")
+  if let f = Float(p) {
+    await ss.setSpeechRate(f)
+  }
+}
+
+func setPitchMultiplier(_ p: String) async {
+  debugLogger.log("Enter: setPitchMultiplier")
+  if let f = Float(p) {
+    await ss.setPitchMultiplier(f)
+  }
+}
+
+
+func setPunctuations(_ p: String) async {
+  debugLogger.log("Enter: setPunctuations")
+  await ss.setPunctuations(p)
+}
+
+func setCharacterScale(_ p: String) async {
+  debugLogger.log("Enter: setCharacterScale")
+  if let f = Float(p) {
+    await ss.setCharacterScale(f)
+  }
+}
+
 func setAllCapsBeep(_ p: String) async {
   debugLogger.log("Enter: setAllCapsBeep")
-  print(p)
   if p == "1" {
     await ss.setAllCapsBeep(true)
   } else {

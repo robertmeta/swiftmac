@@ -89,6 +89,23 @@ func queueLine(_ cmd: String, _ params: String) async {
   await ss.appendToPendingQueue((cmd, params))
 }
 
+func splitOnSquareStar(_ input: String) async -> [String] {
+    let separator = "[*]"
+    var result: [String] = []
+    
+    let parts = input.components(separatedBy: separator)
+    for (index, part) in parts.enumerated() {
+        result.append(part)
+        // Add the separator back except after the last part
+        if index < parts.count - 1 {
+            result.append(separator)
+        }
+    }
+    
+    return result
+}
+
+
 func processAndQueueSpeech(_ p: String) async {
   var temp: String
   if await ss.splitCaps {
@@ -97,8 +114,16 @@ func processAndQueueSpeech(_ p: String) async {
     temp = p
   }
 
-  let speakPart = await replacePunctuations(temp)
-  await ss.appendToPendingQueue(("speak", speakPart))
+  let parts = await splitOnSquareStar(temp)
+  for part in parts {
+      if part == "[*]" {
+        await ss.appendToPendingQueue(("sh", "0"))
+      } else {
+        let speakPart = await replacePunctuations(temp)
+        await ss.appendToPendingQueue(("speak", speakPart))
+      }
+  }
+
 }
 
 func insertSpaceBeforeUppercase(_ input: String) -> String {
@@ -443,7 +468,19 @@ func doStopAll() async {
 
 }
 
+// Because all speaking must handle [*]
 func doSpeak(_ what: String) async {
+  let parts = await splitOnSquareStar(what)
+  for part in parts {
+      if part == "[*]" {
+        await doSilence("0")
+      } else {
+        await _doSpeak(part)
+      }
+  }
+}
+
+func _doSpeak(_ what: String) async {
   debugLogger.log("Enter: doSpeak")
   let utterance = AVSpeechUtterance(string: what)
 

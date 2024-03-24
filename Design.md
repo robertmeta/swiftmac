@@ -65,16 +65,15 @@ parameters.  Program Flow
    parameters using the isolateCmdAndParams() function. Based on the command,
    the corresponding processing function is called.
 
-2. Command Processing The program supports several commands, including:
+2. Command Processing 
 
-"a": Process and queue audio icons "c": Process and queue codes (e.g., setting
-voice) "d": Dispatch pending queue items "l": Instantly speak a letter "p": Play
-a sound file "q": Process and queue speech "s", "sh", "t": Queue a line for
-later processing "tts_" commands: Set various text-to-speech parameters
-"version": Display the program version
+The program supports several commands, including:
 
 Each command has a corresponding processing function that handles the specific
 task.
+
+Commands are either handled in the main loop (instants) or queued for 
+processing on a dispatch event.
 
 3. Pending Queue Some commands are queued for later processing using the
 queueLine() function. These queued commands are stored in the StateStore

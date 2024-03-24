@@ -83,8 +83,25 @@ func queueLine(_ cmd: String, _ params: String) async {
 }
 
 func processAndQueueSpeech(_ p: String) async {
+  if await ss.splitCaps {
+    p = insertSpaceBeforeUppercase(p)
+  }
+  var parts: [String]
+  if await ss.allCapsBeep {
+   parts = p.split(whereSeparator: .isWhitespace).map(String.init)
+  }
+
 
 }
+
+func insertSpaceBeforeUppercase(_ input: String) -> String {
+    let pattern = "(?<=[a-z])(?=[A-Z])"
+    let regex = try! NSRegularExpression(pattern: pattern, options: [])
+    let range = NSRange(input.startIndex..., in: input)
+    let modifiedString = regex.stringByReplacingMatches(in: input, options: [], range: range, withTemplate: " ")
+    return modifiedString
+}
+
 
 @MainActor func instantTtsReset() async {
   await doStopAll()

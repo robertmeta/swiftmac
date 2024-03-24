@@ -90,21 +90,20 @@ func queueLine(_ cmd: String, _ params: String) async {
 }
 
 func splitOnSquareStar(_ input: String) async -> [String] {
-    let separator = "[*]"
-    var result: [String] = []
-    
-    let parts = input.components(separatedBy: separator)
-    for (index, part) in parts.enumerated() {
-        result.append(part)
-        // Add the separator back except after the last part
-        if index < parts.count - 1 {
-            result.append(separator)
-        }
-    }
-    
-    return result
-}
+  let separator = "[*]"
+  var result: [String] = []
 
+  let parts = input.components(separatedBy: separator)
+  for (index, part) in parts.enumerated() {
+    result.append(part)
+    // Add the separator back except after the last part
+    if index < parts.count - 1 {
+      result.append(separator)
+    }
+  }
+
+  return result
+}
 
 func processAndQueueSpeech(_ p: String) async {
   var temp: String
@@ -116,12 +115,12 @@ func processAndQueueSpeech(_ p: String) async {
 
   let parts = await splitOnSquareStar(temp)
   for part in parts {
-      if part == "[*]" {
-        await ss.appendToPendingQueue(("sh", "0"))
-      } else {
-        let speakPart = await replacePunctuations(temp)
-        await ss.appendToPendingQueue(("speak", speakPart))
-      }
+    if part == "[*]" {
+      await ss.appendToPendingQueue(("sh", "0"))
+    } else {
+      let speakPart = await replacePunctuations(temp)
+      await ss.appendToPendingQueue(("speak", speakPart))
+    }
   }
 
 }
@@ -342,7 +341,6 @@ func ttsSetVoice(_ p: String) async {
   await ss.setVoice(p)
 }
 
-
 func ttsSetToneVolume(_ p: String) async {
   debugLogger.log("Enter: ttsSetToneVolume")
   if let f = Float(p) {
@@ -363,7 +361,6 @@ func ttsSetVoiceVolume(_ p: String) async {
     await ss.setVoiceVolume(f)
   }
 }
-
 
 func ttsSetSpeechRate(_ p: String) async {
   debugLogger.log("Enter: ttsSetSpeechRate")
@@ -472,11 +469,11 @@ func doStopAll() async {
 func doSpeak(_ what: String) async {
   let parts = await splitOnSquareStar(what)
   for part in parts {
-      if part == "[*]" {
-        await doSilence("0")
-      } else {
-        await _doSpeak(part)
-      }
+    if part == "[*]" {
+      await doSilence("0")
+    } else {
+      await _doSpeak(part)
+    }
   }
 }
 

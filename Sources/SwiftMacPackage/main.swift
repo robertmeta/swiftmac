@@ -366,32 +366,23 @@ func setAllCapsBeep(_ p: String) async {
   }
 }
 
-// func ttsSyncState(_ line: String) async {
-//   debugLogger.log("Enter: ttsSyncState")
-//   let l = await isolateParams(line)
-//   let ps = l.split(separator: " ")
-//   if ps.count == 4 {
-//     if let r = Float(ps[3]) {
-//       speaker.rate = r
-//     }
+func processAndQueueSync(_ p: String) async {
+  debugLogger.log("Enter: processAndQueueSync")
+  let ps = p.split(separator: " ")
+  if ps.count == 4 {
+    let punct = String(ps[0])
+    await ss.appendToPendingQueue(("tts_set_punctuations", punct))
 
-//     let beepCaps = ps[2]
-//     if beepCaps == "1" {
-//       await ss.setBeepCaps(true)
-//     } else {
-//       await ss.setBeepCaps(false)
-//     }
+    let splitCaps = String(ps[1])
+    await ss.appendToPendingQueue(("tts_split_caps", splitCaps))
 
-//     let splitCaps = ps[1]
-//     if splitCaps == "1" {
-//       await ss.setSplitCaps(true)
-//     } else {
-//       await ss.setSplitCaps(false)
-//     }
-//     let punct = ps[0]
-//     await ss.setPunct(String(punct))
-//   }
-// }
+    let beepCaps = String(ps[2])
+    await ss.appendToPendingQueue(("tts_allcaps_beep", beepCaps))
+
+    let rate = String(ps[3])
+    await ss.appendToPendingQueue(("tts_set_speech_rate", rate))
+  }
+}
 
 func doPlayTone(_ p: String) async {
   print("Enter: doPlayTone")

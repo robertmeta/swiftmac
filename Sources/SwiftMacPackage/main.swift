@@ -48,7 +48,7 @@ func main() async {
     case "tts_set_punctuations": await queueLine(cmd, params)
     case "tts_set_speech_rate": await queueLine(cmd, params)
     case "tts_split_caps": await queueLine(cmd, params)
-    // case "tts_sync_state": await processAndQueueSync(l)
+    case "tts_sync_state": await processAndQueueSync(l)
     case "tts_allcaps_beep": await queueLine(cmd, params)
     case "tts_set_voice": await queueLine(cmd, params)
     case "tts_set_pitch_multiplier": await queueLine(cmd, params)
@@ -151,6 +151,7 @@ func instantTtsPause() async {
 func unknownLine(_ line: String) async {
   debugLogger.log("Enter: unknownLine")
   debugLogger.log("Unknown command: \(line)")
+  print("Unknown command: \(line)")
 }
 
 func getVoiceIdentifier(voiceName: String) -> String {

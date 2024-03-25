@@ -55,7 +55,7 @@ func main() async {
     case "tts_split_caps": await queueLine(cmd, params)
     case "tts_sync_state": await processAndQueueSync(l)
     case "version": await instantVersion()
-    default: await unknownLine(l)
+    default: await unknownLine(cmd, params)
     }
   }
 }
@@ -209,10 +209,10 @@ func instantTtsPause() async {
   speaker.pauseSpeaking(at: .immediate)
 }
 
-func unknownLine(_ line: String) async {
+func unknownLine(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: unknownLine")
-  debugLogger.log("Unknown command: \(line)")
-  print("Unknown command: \(line)")
+  debugLogger.log("Unknown command: '\(cmd)' '\(params)'")
+  print("Unknown command: '\(cmd)' '\(params)'")
 }
 
 func getVoiceIdentifier(voiceName: String) -> String {

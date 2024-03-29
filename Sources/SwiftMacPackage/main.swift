@@ -19,11 +19,42 @@ let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
 let tonePlayer = TonePlayerActor()
+var notificationMode = false
 
 /* EntryPoint */
-func main() async {
+@MainActor func main() async {
   debugLogger.log("Enter: main")
-  await instantVersion()
+
+  let arguments = CommandLine.arguments.dropFirst()
+
+  for arg in arguments {
+    switch arg {
+    case "-h", "--help":
+        print("Usage: myprogram [options]")
+        print("Options:")
+        print("-h, --help      Show help")
+        print("-v, --version   Show version information")
+        print("-n, --notificationMode   play only to left channel")
+        exit(0)
+    case "-v", "--version":
+        #if DEBUG
+        print("\(name) \(version): debug mode")
+        #else
+        print("\(name) \(version)")
+        #endif
+        exit(0)
+    case "-n", "--notificationMode":
+        print("notificationMode enabled")
+        notificationMode = true
+    default:
+        print("Unknown option: \(arg). Use --help for usage information.")
+    }
+  }
+
+  // so we don't emit versions twice 
+  if !notificationMode {
+    await instantVersion()
+  }
 
   while let l = readLine() {
     debugLogger.log("got line \(l)")
@@ -462,7 +493,6 @@ func doStopAll() async {
   await doStopSpeaking()
   await tonePlayer.stop()
   await SoundManager.shared.stopCurrentSound()
-
 }
 
 // Because all speaking must handle [*]
@@ -472,9 +502,56 @@ func doSpeak(_ what: String) async {
     if part == "[*]" {
       await doSilence("0")
     } else {
+      // TODO: to make this work, speak would // need to be blocking version
+      /*if await ss.allCapsBeep {
+        let possibleCaps = await splitStringAtSpaceBeforeCapitalLetter(part)
+        var isFirst = true
+        for pc in possibleCaps {
+          if isFirst {
+            if isFirstLetterCapital(pc) {
+              await doTone("500 50")
+            }
+            isFirst = false
+          } else {
+              await doTone("500 50")
+              await _doSpeak(pc)
+          }
+        }
+      } else {*/
       await _doSpeak(part)
+      //}
     }
   }
+}
+
+func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
+  // Regular expression pattern to match a space followed by an uppercase letter
+  // Using lookbehind and lookahead to ensure the uppercase letter is not consumed during split
+  let pattern = "(?<=\\s)(?=[A-Z])"
+
+  // Attempt to create a regular expression
+  guard let regex = try? NSRegularExpression(pattern: pattern) else {
+    // If regex can't be created, return the original string in an array as a fallback
+    return [input]
+  }
+
+  // Use the regular expression to find matches, which are the split points in the string
+  let range = NSRange(input.startIndex..., in: input)
+  let matches = regex.matches(in: input, options: [], range: range)
+
+  var results = [String]()
+  var lastEndIndex = input.startIndex
+  // Iterate through the matches to split the string
+  for match in matches {
+    let matchRange = Range(match.range, in: input)!
+    // Add substring from last match end to current match start
+    results.append(String(input[lastEndIndex..<matchRange.lowerBound]))
+    lastEndIndex = matchRange.lowerBound
+  }
+  // Add the remaining part of the string after the last match
+  results.append(String(input[lastEndIndex...]))
+
+  return results
 }
 
 func _doSpeak(_ what: String) async {

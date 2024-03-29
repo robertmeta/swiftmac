@@ -30,29 +30,31 @@ var notificationMode = false
   for arg in arguments {
     switch arg {
     case "-h", "--help":
-        print("Usage: myprogram [options]")
-        print("Options:")
-        print("-h, --help      Show help")
-        print("-v, --version   Show version information")
-        print("-n, --notificationMode   play only to left channel")
-        exit(0)
+      print("Usage: myprogram [options]")
+      print("Options:")
+      print("-h, --help      Show help")
+      print("-v, --version   Show version information")
+      print("-n, --notificationMode   play only to left channel")
+      exit(0)
     case "-v", "--version":
-        #if DEBUG
+      #if DEBUG
         print("\(name) \(version): debug mode")
-        #else
+      #else
         print("\(name) \(version)")
-        #endif
-        exit(0)
+      #endif
+      exit(0)
     case "-n", "--notificationMode":
-        print("notificationMode enabled")
-        notificationMode = true
+      print("notificationMode enabled")
+      notificationMode = true
     default:
-        print("Unknown option: \(arg). Use --help for usage information.")
+      print("Unknown option: \(arg). Use --help for usage information.")
     }
   }
 
-  // so we don't emit versions twice 
-  if !notificationMode {
+  // so we don't emit versions twice
+  if notificationMode {
+    await instantTtsSay("notification mode on")
+  } else {
     await instantVersion()
   }
 

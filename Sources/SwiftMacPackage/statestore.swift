@@ -17,12 +17,6 @@ public actor StateStore {
     set { _characterScale = newValue }
   }
 
-  private var _deadpanMode: Bool = false
-  public var deadpanMode: Bool {
-    get { _deadpanMode }
-    set { _deadpanMode = newValue }
-  }
-
   private var _pendingQueue: [(String, String)] = []
   public var pendingQueue: [(String, String)] {
     get { _pendingQueue }
@@ -69,6 +63,12 @@ public actor StateStore {
     set { _punctuations = newValue }
   }
 
+  private var _audioTarget: String = "None"
+  public var audioTarget: String {
+    get { _audioTarget.lowercased() }
+    set { _audioTarget = newValue }
+  }
+
   private var _soundVolume: Float = 1
   public var soundVolume: Float {
     get { _soundVolume }
@@ -99,8 +99,8 @@ public actor StateStore {
     set { _ttsDiscard = newValue }
   }
 
-  private var _voice: String = "default"
-  public var voice: String {
+  private var _voice: AVSpeechSynthesisVoice = AVSpeechSynthesisVoice()
+  public var voice: AVSpeechSynthesisVoice {
     get { _voice }
     set { _voice = newValue }
   }
@@ -125,13 +125,12 @@ public actor StateStore {
     if let f = Float(self.getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
       self.voiceVolume = f
     }
-    if let f = Bool(self.getEnvironmentVariable("SWIFTMAC_DEADPAN_MODE")) {
-      self.deadpanMode = f
-    }
+
+    self.audioTarget = self.getEnvironmentVariable("SWIFTMAC_AUDIO_TARGET")
+
     debugLogger.log("soundVolume \(self.soundVolume)")
     debugLogger.log("toneVolume \(self.toneVolume)")
     debugLogger.log("voiceVolume \(self.voiceVolume)")
-    debugLogger.log("deadpanMode \(self.deadpanMode)")
   }
 
   public func getCharacterRate() async -> Float {
@@ -148,10 +147,6 @@ public actor StateStore {
 
   public func setCharacterScale(_ value: Float) {
     self._characterScale = value
-  }
-
-  public func setDeadpanMode(_ value: Bool) {
-    self._deadpanMode = value
   }
 
   public func setPitchMultiplier(_ value: Float) {
@@ -191,7 +186,32 @@ public actor StateStore {
   }
 
   public func setVoice(_ value: String) {
-    self._voice = value
+    let voiceIdentifier = self.getVoiceIdentifier(voiceName: value)
+    if let voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier) {
+      self._voice = voice
+    } else {
+      self._voice = AVSpeechSynthesisVoice()
+    }
+  }
+
+  private func getVoiceIdentifier(voiceName: String) -> String {
+    debugLogger.log("Enter: getVoiceIdentifier")
+    let defaultVoiceIdentifier = "default-this-will-fail"
+
+    let voices = AVSpeechSynthesisVoice.speechVoices()
+
+    // Check if the voiceName is in the long format (e.g., com.apple.ttsbundle.Samantha-compact)
+    if let voice = voices.first(where: { $0.identifier == voiceName }) {
+      return voice.identifier
+    }
+
+    // Check if the voiceName is in the short format (e.g., Samantha)
+    if let voice = voices.first(where: { $0.name == voiceName }) {
+      return voice.identifier
+    }
+
+    // If the voiceName is not found, return the default voice identifier
+    return defaultVoiceIdentifier
   }
 
   public func setVoiceVolume(_ value: Float) {

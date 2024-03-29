@@ -21,7 +21,6 @@ let speaker = AVSpeechSynthesizer()
 let tonePlayer = TonePlayerActor()
 
 // notification support
-var notificationMode = false
 let engine = AVAudioEngine()
 let playerNode = AVAudioPlayerNode()
 let environmentNode = AVAudioEnvironmentNode()
@@ -31,19 +30,18 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
 
   if pcmBuffer.frameLength > 0 {
-    // Set the output format if not set yet
     if outputFormat == nil {
       outputFormat = pcmBuffer.format
-
-      // Connect the player node to the environment node
       engine.connect(playerNode, to: environmentNode, format: outputFormat)
-
-      // Connect the environment node to the engine's main mixer
       engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
-
-      // Position the audio source to the left side of the listener
-      playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
-
+      Task {
+        if await ss.audioTarget == "right" {
+          playerNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
+        }
+        if await ss.audioTarget == "left" {
+          playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
+        }
+      }
       engine.prepare()
 
       do {
@@ -63,42 +61,22 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   }
 }
 
-@MainActor func turnOnNotificationMode() async {
-  notificationMode = true
+func notificationMode() async -> Bool {
+  let at = await ss.audioTarget.lowercased()
+  if at == "right" {
+    return true
+  }
+  if at == "left" {
+    return true
+  }
+  return false
 }
 
 /* EntryPoint */
 func main() async {
   debugLogger.log("Enter: main")
 
-  let arguments = CommandLine.arguments.dropFirst()
-
-  for arg in arguments {
-    switch arg {
-    case "-h", "--help":
-      print("Usage: myprogram [options]")
-      print("Options:")
-      print("-h, --help      Show help")
-      print("-v, --version   Show version information")
-      print("-n, --notificationMode   play only to left channel")
-      exit(0)
-    case "-v", "--version":
-      #if DEBUG
-        print("\(name) \(version): debug mode")
-      #else
-        print("\(name) \(version)")
-      #endif
-      exit(0)
-    case "-n", "--notificationMode":
-      print("notificationMode enabled")
-      await turnOnNotificationMode()
-    default:
-      print("Unknown option: \(arg). Use --help for usage information.")
-    }
-  }
-
-  // so we don't emit versions twice
-  if await notificationMode {
+  if await notificationMode() {
     await instantTtsSay("notification mode on")
 
     // Setup notification audio routing
@@ -257,7 +235,6 @@ func instantLetter(_ p: String) async {
   let oldPitchMultiplier = await ss.pitchMultiplier
   let oldPreDelay = await ss.preDelay
   if isFirstLetterCapital(p) {
-    // TODO: Remove this hardcoding
     if await ss.allCapsBeep {
       await doTone("500 50")
     } else {
@@ -297,26 +274,6 @@ func unknownLine(_ cmd: String, _ params: String) async {
   debugLogger.log("Enter: unknownLine")
   debugLogger.log("Unknown command: '\(cmd)' '\(params)'")
   print("Unknown command: '\(cmd)' '\(params)'")
-}
-
-func getVoiceIdentifier(voiceName: String) -> String {
-  debugLogger.log("Enter: getVoiceIdentifier")
-  let defaultVoiceIdentifier = "com.apple.speech.voice.Alex"
-
-  let voices = AVSpeechSynthesisVoice.speechVoices()
-
-  // Check if the voiceName is in the long format (e.g., com.apple.ttsbundle.Samantha-compact)
-  if let voice = voices.first(where: { $0.identifier == voiceName }) {
-    return voice.identifier
-  }
-
-  // Check if the voiceName is in the short format (e.g., Samantha)
-  if let voice = voices.first(where: { $0.name == voiceName }) {
-    return voice.identifier
-  }
-
-  // If the voiceName is not found, return the default voice identifier
-  return defaultVoiceIdentifier
 }
 
 func impossibleQueue(_ cmd: String, _ params: String) async {
@@ -555,24 +512,7 @@ func doSpeak(_ what: String) async {
     if part == "[*]" {
       await doSilence("0")
     } else {
-      // TODO: to make this work, speak would // need to be blocking version
-      /*if await ss.allCapsBeep {
-        let possibleCaps = await splitStringAtSpaceBeforeCapitalLetter(part)
-        var isFirst = true
-        for pc in possibleCaps {
-          if isFirst {
-            if isFirstLetterCapital(pc) {
-              await doTone("500 50")
-            }
-            isFirst = false
-          } else {
-              await doTone("500 50")
-              await _doSpeak(pc)
-          }
-        }
-      } else {*/
       await _doSpeak(part)
-      //}
     }
   }
 }
@@ -627,15 +567,10 @@ func _doSpeak(_ what: String) async {
   utterance.postUtteranceDelay = await ss.postDelay
 
   // Set the voice
-  // TODO: Move this to statestore and change type to a voice
-  let voiceIdentifier = getVoiceIdentifier(voiceName: await ss.voice)
-  if let voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier) {
-    utterance.voice = voice
-  }
+  utterance.voice = await ss.voice
 
   // Start speaking
-  if await notificationMode {
-    print("TEST")
+  if await notificationMode() {
     DispatchQueue.global().async {
       speaker.write(utterance, toBufferCallback: bufferHandler)
     }

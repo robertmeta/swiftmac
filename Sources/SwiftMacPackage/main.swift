@@ -14,15 +14,61 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.0.1"
+let version = "2.1.0"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
 let tonePlayer = TonePlayerActor()
+
+// notification support
 var notificationMode = false
+let engine = AVAudioEngine()
+let playerNode = AVAudioPlayerNode()
+let environmentNode = AVAudioEnvironmentNode()
+// Define a closure to handle the output buffer
+var outputFormat: AVAudioFormat?
+let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
+  guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
+
+  if pcmBuffer.frameLength > 0 {
+    // Set the output format if not set yet
+    if outputFormat == nil {
+      outputFormat = pcmBuffer.format
+
+      // Connect the player node to the environment node
+      engine.connect(playerNode, to: environmentNode, format: outputFormat)
+
+      // Connect the environment node to the engine's main mixer
+      engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
+
+      // Position the audio source to the left side of the listener
+      playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
+
+      engine.prepare()
+
+      do {
+        try engine.start()
+      } catch {
+        print("Error starting audio engine: \(error.localizedDescription)")
+        return
+      }
+    }
+
+    // Schedule the buffer for playback
+    playerNode.scheduleBuffer(pcmBuffer)
+
+    if !playerNode.isPlaying {
+      playerNode.play()
+    }
+  }
+}
+
+@MainActor func turnOnNotificationMode() async {
+  notificationMode = true
+}
 
 /* EntryPoint */
-@MainActor func main() async {
+func main() async {
   debugLogger.log("Enter: main")
 
   let arguments = CommandLine.arguments.dropFirst()
@@ -45,15 +91,20 @@ var notificationMode = false
       exit(0)
     case "-n", "--notificationMode":
       print("notificationMode enabled")
-      notificationMode = true
+      await turnOnNotificationMode()
     default:
       print("Unknown option: \(arg). Use --help for usage information.")
     }
   }
 
   // so we don't emit versions twice
-  if notificationMode {
+  if await notificationMode {
     await instantTtsSay("notification mode on")
+
+    // Setup notification audio routing
+    engine.attach(playerNode)
+    engine.attach(environmentNode)
+
   } else {
     await instantVersion()
   }
@@ -583,7 +634,15 @@ func _doSpeak(_ what: String) async {
   }
 
   // Start speaking
-  speaker.speak(utterance)
+  if await notificationMode {
+    print("TEST")
+    DispatchQueue.global().async {
+      speaker.write(utterance, toBufferCallback: bufferHandler)
+    }
+
+  } else {
+    speaker.speak(utterance)
+  }
 
 }
 

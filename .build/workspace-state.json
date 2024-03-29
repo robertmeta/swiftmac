@@ -9,11 +9,11 @@
           "location" : "https://github.com/arkasas/OggDecoder.git",
           "name" : "OggDecoder"
         },
-        "path" : "/Users/rmelton/projects/robertmeta/swiftmac/.build/checkouts/OggDecoder/ogg.xcframework",
+        "path" : "/Users/rmelton/projects/robertmeta/swiftmac/.build/checkouts/OggDecoder/vorbis.xcframework",
         "source" : {
           "type" : "local"
         },
-        "targetName" : "ogg"
+        "targetName" : "vorbis"
       },
       {
         "kind" : "xcframework",
@@ -23,11 +23,11 @@
           "location" : "https://github.com/arkasas/OggDecoder.git",
           "name" : "OggDecoder"
         },
-        "path" : "/Users/rmelton/projects/robertmeta/swiftmac/.build/checkouts/OggDecoder/vorbis.xcframework",
+        "path" : "/Users/rmelton/projects/robertmeta/swiftmac/.build/checkouts/OggDecoder/ogg.xcframework",
         "source" : {
           "type" : "local"
         },
-        "targetName" : "vorbis"
+        "targetName" : "ogg"
       }
     ],
     "dependencies" : [

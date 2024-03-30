@@ -14,7 +14,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.1.0"
+let version = "2.1.1"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -253,6 +253,7 @@ func instantLetter(_ p: String) async {
 func doStopSpeaking() async {
   debugLogger.log("Enter: doStopSpeaking")
   speaker.stopSpeaking(at: .immediate)
+  playerNode.stop()
 }
 
 func isFirstLetterCapital(_ str: String) -> Bool {

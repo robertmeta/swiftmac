@@ -549,7 +549,7 @@ func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
 }
 
 func _doSpeak(_ what: String) async {
-  debugLogger.log("Enter: doSpeak")
+  debugLogger.log("Enter: _doSpeak")
   let utterance = AVSpeechUtterance(string: what)
 
   // Set the rate of speech (0.5 to 1.0)

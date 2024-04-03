@@ -1,0 +1,197 @@
+RESTART
+s
+d
+START_SKIP
+
+# For startup sound
+DELAY 2.2
+
+
+tts_say If you hear this, basic server is working
+DELAY 3
+
+ENV SWIFTMAC_AUDIO_TARGET LEFT
+RESTART
+tts_say If you hear this left channel only, notifications server is working
+DELAY 4.5
+
+ENVCLEAR
+RESTART
+tts_say Back to both ears, now we are going to test settings
+DELAY 4
+
+tts_set_pitch_multiplier 2
+d
+tts_say This should be high pitched
+DELAY 2
+
+tts_set_pitch_multiplier .5 
+d
+tts_say This should be low pitched
+DELAY 2
+
+tts_set_speech_rate .8
+d
+tts_say This should be fast
+DELAY 1
+
+tts_set_speech_rate .2
+d
+tts_say This should be slow
+DELAY 3
+
+tts_set_speech_rate .6
+tts_set_voice Alex
+d
+tts_say This should be Alex voice
+
+DELAY 2
+tts_set_voice Samantha
+q This should be Samantha voice
+d
+DELAY 2
+
+q You should hear a pause after this
+sh 500
+q now done with pause, should have been 0.5 second
+d
+DELAY 5
+
+q Going to interupt this long and awesome sentense about ninja turtles
+d
+DELAY 1
+
+s
+d
+
+tts_set_voice_volume .5
+q Half normal volume for voice
+d
+DELAY 2
+
+tts_set_voice_volume 1
+q Back to normal
+d
+DELAY 2
+
+tts_say You should hear 5 beeps
+DELAY 2
+p $SD/beep.ogg
+p $SD/beep.ogg
+p $SD/beep.ogg
+p $SD/beep.ogg
+p $SD/beep.ogg
+d
+DELAY 2
+
+tts_say You should hear a ask-question sound
+DELAY 2
+p $SD/ask-question.ogg
+d
+DELAY 1
+
+ENV SWIFTMAC_SOUND_VOLUME .25
+RESTART
+tts_say You should hear ask-question at quarter volume
+DELAY 2
+
+p $SD/ask-question.ogg
+d
+DELAY 1
+
+
+tts_say You should hear a tone
+DELAY 2
+t 500 500
+d
+DELAY 1
+
+ENV SWIFTMAC_TONE_VOLUME .25
+RESTART
+tts_say You should hear tone at quarter volume
+DELAY 2.3
+
+t 500 500
+d
+DELAY 1
+
+tts_say and now back to normal
+DELAY 1
+
+tts_set_tone_volume 1.0
+t 500 500
+d
+DELAY 1
+
+tts_say Letters but going faster as they go
+DELAY 2
+tts_set_character_scale 1.0
+d
+l a
+DELAY .3
+tts_set_character_scale 1.1
+d
+l b
+DELAY .3
+tts_set_character_scale 1.3
+d
+l c
+tts_set_character_scale 1.5
+d
+DELAY .3
+tts_set_character_scale 1.7
+d
+l d
+DELAY .3
+tts_set_character_scale 1.9
+d
+l e
+DELAY .3
+tts_set_character_scale 2.1
+d
+l f
+DELAY .3
+tts_set_character_scale 2.2
+d
+l g
+DELAY .3
+tts_set_character_scale 2.5
+d
+l h
+DELAY .3
+
+END_SKIP
+tts_say Testing audio icon queued
+DELAY 2
+a $SD/ask-question.ogg
+d
+DELAY 1
+
+RESTART
+tts_say Testing Beep Caps (alternating caps)
+DELAY 3
+tts_allcaps_beep 1
+d
+l a
+DELAY .3
+l A
+DELAY .3
+l b
+DELAY .3
+l B
+DELAY .3
+l c
+DELAY .3
+l C
+DELAY .3
+
+# Known broken on swiftmac
+tts_say Testing Beep Caps (in output)
+DELAY 3
+q Every Word In This Starts With A Capital
+d
+DELAY 2
+
+# Local Variables:
+# comment-start: "# "
+# End:

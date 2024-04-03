@@ -168,23 +168,16 @@ func splitOnSquareStar(_ input: String) async -> [String] {
 }
 
 func processAndQueueSpeech(_ p: String) async {
-  var temp: String
-  if await ss.splitCaps {
-    temp = insertSpaceBeforeUppercase(p)
-  } else {
-    temp = p
-  }
 
-  let parts = await splitOnSquareStar(temp)
+  let parts = await splitOnSquareStar(p)
   for part in parts {
     if part == "[*]" {
       await ss.appendToPendingQueue(("sh", "0"))
     } else {
-      let speakPart = await replacePunctuations(temp)
+      let speakPart = await replacePunctuations(p)
       await ss.appendToPendingQueue(("speak", speakPart))
     }
   }
-
 }
 
 func insertSpaceBeforeUppercase(_ input: String) -> String {
@@ -549,8 +542,15 @@ func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
 }
 
 func _doSpeak(_ what: String) async {
-  debugLogger.log("Enter: _doSpeak")
-  let utterance = AVSpeechUtterance(string: what)
+  debugLogger.log("Enter: _doSpeak :: '\(what)'")
+ 
+  var temp: String
+  if await ss.splitCaps {
+    temp = insertSpaceBeforeUppercase(what)
+  } else {
+    temp = what
+  }
+  let utterance = AVSpeechUtterance(string: temp)
 
   // Set the rate of speech (0.5 to 1.0)
   utterance.rate = await ss.speechRate
@@ -575,7 +575,6 @@ func _doSpeak(_ what: String) async {
     DispatchQueue.global().async {
       speaker.write(utterance, toBufferCallback: bufferHandler)
     }
-
   } else {
     speaker.speak(utterance)
   }

@@ -96,7 +96,7 @@ func main() async {
     case "d": await dispatchPendingQueue()
     case "l": await instantLetter(params)
     case "p": await doPlaySound(params)
-    case "q": await processAndQueueSpeech(params)
+    case "q": await queueLine(cmd, params)
     case "s": await queueLine(cmd, params)
     case "sh": await queueLine(cmd, params)
     case "t": await queueLine(cmd, params)
@@ -127,9 +127,9 @@ func dispatchPendingQueue() async {
     debugLogger.log("got queued \(cmd) \(params)")
     switch cmd {
     case "p": await doPlaySound(params)  // just like p in mainloop
+    case "q": await doSpeak(params)
     case "s": await doStopSpeaking()
     case "sh": await doSilence(params)
-    case "speak": await doSpeak(params)
     case "t": await doTone(params)
     case "tts_allcaps_beep": await ttsAllCapsBeep(params)
     case "tts_set_character_scale": await ttsSetCharacterScale(params)
@@ -165,19 +165,6 @@ func splitOnSquareStar(_ input: String) async -> [String] {
   }
 
   return result
-}
-
-func processAndQueueSpeech(_ p: String) async {
-
-  let parts = await splitOnSquareStar(p)
-  for part in parts {
-    if part == "[*]" {
-      await ss.appendToPendingQueue(("sh", "0"))
-    } else {
-      let speakPart = await replacePunctuations(p)
-      await ss.appendToPendingQueue(("speak", speakPart))
-    }
-  }
 }
 
 func insertSpaceBeforeUppercase(_ input: String) -> String {
@@ -295,6 +282,7 @@ func extractVoice(_ string: String) -> String? {
 func processAndQueueAudioIcon(_ p: String) async {
   debugLogger.log("Enter: processAndQueueAudioIcon")
   await ss.appendToPendingQueue(("p", p))
+  await ss.appendToPendingQueue(("d", ""))
 }
 
 func processAndQueueCodes(_ p: String) async {
@@ -308,7 +296,7 @@ func replacePunctuations(_ s: String) async -> String {
   if await ss.punctuations == "all" {
     return replaceAllPuncs(s)
   }
-  if await ss.punctuations == "come" {
+  if await ss.punctuations == "some" {
     return replaceSomePuncs(s)
   }
   return replaceBasePuncs(s)
@@ -506,7 +494,8 @@ func doSpeak(_ what: String) async {
     if part == "[*]" {
       await doSilence("0")
     } else {
-      await _doSpeak(part)
+      let speakPart = await replacePunctuations(part)
+      await _doSpeak(speakPart)
     }
   }
 }

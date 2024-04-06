@@ -532,7 +532,7 @@ func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
 
 @MainActor func _doSpeak(_ what: String) async {
   debugLogger.log("Enter: _doSpeak :: '\(what)'")
- 
+
   var temp: String
   if await ss.splitCaps {
     temp = insertSpaceBeforeUppercase(what)

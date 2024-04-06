@@ -28,6 +28,13 @@ These are the commands sent via stdin and on thier own line.
 - ```tts_sync_state```: [decomp] queue multiple settings change
 - ```version```: [decomp] say tts version
 
+Not Implemented yet:
+- ```set_next_lang```:
+- ```set_previous_lang```:
+- ```set_lang```
+- ```set_preferred_lang```
+
+
 Engine Specific:
 - ```tts_exit```: instant exit
 - ```tts_set_pitch_multiplier```: .5 to 2 pitch multiplier

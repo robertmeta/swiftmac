@@ -530,7 +530,7 @@ func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
   return results
 }
 
-func _doSpeak(_ what: String) async {
+@MainActor func _doSpeak(_ what: String) async {
   debugLogger.log("Enter: _doSpeak :: '\(what)'")
  
   var temp: String

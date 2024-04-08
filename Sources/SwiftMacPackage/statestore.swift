@@ -185,8 +185,26 @@ public actor StateStore {
     self._ttsDiscard = value
   }
 
+  func parseLang(_ input: String) -> (String?, String?) {
+    let components = input.split(separator: ":", maxSplits: 1)
+
+    switch components.count {
+    case 1:
+      if input.hasPrefix(":") {
+        return (nil, String(components[0]))
+      } else {
+        return (String(components[0]), nil)
+      }
+    case 2:
+      return (String(components[0]), String(components[1]))
+    default:
+      return (nil, nil)
+    }
+  }
+
   public func setVoice(_ value: String) {
-    let voiceIdentifier = self.getVoiceIdentifier(voiceName: value)
+    let (l, v) = parseLang(value)
+    let voiceIdentifier = self.getVoiceIdentifier(language: l, voiceName: v)
     if let voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier) {
       self._voice = voice
     } else {
@@ -194,26 +212,37 @@ public actor StateStore {
     }
   }
 
-  private func getVoiceIdentifier(voiceName: String) -> String {
+  private func getVoiceIdentifier(language: String?, voiceName: String?) -> String {
     debugLogger.log("Enter: getVoiceIdentifier")
-    let defaultVoiceIdentifier = "default-this-will-fail"
+
+    let defaultVoice = AVSpeechSynthesisVoice()
 
     let voices = AVSpeechSynthesisVoice.speechVoices()
 
-    // Check if the voiceName is in the long format (e.g., com.apple.ttsbundle.Samantha-compact)
-    if let voice = voices.first(where: { $0.identifier == voiceName }) {
-      return voice.identifier
+    // Check if both language and voiceName are provided
+    if let language = language, let voiceName = voiceName {
+      if let voice = voices.first(where: { $0.language == language && $0.name == voiceName }) {
+        return voice.identifier
+      }
     }
 
-    // Check if the voiceName is in the short format (e.g., Samantha)
-    if let voice = voices.first(where: { $0.name == voiceName }) {
-      return voice.identifier
+    // Check if only language is provided
+    if let language = language {
+      if let voice = voices.first(where: { $0.language == language }) {
+        return voice.identifier
+      }
     }
 
-    // If the voiceName is not found, return the default voice identifier
-    return defaultVoiceIdentifier
+    // Check if only voiceName is provided
+    if let voiceName = voiceName {
+      if let voice = voices.first(where: { $0.name == voiceName }) {
+        return voice.identifier
+      }
+    }
+
+    // If no matching voice is found, return the default voice identifier
+    return defaultVoice.identifier
   }
-
   public func setVoiceVolume(_ value: Float) {
     self._voiceVolume = value
   }

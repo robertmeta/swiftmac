@@ -14,7 +14,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.1.2"
+let version = "2.1.3"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -101,6 +101,7 @@ func main() async {
     case "sh": await queueLine(cmd, params)
     case "t": await queueLine(cmd, params)
     case "tts_allcaps_beep": await queueLine(cmd, params)
+    case "set_lang": await ttsSetVoice(params)  // like tts_set_voice but instnat
     case "tts_exit": await instantTtsExit()
     case "tts_pause": await instantTtsPause()
     case "tts_reset": await instantTtsReset()
@@ -115,15 +116,15 @@ func main() async {
     case "tts_set_voice": await queueLine(cmd, params)
     case "tts_set_voice_volume": await queueLine(cmd, params)
     case "tts_split_caps": await queueLine(cmd, params)
-    case "tts_sync_state": await dispose(cmd, params)
+    case "tts_sync_state": await doDiscard(cmd, params)
     case "version": await instantVersion()
     default: await unknownLine(cmd, params)
     }
   }
 }
 
-func dispose(_ cmd String, _ params String) {
-    debugLogger.log("Intentionally disposed: \(cmd) \(params)")
+func doDiscard(_ cmd: String, _ params: String) async {
+  debugLogger.log("Intentionally disposed: \(cmd) \(params)")
 }
 
 func dispatchPendingQueue() async {

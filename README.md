@@ -1,5 +1,25 @@
 # swiftmac
 
+## Settings Recommendations
+
+```
+  ; stops doubletalk (when supported)
+  (setopt mac-ignore-accessibility 't)
+  (setopt dtk-program "swiftmac")
+  ; these are between 0 and 1
+  (setenv "SWIFTMAC_TONE_VOLUME" "0.1")
+  (setenv "SWIFTMAC_SOUND_VOLUME" "0.1")
+  (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")
+  (push "swiftmac" tts-multi-engines)
+  (setopt tts-notification-device "right")
+  (require 'emacspeak-setup)
+  ; Heree you can just do "en-US" or just ":Alex"
+  (dtk-set-language "en-US:Alex")
+  ; 0.7 is 70% in VoiceOver terms
+  (dtk-set-rate 0.7 t)
+
+```
+
 ## Introduction 
 
 This is an emacspeak server written in swift intended to be as async as 

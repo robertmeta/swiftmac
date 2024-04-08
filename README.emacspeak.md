@@ -11,15 +11,19 @@ Quick Install (requires swift compiler)
 Recommended Settings
 ------------------------------------------------------------------------------
 ```
+  ; stops doubletalk (when supported)
   (setopt mac-ignore-accessibility 't)
   (setopt dtk-program "swiftmac")
-  ; The below doesn't work but should
-  (setopt mac-default-speech-rate 0.5)
-  ; Optional volume control
-  (setenv "SWIFTMAC_TONE_VOLUME" "0.5")
-  (setenv "SWIFTMAC_SOUND_VOLUME" "0.5")
+  ; these are between 0 and 1
+  (setenv "SWIFTMAC_TONE_VOLUME" "0.6")
+  (setenv "SWIFTMAC_SOUND_VOLUME" "0.3")
   (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")
+  (push "swiftmac" tts-multi-engines)
+  (setopt tts-notification-device "right")
   (require 'emacspeak-setup)
+  ; Heree you can just do "en-US" or just ":Alex"
+  (dtk-set-language "en-US:Alex")
+  ; 0.6 is 60% in VoiceOver terms
   (dtk-set-rate 0.6 t)
 ```
 

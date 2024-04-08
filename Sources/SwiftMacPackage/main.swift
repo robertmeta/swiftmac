@@ -92,7 +92,7 @@ func main() async {
     let (cmd, params) = await isolateCmdAndParams(l)
     switch cmd {
     case "a": await processAndQueueAudioIcon(params)
-    case "c": await processAndQueueCodes(l)
+    case "c": await doDiscard(cmd, params)
     case "d": await dispatchPendingQueue()
     case "l": await instantLetter(params)
     case "p": await doPlaySound(params)
@@ -101,11 +101,9 @@ func main() async {
     case "sh": await queueLine(cmd, params)
     case "t": await queueLine(cmd, params)
     case "tts_allcaps_beep": await queueLine(cmd, params)
-    case "set_lang": await ttsSetVoice(params)  // like tts_set_voice but instnat
+    case "set_lang": await ttsSetVoice(params)  // tts_set_voice but instnat
     case "tts_exit": await instantTtsExit()
-    case "tts_pause": await instantTtsPause()
     case "tts_reset": await instantTtsReset()
-    case "tts_resume": await instantTtsResume()
     case "tts_say": await instantTtsSay(params)
     case "tts_set_character_scale": await queueLine(cmd, params)
     case "tts_set_pitch_multiplier": await queueLine(cmd, params)
@@ -113,7 +111,6 @@ func main() async {
     case "tts_set_sound_volume": await queueLine(cmd, params)
     case "tts_set_speech_rate": await queueLine(cmd, params)
     case "tts_set_tone_volume": await queueLine(cmd, params)
-    case "tts_set_voice": await queueLine(cmd, params)
     case "tts_set_voice_volume": await queueLine(cmd, params)
     case "tts_split_caps": await queueLine(cmd, params)
     case "tts_sync_state": await doDiscard(cmd, params)
@@ -143,7 +140,6 @@ func dispatchPendingQueue() async {
     case "tts_set_sound_volume": await ttsSetSoundVolume(params)
     case "tts_set_speech_rate": await ttsSetSpeechRate(params)
     case "tts_set_tone_volume": await ttsSetToneVolume(params)
-    case "tts_set_voice": await ttsSetVoice(params)
     case "tts_set_voice_volume": await ttsSetVoiceVolume(params)
     case "tts_split_caps": await ttsSplitCaps(params)
     default: await impossibleQueue(cmd, params)
@@ -366,7 +362,18 @@ func ttsSplitCaps(_ p: String) async {
 
 func ttsSetVoice(_ p: String) async {
   debugLogger.log("Enter: ttsSetVoice")
-  await ss.setVoice(p)
+  let ps = p.split(separator: " ")
+  if ps.count == 1 {
+    let langvoice = String(ps[0])
+    await ss.setVoice(langvoice)
+  }
+  if ps.count == 2 {
+    let langvoice = String(ps[0])
+    await ss.setVoice(langvoice)
+    if ps[1] == "t" {
+       await doSpeak("Switched to \(langvoice)")
+    }
+  }
 }
 
 func ttsSetToneVolume(_ p: String) async {

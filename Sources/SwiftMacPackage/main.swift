@@ -10,11 +10,11 @@ import OggDecoder
   let dateFormatter = DateFormatter()
   dateFormatter.dateFormat = "yyyy-MM-dd_HH_mm_ss"
   let timestamp = dateFormatter.string(from: currentDate)
-  let debugLogger = Logger(fileName: "swiftmac-debug-\(timestamp).log")
+  let debugLogger = Logger(fileName: "swiftmac-debug-\(timestamp)")
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.1.3"
+let version = "2.1.5"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -371,7 +371,7 @@ func ttsSetVoice(_ p: String) async {
     let langvoice = String(ps[0])
     await ss.setVoice(langvoice)
     if ps[1] == "t" {
-       await doSpeak("Switched to \(langvoice)")
+      await doSpeak("Switched to \(langvoice)")
     }
   }
 }
@@ -463,26 +463,28 @@ func doTone(_ p: String) async {
 }
 
 func doPlaySound(_ p: String) async {
-  debugLogger.log("Enter: doPlaySound")
-  let soundURL = URL(fileURLWithPath: p)
+    debugLogger.log("Enter: doPlaySound")
+    let soundURL = URL(fileURLWithPath: p)
 
-  let savedWavUrl: URL? = await withCheckedContinuation { continuation in
-    if soundURL.pathExtension.lowercased() == "ogg" {
-      let decoder = OGGDecoder()
-      decoder.decode(soundURL) { savedWavUrl in
-        continuation.resume(returning: savedWavUrl)
-      }
-    } else {
-      continuation.resume(returning: soundURL)
+    let savedWavUrl: URL? = await withCheckedContinuation { continuation in
+        if soundURL.pathExtension.lowercased() == "ogg" {
+            debugLogger.log("Decoding OGG file at URL: \(soundURL)")
+            let decoder = OGGDecoder()
+            decoder.decode(soundURL) { savedWavUrl in
+                continuation.resume(returning: savedWavUrl)
+            }
+        } else {
+            continuation.resume(returning: soundURL)
+        }
     }
-  }
 
-  guard let url = savedWavUrl else {
-    print("Failed to get audio file URL")
-    return
-  }
+    guard let url = savedWavUrl else {
+        debugLogger.log("Failed to get audio file URL from path: \(p)")
+        return
+    }
 
-  await SoundManager.shared.playSound(from: url, volume: await ss.soundVolume)
+    let volume = await ss.soundVolume // Assuming this is efficient to call frequently.
+    await SoundManager.shared.playSound(from: url, volume: volume)
 }
 
 func instantTtsSay(_ p: String) async {
@@ -542,7 +544,7 @@ func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
   return results
 }
 
-@MainActor func _doSpeak(_ what: String) async {
+func _doSpeak(_ what: String) async {
   debugLogger.log("Enter: _doSpeak :: '\(what)'")
 
   var temp: String

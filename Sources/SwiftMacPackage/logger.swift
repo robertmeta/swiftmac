@@ -12,7 +12,13 @@ class Logger {
       let fileManager = FileManager.default
       let directoryURL = URL(fileURLWithPath: "/tmp", isDirectory: true)
 
-      fileURL = directoryURL.appendingPathComponent(fileName)
+      // Get the process ID (PID)
+      let pid = ProcessInfo.processInfo.processIdentifier
+
+      // Append the PID to the filename
+      let fileNameWithPID = "\(fileName)_\(pid).log"
+
+      fileURL = directoryURL.appendingPathComponent(fileNameWithPID)
 
       // Create file if it doesn't exist
       if !fileManager.fileExists(atPath: fileURL.path) {

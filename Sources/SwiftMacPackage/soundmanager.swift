@@ -1,35 +1,43 @@
 import AVFoundation
-import AppKit
-import Darwin
 import Foundation
-import OggDecoder
 
 actor SoundManager {
     static let shared = SoundManager()
     
-    private var currentSound: NSSound?
+    private var soundCache: [URL: AVAudioPlayer] = [:]
+    private var currentSoundURL: URL?
     
-    func playSound(from url: URL, volume: Float) {
-        // Stop the currently playing sound, if any
-        if let sound = currentSound, sound.isPlaying {
-            sound.stop()
+    func playSound(from url: URL, volume: Float) async {
+        // Stop the currently playing sound
+        await stopCurrentSound()
+        
+        let player: AVAudioPlayer
+        
+        // Try to reuse an existing sound player if available
+        if let cachedPlayer = soundCache[url], cachedPlayer.volume == volume {
+            player = cachedPlayer
+        } else {
+            // Create a new player if necessary
+            do {
+                player = try AVAudioPlayer(contentsOf: url)
+                player.volume = volume
+                soundCache[url] = player // Cache the newly created player
+            } catch {
+                print("Error loading sound: \(error)")
+                return
+            }
         }
         
-        // Create a new sound instance
-        let sound = NSSound(contentsOf: url, byReference: true)
-        print("vol: \(volume)")
-        sound?.volume = volume
-        
-        // Play the new sound
-        sound?.play()
-        
-        // Set the new sound as the current sound
-        currentSound = sound
+        player.play()
+        currentSoundURL = url
     }
     
-    func stopCurrentSound() {
-        if let sound = currentSound, sound.isPlaying {
-            sound.stop()
+    func stopCurrentSound() async {
+        guard let url = currentSoundURL, let player = soundCache[url], player.isPlaying else {
+            return
         }
+        
+        player.stop()
+        player.currentTime = 0 // Reset playback if needed
     }
 }

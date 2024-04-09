@@ -14,7 +14,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.1.5"
+let version = "2.2.0" // think this is first bug free 2.0
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -109,7 +109,7 @@ func main() async {
     case "tts_set_pitch_multiplier": await queueLine(cmd, params)
     case "tts_set_punctuations": await queueLine(cmd, params)
     case "tts_set_sound_volume": await queueLine(cmd, params)
-    case "tts_set_speech_rate": await queueLine(cmd, params)
+    case "tts_set_speech_rate": await instantSetSpeechRate(params)
     case "tts_set_tone_volume": await queueLine(cmd, params)
     case "tts_set_voice_volume": await queueLine(cmd, params)
     case "tts_split_caps": await queueLine(cmd, params)
@@ -138,7 +138,6 @@ func dispatchPendingQueue() async {
     case "tts_set_pitch_multiplier": await ttsSetPitchMultiplier(params)
     case "tts_set_punctuations": await ttsSetPunctuations(params)
     case "tts_set_sound_volume": await ttsSetSoundVolume(params)
-    case "tts_set_speech_rate": await ttsSetSpeechRate(params)
     case "tts_set_tone_volume": await ttsSetToneVolume(params)
     case "tts_set_voice_volume": await ttsSetVoiceVolume(params)
     case "tts_split_caps": await ttsSplitCaps(params)
@@ -397,8 +396,8 @@ func ttsSetVoiceVolume(_ p: String) async {
   }
 }
 
-func ttsSetSpeechRate(_ p: String) async {
-  debugLogger.log("Enter: ttsSetSpeechRate")
+func instantSetSpeechRate(_ p: String) async {
+  debugLogger.log("Enter: instantSetSpeechRate")
   if let f = Float(p) {
     await ss.setSpeechRate(f)
   }

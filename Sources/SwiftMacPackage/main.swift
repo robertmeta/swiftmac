@@ -14,7 +14,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.2.0" // think this is first bug free 2.0
+let version = "2.2.0"  // think this is first bug free 2.0
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -462,28 +462,28 @@ func doTone(_ p: String) async {
 }
 
 func doPlaySound(_ p: String) async {
-    debugLogger.log("Enter: doPlaySound")
-    let soundURL = URL(fileURLWithPath: p)
+  debugLogger.log("Enter: doPlaySound")
+  let soundURL = URL(fileURLWithPath: p)
 
-    let savedWavUrl: URL? = await withCheckedContinuation { continuation in
-        if soundURL.pathExtension.lowercased() == "ogg" {
-            debugLogger.log("Decoding OGG file at URL: \(soundURL)")
-            let decoder = OGGDecoder()
-            decoder.decode(soundURL) { savedWavUrl in
-                continuation.resume(returning: savedWavUrl)
-            }
-        } else {
-            continuation.resume(returning: soundURL)
-        }
+  let savedWavUrl: URL? = await withCheckedContinuation { continuation in
+    if soundURL.pathExtension.lowercased() == "ogg" {
+      debugLogger.log("Decoding OGG file at URL: \(soundURL)")
+      let decoder = OGGDecoder()
+      decoder.decode(soundURL) { savedWavUrl in
+        continuation.resume(returning: savedWavUrl)
+      }
+    } else {
+      continuation.resume(returning: soundURL)
     }
+  }
 
-    guard let url = savedWavUrl else {
-        debugLogger.log("Failed to get audio file URL from path: \(p)")
-        return
-    }
+  guard let url = savedWavUrl else {
+    debugLogger.log("Failed to get audio file URL from path: \(p)")
+    return
+  }
 
-    let volume = await ss.soundVolume // Assuming this is efficient to call frequently.
-    await SoundManager.shared.playSound(from: url, volume: volume)
+  let volume = await ss.soundVolume  // Assuming this is efficient to call frequently.
+  await SoundManager.shared.playSound(from: url, volume: volume)
 }
 
 func instantTtsSay(_ p: String) async {

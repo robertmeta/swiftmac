@@ -54,12 +54,17 @@ tidy:
 	rm temp
 
 contribute: tidy
-	cp -Rvf Sources ~/Projects/others/emacspeak/servers/mac-swiftmac
+	mkdir -p ~/Projects/others/emacspeak/servers/mac-swiftmac/
+	rm -rf ~/Projects/others/emacspeak/servers/mac-swiftmac/*
+	cp -Rvf * ~/Projects/others/emacspeak/servers/mac-swiftmac
+	cp -Rvf .gitignore ~/Projects/others/emacspeak/servers/mac-swiftmac
+	cp -f .gitignore ~/Projects/others/emacspeak/servers/mac-swiftmac
+	rm -f ~/Projects/others/emacspeak/servers/README.emacspeak.md
+	rm -f ~/Projects/others/emacspeak/servers/Makefile.emacspeak.md
 	cp -f Makefile.emacspeak ~/Projects/others/emacspeak/servers/mac-swiftmac/Makefile
 	cp -f README.emacspeak.md ~/Projects/others/emacspeak/servers/mac-swiftmac/README.md
 	cp -f cloud-swiftmac ~/Projects/others/emacspeak/servers/cloud-swiftmac
 	cp -f log-swiftmac ~/Projects/others/emacspeak/servers/log-swiftmac
-	cp -f swiftmac-voices.el $(LISP)/swiftmac-voices.el
 
 clean:
 	swift package clean

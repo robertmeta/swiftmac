@@ -14,7 +14,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.2.0"  // think this is first bug free 2.0
+let version = "2.4.0"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -97,7 +97,7 @@ func main() async {
     case "l": await instantLetter(params)
     case "p": await doPlaySound(params)
     case "q": await queueLine(cmd, params)
-    case "s": await queueLine(cmd, params)
+    case "s": await instantStopSpeaking()
     case "sh": await queueLine(cmd, params)
     case "t": await queueLine(cmd, params)
     case "tts_allcaps_beep": await queueLine(cmd, params)
@@ -131,7 +131,6 @@ func dispatchPendingQueue() async {
     switch cmd {
     case "p": await doPlaySound(params)  // just like p in mainloop
     case "q": await doSpeak(params)
-    case "s": await doStopSpeaking()
     case "sh": await doSilence(params)
     case "t": await doTone(params)
     case "tts_allcaps_beep": await ttsAllCapsBeep(params)
@@ -225,15 +224,15 @@ func instantLetter(_ p: String) async {
   }
   let oldSpeechRate = await ss.speechRate
   await ss.setSpeechRate(await ss.getCharacterRate())
-  await doStopSpeaking()
+  await instantStopSpeaking()
   await doSpeak(p.lowercased())
   await ss.setPitchMultiplier(oldPitchMultiplier)
   await ss.setSpeechRate(oldSpeechRate)
   await ss.setPreDelay(oldPreDelay)
 }
 
-func doStopSpeaking() async {
-  debugLogger.log("Enter: doStopSpeaking")
+func instantStopSpeaking() async {
+  debugLogger.log("Enter: instantStopSpeaking")
   speaker.stopSpeaking(at: .immediate)
   playerNode.stop()
 }
@@ -497,7 +496,7 @@ func instantTtsSay(_ p: String) async {
 
 func doStopAll() async {
   debugLogger.log("Enter: doStopAll")
-  await doStopSpeaking()
+  await instantStopSpeaking()
   await tonePlayer.stop()
   await SoundManager.shared.stopCurrentSound()
 }

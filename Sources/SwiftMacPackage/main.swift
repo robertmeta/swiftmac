@@ -14,7 +14,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.4.0"
+let version = "2.4.2"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -180,7 +180,7 @@ func insertSpaceBeforeUppercase(_ input: String) -> String {
 
 @MainActor func instantTtsReset() async {
   debugLogger.log("Enter: instantTtsReset")
-  await doStopAll()
+  await instantStopSpeaking()
   ss = await StateStore()
 }
 
@@ -188,7 +188,7 @@ func instantVersion() async {
   debugLogger.log("Enter: instantVersion")
   let sayVersion = version.replacingOccurrences(of: ".", with: " dot ")
 
-  await doStopAll()
+  await instantStopSpeaking()
   #if DEBUG
     await instantTtsSay("\(name) \(sayVersion): debug mode")
   #else
@@ -432,7 +432,8 @@ func ttsAllCapsBeep(_ p: String) async {
   }
 }
 
-func instantTtsSyncState(_ p: String) async {
+// MainActor because this is explicitly to be atomic
+@MainActor func instantTtsSyncState(_ p: String) async {
   debugLogger.log("Enter: processAndQueueSync")
   let ps = p.split(separator: " ")
   if ps.count == 4 {
@@ -488,15 +489,8 @@ func doPlaySound(_ p: String) async {
 func instantTtsSay(_ p: String) async {
   debugLogger.log("Enter: instantTtsSay")
   debugLogger.log("ttsSay: \(p)")
-  await doStopAll()
-  await doSpeak(p)
-}
-
-func doStopAll() async {
-  debugLogger.log("Enter: doStopAll")
   await instantStopSpeaking()
-  await tonePlayer.stop()
-  await SoundManager.shared.stopCurrentSound()
+  await doSpeak(p)
 }
 
 // Because all speaking must handle [*]

@@ -30,7 +30,7 @@ install-debug: debug support-files backup-if-exists
 	cp .build/debug/swiftmac $(SERVERS)/swiftmac
 
 backup-if-exists:
-	if [ -f $(SERVERS)/swiftmac ]; then a cp $(SERVERS)/swiftmac	\
+	if [ -f $(SERVERS)/swiftmac ]; then cp $(SERVERS)/swiftmac	\
 	$(SERVERS)/swiftmac.last_version; fi
 
 restore-from-backup:

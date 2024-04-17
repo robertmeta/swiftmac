@@ -2,7 +2,7 @@
 
 ** Confirguration Example
 
-```
+```elisp
   ; stops doubletalk (when supported)
   (setopt mac-ignore-accessibility 't)
   (setopt dtk-program "swiftmac")

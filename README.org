@@ -17,7 +17,6 @@
   (dtk-set-language "en-US:Alex")
   ; 0.7 is 70% in VoiceOver terms
   (dtk-set-rate 0.7 t)
-
 #+end_src
 
 
@@ -35,12 +34,24 @@ date with this one fairly consistently.
 The recommended workflow is to symlink the swiftmac binary under either
 .build/release/swiftmac or ./build/debug/swiftmac (depending which you are building) to your emacspeak servers directory. 
 
-then just ```make``` for debug or ```make release``` to build a fresh binary.
+then just
+#+begin_src shell
+make
+#+end_src
+
+for debug or
+
+#+begin_src shell
+make release
+#+end_src
+
+to build a fresh binary.
 
 I will likely remove make install in the future, as it is a bit fidgety, but I 
 will leave it in for now. 
 
 ** Having Trouble?
+
 
 *** It emits warnings and notes
 
@@ -54,5 +65,3 @@ and your emacs version supports it. If that doesn't work, you can use the
 VoiceOver Utility that comes with MacOS to create an activity for Emacs.app 
 to turn off voiceover while in the Emacs window.  This only works if you are
 using a windowed version of Emacs (not terminal version). 
-* 
-* 

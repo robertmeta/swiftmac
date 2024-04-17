@@ -2,7 +2,7 @@
 
 ** Confirguration Example
 
-```elisp
+#+begin_src emacs-lisp :eval no
   ; stops doubletalk (when supported)
   (setopt mac-ignore-accessibility 't)
   (setopt dtk-program "swiftmac")
@@ -18,7 +18,8 @@
   ; 0.7 is 70% in VoiceOver terms
   (dtk-set-rate 0.7 t)
 
-```
+#+end_src
+
 
 ** Introduction 
 

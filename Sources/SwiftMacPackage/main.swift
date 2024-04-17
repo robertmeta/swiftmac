@@ -101,7 +101,7 @@ func main() async {
     case "sh": await queueLine(cmd, params)
     case "t": await queueLine(cmd, params)
     case "tts_allcaps_beep": await queueLine(cmd, params)
-    case "set_lang": await ttsSetVoice(params) 
+    case "set_lang": await ttsSetVoice(params)
     case "tts_exit": await instantTtsExit()
     case "tts_reset": await instantTtsReset()
     case "tts_say": await instantTtsSay(params)

@@ -58,10 +58,10 @@ contribute: tidy
 	cp -Rvf * ~/Projects/others/emacspeak/servers/mac-swiftmac
 	cp -Rvf .gitignore ~/Projects/others/emacspeak/servers/mac-swiftmac
 	cp -f .gitignore ~/Projects/others/emacspeak/servers/mac-swiftmac
-	rm -f ~/Projects/others/emacspeak/servers/README.emacspeak.md
-	rm -f ~/Projects/others/emacspeak/servers/Makefile.emacspeak.md
+	rm -f ~/Projects/others/emacspeak/servers/README.emacspeak.org
+	rm -f ~/Projects/others/emacspeak/servers/Makefile.emacspeak.org
 	cp -f Makefile.emacspeak ~/Projects/others/emacspeak/servers/mac-swiftmac/Makefile
-	cp -f README.emacspeak.md ~/Projects/others/emacspeak/servers/mac-swiftmac/README.md
+	cp -f README.emacspeak.org ~/Projects/others/emacspeak/servers/mac-swiftmac/README.org
 	cp -f cloud-swiftmac ~/Projects/others/emacspeak/servers/cloud-swiftmac
 	cp -f log-swiftmac ~/Projects/others/emacspeak/servers/log-swiftmac
 

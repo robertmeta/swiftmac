@@ -1,6 +1,7 @@
 * swiftmac
 
 ** Confirguration Example
+
 ```
   ; stops doubletalk (when supported)
   (setopt mac-ignore-accessibility 't)

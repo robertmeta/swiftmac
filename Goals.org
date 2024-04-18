@@ -1,4 +1,4 @@
-# Goals
+* Goals
 
 1. The server should be as dumb as possible.
 2. Major decisions should be configurable in lisp.

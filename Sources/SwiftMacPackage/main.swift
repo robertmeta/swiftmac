@@ -233,8 +233,12 @@ func instantLetter(_ p: String) async {
 
 func instantStopSpeaking() async {
   debugLogger.log("Enter: instantStopSpeaking")
-  speaker.stopSpeaking(at: .immediate)
-  playerNode.stop()
+  if speaker.isSpeaking {
+    speaker.stopSpeaking(at: .immediate)
+  }
+  if playerNode.isPlaying {
+    playerNode.stop()
+  }
 }
 
 func isFirstLetterCapital(_ str: String) -> Bool {

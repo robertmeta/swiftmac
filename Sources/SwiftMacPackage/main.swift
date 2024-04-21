@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.4.3"
+let version = "2.4.4"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -466,29 +466,37 @@ func doTone(_ p: String) async {
   }
 }
 
-func doPlaySound(_ p: String) async {
-  debugLogger.log("Enter: doPlaySound")
-  let soundURL = URL(fileURLWithPath: p)
-
-  let savedWavUrl: URL? = await withCheckedContinuation { continuation in
-    if soundURL.pathExtension.lowercased() == "ogg" {
-      debugLogger.log("Decoding OGG file at URL: \(soundURL)")
-      let decoder = OGGDecoder()
-      decoder.decode(soundURL) { savedWavUrl in
-        continuation.resume(returning: savedWavUrl)
-      }
-    } else {
-      continuation.resume(returning: soundURL)
+func doPlaySound(_ path: String) async {
+    debugLogger.log("Enter: doPlaySound")
+    let soundURL = URL(fileURLWithPath: path)
+    
+    let decodedURL: URL? = await decodeIfNeeded(soundURL)
+    
+    guard let url = decodedURL else {
+        debugLogger.log("Failed to get audio file URL from path: \(path)")
+        return
     }
-  }
+    
+    debugLogger.log("Playing sound from URL: \(url)")
+    let volume = await ss.soundVolume  // Assuming this is a property call or async method
+    Task {
+        await SoundManager.shared.playSound(from: url, volume: volume)
+    }
+}
 
-  guard let url = savedWavUrl else {
-    debugLogger.log("Failed to get audio file URL from path: \(p)")
-    return
-  }
-
-  let volume = await ss.soundVolume  // Assuming this is efficient to call frequently.
-  await SoundManager.shared.playSound(from: url, volume: volume)
+/// Helper function to decode OGG files if necessary
+private func decodeIfNeeded(_ url: URL) async -> URL? {
+    if url.pathExtension.lowercased() == "ogg" {
+        debugLogger.log("Decoding OGG file at URL: \(url)")
+        let decoder = OGGDecoder()
+        return await withCheckedContinuation { continuation in
+            decoder.decode(url) { decodedUrl in
+                continuation.resume(returning: decodedUrl)
+            }
+        }
+    } else {
+        return url
+    }
 }
 
 func instantTtsSay(_ p: String) async {

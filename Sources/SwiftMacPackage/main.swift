@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.4.4"
+let version = "2.4.5"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -93,7 +93,7 @@ func main() async {
     let (cmd, params) = await isolateCmdAndParams(l)
     switch cmd {
     case "a": await processAndQueueAudioIcon(params)
-    case "c": await doDiscard(cmd, params)
+    case "c": await processAndQueueCodes(params)
     case "d": await dispatchPendingQueue()
     case "l": await instantLetter(params)
     case "p": await doPlaySound(params)
@@ -285,6 +285,22 @@ func extractVoice(_ string: String) -> String? {
   return String(string[range])
 }
 
+func extractPitch(_ string: String) -> String? {
+  debugLogger.log("Enter: extractPitch")
+  let pattern = "\\[\\[pitch\\s+([^\\]]+)\\]\\]"
+  let regex = try! NSRegularExpression(pattern: pattern, options: [])
+
+  let matches = regex.matches(
+    in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+
+  guard let match = matches.first else {
+    return nil
+  }
+
+  let range = Range(match.range(at: 1), in: string)!
+  return String(string[range])
+}
+
 func processAndQueueAudioIcon(_ p: String) async {
   debugLogger.log("Enter: processAndQueueAudioIcon")
   await ss.appendToPendingQueue(("p", p))
@@ -295,6 +311,9 @@ func processAndQueueCodes(_ p: String) async {
   debugLogger.log("Enter: processAndQueueCodes")
   if let v = extractVoice(p) {
     await ss.appendToPendingQueue(("tts_set_voice", v))
+  }
+  if let p = extractPitch(p) {
+    await ss.appendToPendingQueue(("tts_set_pitch_multiplier", p))
   }
 }
 

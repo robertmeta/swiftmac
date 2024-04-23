@@ -1,8 +1,8 @@
-;;; mac-voices.el --- Define  Mac tags  -*- lexical-binding: t; -*-
-;; $Id: mac-voices.el 6342 2009-10-20 19:12:40Z tv.raman.tv $
-;; $Author: Dave $
-;; Description:  Module to set up Mac voices and personalities
-;; Keywords: Voice, Personality, Mac
+;;; swiftmac-voices.el --- Define  Swiftmac tags  -*- lexical-binding: t; -*-
+;; $Id: swiftmac-voices.el 6342 2024-04-20 19:12:40Z tv.raman.tv $
+;; $Author: Robert Melton $
+;; Description:  Module to set up Swiftmac voices and personalities
+;; Keywords: Voice, Personality, Swiftmac
 ;;;   LCD Archive entry:
 
 ;; LCD Archive Entry:
@@ -49,67 +49,67 @@
 (require 'emacspeak-preamble)           ;For `ems--fastload'.
 (cl-declaim  (optimize  (safety 0) (speed 3)))
 
-;;; mac:
+;;; swiftmac:
 ;;;###autoload
 (defun swiftmac ()
-  "Swiftmac TTS."
+  "Mac TTS."
   (interactive)
   (mac-configure-tts)
   (ems--fastload "voice-defs")
-  (dtk-select-server "swiftmac")
+  (dtk-select-server "mac")
   (dtk-initialize))
 
 ;;;  Customizations:
 
-(defcustom swiftmac-default-speech-rate 0.5
-  "Default speech rate for swiftswiftmac."
+(defcustom mac-default-speech-rate 225
+  "Default speech rate for mac."
   :group 'tts
   :type 'integer
   :set #'(lambda(sym val)
            (set-default sym val)
-           (when (string-match "swiftmac\\'"dtk-program)
+           (when (string-match "mac\\'"dtk-program)
              (setq-default dtk-speech-rate val))))
 
 ;;;   voice table
 
-(defvar swiftmac-default-voice-string "[{voice systemDefault}]"
-  "Default Swiftmac tag for  default voice.")
+(defvar mac-default-voice-string "[{voice systemDefault}]"
+  "Default Mac tag for  default voice.")
 
-(defvar swiftmac-voice-table (make-hash-table)
-  "Association between symbols and strings to set Swiftmac  voices.
+(defvar mac-voice-table (make-hash-table)
+  "Association between symbols and strings to set Mac  voices.
 The string can set any voice parameter.")
 
-(defun swiftmac-define-voice (name command-string)
-  "Define a Swiftmac  voice named NAME.
+(defun mac-define-voice (name command-string)
+  "Define a Mac  voice named NAME.
 This voice will be set   by sending the string
 COMMAND-STRING to the TTS engine."
-  (cl-declare (special swiftmac-voice-table))
-  (puthash name command-string swiftmac-voice-table))
+  (cl-declare (special mac-voice-table))
+  (puthash name command-string mac-voice-table))
 
-(defun swiftmac-get-voice-command-internal  (name)
+(defun mac-get-voice-command-internal  (name)
   "Retrieve command string for  voice NAME."
-  (cl-declare (special swiftmac-voice-table))
+  (cl-declare (special mac-voice-table))
   (cond
    ((listp name)
-    (mapconcat #'swiftmac-get-voice-command name " "))
-   (t (or  (gethash name swiftmac-voice-table)
-           swiftmac-default-voice-string))))
+    (mapconcat #'mac-get-voice-command name " "))
+   (t (or  (gethash name mac-voice-table)
+           mac-default-voice-string))))
 
-(defun swiftmac-get-voice-command (name)
+(defun mac-get-voice-command (name)
   "Retrieve command string for  voice NAME."
-  (swiftmac-get-voice-command-internal name))
+  (mac-get-voice-command-internal name))
 
-(defun swiftmac-voice-defined-p (name)
+(defun mac-voice-defined-p (name)
   "Check if there is a voice named NAME defined."
-  (cl-declare (special swiftmac-voice-table))
-  (gethash name swiftmac-voice-table))
+  (cl-declare (special mac-voice-table))
+  (gethash name mac-voice-table))
 
 ;;;  voice definitions
 
 ;; the nine predefined voices: TODO: figure out if embedding is
 ;; possible (and update voice names).
 
-(swiftmac-define-voice 'paul  " [{voice systemDefault}] ")
+(mac-define-voice 'paul  " [{voice systemDefault}] ")
 
 ;; Modified voices:
 
@@ -118,30 +118,30 @@ COMMAND-STRING to the TTS engine."
 
 ;;;  voice family codes
 
-(defun swiftmac-get-family-code (name)
+(defun mac-get-family-code (name)
   "Get control code for voice family NAME."
-  (swiftmac-get-voice-command-internal name))
+  (mac-get-voice-command-internal name))
 
 ;;;   hash table for mapping families to their dimensions
 
-(defvar swiftmac-css-code-tables (make-hash-table)
-  "Hash table holding vectors of swiftmac codes.
+(defvar mac-css-code-tables (make-hash-table)
+  "Hash table holding vectors of mac codes.
 Keys are symbols of the form <FamilyName-Dimension>.
 Values are vectors holding the control codes for the 10 settings.")
 
-(defun swiftmac-css-set-code-table (family dimension table)
+(defun mac-css-set-code-table (family dimension table)
   "Set up voice FAMILY.
 Argument DIMENSION is the dimension being set,
 and TABLE gives the values along that dimension."
-  (cl-declare (special swiftmac-css-code-tables))
+  (cl-declare (special mac-css-code-tables))
   (let ((key (intern (format "%s-%s" family dimension))))
-    (puthash key table swiftmac-css-code-tables)))
+    (puthash key table mac-css-code-tables)))
 
-(defun swiftmac-css-get-code-table (family dimension)
+(defun mac-css-get-code-table (family dimension)
   "Retrieve table of values for specified FAMILY and DIMENSION."
-  (cl-declare (special swiftmac-css-code-tables))
+  (cl-declare (special mac-css-code-tables))
   (let ((key (intern (format "%s-%s" family dimension))))
-    (gethash key swiftmac-css-code-tables)))
+    (gethash key mac-css-code-tables)))
 
 ;;;   average pitch
 
@@ -172,13 +172,13 @@ and TABLE gives the values along that dimension."
      (7 55)
      (8 58)
      (9 62)))
-  (swiftmac-css-set-code-table 'paul 'average-pitch table))
+  (mac-css-set-code-table 'paul 'average-pitch table))
 
-(defun swiftmac-get-average-pitch-code (value family)
+(defun mac-get-average-pitch-code (value family)
   "Get  AVERAGE-PITCH for specified VALUE and  FAMILY."
   (or family (setq family 'paul))
   (if value 
-      (aref (swiftmac-css-get-code-table family 'average-pitch)
+      (aref (mac-css-get-code-table family 'average-pitch)
             value)
     ""))
 
@@ -209,13 +209,13 @@ and TABLE gives the values along that dimension."
      (7 98.7)
      (8  112.8)
      (9  127)))
-  (swiftmac-css-set-code-table 'paul 'pitch-range table))
+  (mac-css-set-code-table 'paul 'pitch-range table))
 
-(defun swiftmac-get-pitch-range-code (value family)
+(defun mac-get-pitch-range-code (value family)
   "Get pitch-range code for specified VALUE and FAMILY."
   (or family (setq family 'paul))
   (if value 
-      (aref (swiftmac-css-get-code-table family 'pitch-range)
+      (aref (mac-css-get-code-table family 'pitch-range)
             value)
     ""))
 
@@ -245,12 +245,12 @@ and TABLE gives the values along that dimension."
      (7  1 1 70 .3)
      (8  1 1 80 .3)
      (9  1 1 90 .3)))
-  (swiftmac-css-set-code-table 'paul 'stress table))
+  (mac-css-set-code-table 'paul 'stress table))
 
-(defun swiftmac-get-stress-code (value family)
+(defun mac-get-stress-code (value family)
   (or family (setq family 'paul))
   (if value 
-      (aref (swiftmac-css-get-code-table family 'stress)
+      (aref (mac-css-get-code-table family 'stress)
             value)
     ""))
 
@@ -258,47 +258,47 @@ and TABLE gives the values along that dimension."
 
 ;;;   paul richness TODO
 (let ((table (make-vector 10 "")))
-  (swiftmac-css-set-code-table 'paul 'richness table))
+  (mac-css-set-code-table 'paul 'richness table))
 
-(defun swiftmac-get-richness-code (value family)
+(defun mac-get-richness-code (value family)
   (or family (setq family 'paul))
   (if value 
-      (aref (swiftmac-css-get-code-table family 'richness)
+      (aref (mac-css-get-code-table family 'richness)
             value)
     ""))
 
-;;;   swiftmac-define-voice-from-speech-style
+;;;   mac-define-voice-from-speech-style
 
-(defun swiftmac-define-voice-from-speech-style (name style)
-  "Define NAME to be a swiftmac voice as specified by settings in STYLE."
+(defun mac-define-voice-from-speech-style (name style)
+  "Define NAME to be a mac voice as specified by settings in STYLE."
   (let* ((family(acss-family style))
          (command
           (concat 
-           (swiftmac-get-family-code family)
-           (swiftmac-get-average-pitch-code (acss-average-pitch style) family)
-           (swiftmac-get-pitch-range-code (acss-pitch-range style) family)
-           (swiftmac-get-stress-code (acss-stress style) family)
-           (swiftmac-get-richness-code (acss-richness style) family))))
-    (swiftmac-define-voice name command)))
+           (mac-get-family-code family)
+           (mac-get-average-pitch-code (acss-average-pitch style) family)
+           (mac-get-pitch-range-code (acss-pitch-range style) family)
+           (mac-get-stress-code (acss-stress style) family)
+           (mac-get-richness-code (acss-richness style) family))))
+    (mac-define-voice name command)))
 
 ;;;  Configurater 
 ;;;###autoload
-(defun swiftmac-configure-tts ()
-  "Configure TTS  to use swiftmac."
+(defun mac-configure-tts ()
+  "Configure TTS  to use mac."
   (cl-declare (special tts-default-speech-rate
-                       tts-default-voice swiftmac-default-speech-rate))
+                       tts-default-voice mac-default-speech-rate))
   (setq tts-default-voice 'systemDefault)
-  (fset 'tts-voice-defined-p 'swiftmac-voice-defined-p)
-  (fset 'tts-get-voice-command 'swiftmac-get-voice-command)
-  (fset 'tts-define-voice-from-speech-style 'swiftmac-define-voice-from-speech-style)
-  (setq tts-default-speech-rate swiftmac-default-speech-rate)
-  (set-default 'tts-default-speech-rate swiftmac-default-speech-rate)
+  (fset 'tts-voice-defined-p 'mac-voice-defined-p)
+  (fset 'tts-get-voice-command 'mac-get-voice-command)
+  (fset 'tts-define-voice-from-speech-style 'mac-define-voice-from-speech-style)
+  (setq tts-default-speech-rate mac-default-speech-rate)
+  (set-default 'tts-default-speech-rate mac-default-speech-rate)
   (dtk-unicode-update-untouched-charsets
    '(ascii latin-iso8859-1 latin-iso8859-15 latin-iso8859-9
            eight-bit-graphic))
-  (setq eswiftmacspeak-play-program nil))
+  (setq emacspeak-play-program nil))
 
-;;;  tts-env for Swiftmac:
+;;;  tts-env for Mac:
 
-(provide 'swiftmac-voices)
+(provide 'mac-voices)
 

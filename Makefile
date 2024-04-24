@@ -1,4 +1,8 @@
-EMACSPEAK := $(shell ./get-emacspeak-path.sh)
+ifndef EMACSPEAK_DIR
+$(error EMACSPEAK_DIR is not set)
+endif
+
+EMACSPEAK := $(EMACSPEAK_DIR)
 SERVERS := $(EMACSPEAK)/servers
 LISP := $(EMACSPEAK)/lisp
 

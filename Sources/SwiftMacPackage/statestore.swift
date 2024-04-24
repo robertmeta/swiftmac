@@ -229,6 +229,13 @@ public actor StateStore {
 
     let voices = AVSpeechSynthesisVoice.speechVoices()
 
+    // Check if an exact identifier match is provided
+    if let voiceName = voiceName, voiceName.contains(".") {
+      if let voice = voices.first(where: { $0.identifier == voiceName }) {
+        return voice.identifier
+      }
+    }
+
     // Check if both language and voiceName are provided
     if let language = language, let voiceName = voiceName {
       if let voice = voices.first(where: { $0.language == language && $0.name == voiceName }) {

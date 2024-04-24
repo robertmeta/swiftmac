@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.6.0"
+let version = "2.6.2"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -135,7 +135,7 @@ func handleConnection(_ connection: NWConnection) {
 func receiveData(from connection: NWConnection) {
   debugLogger.log("in receiveData")
 
-  connection.receive(minimumIncompleteLength: 1, maximumLength: 1024) {
+  connection.receive(minimumIncompleteLength: 1, maximumLength: 101024) {
     data, _, isComplete, error in
     if let error = error {
       debugLogger.log("Error receiving data: \(error)")
@@ -145,7 +145,9 @@ func receiveData(from connection: NWConnection) {
 
     if let data = data, !data.isEmpty {
       let inputString = String(data: data, encoding: .utf8) ?? ""
-      let inputLines = inputString.split(separator: "\n", omittingEmptySubsequences: false)
+      let inputLines = inputString.components(separatedBy: CharacterSet.newlines)
+      debugLogger.log("string in \(inputLines)")
+      debugLogger.log("lines in \(inputLines)")
 
       for inputLine in inputLines {
         let trimmedLine = inputLine.trimmingCharacters(in: .whitespacesAndNewlines)

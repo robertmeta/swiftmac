@@ -17,7 +17,7 @@ debug: clean
 
 support-files:
 	cp cloud-swiftmac $(SERVERS)/cloud-swiftmac
-	cp swiftmac-voices.el $(LISP)/swiftmac-voice.el
+	cp swiftmac-voices.el $(LISP)/swiftmac-voices.el
 	cp log-swiftmac $(SERVERS)/log-swiftmac
 	sed -i '' '/swiftmac/d' $(SERVERS)/.servers
 	echo "swiftmac" >>  $(SERVERS)/.servers
@@ -72,6 +72,10 @@ contribute: tidy
 	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/get-emacspeak-path.sh
 	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/get-emacspeak-path.el
 	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/Package.resolved
+	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/cloud-swiftmac
+	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/Design.org
+	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/Goals.org
+	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/log-swiftmac
 	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/Makefile.emacspeak
 
 clean:

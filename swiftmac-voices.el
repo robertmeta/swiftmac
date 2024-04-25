@@ -72,11 +72,10 @@
 
 ;;;   voice table
 
-
 ; when this is set it makes dtk-set-language do nothing 
 ; (defvar swiftmac-default-voice-string "[{voice en-US:Alex}]"
-(defvar swiftmac-default-voice-string ""
-  "Default swiftmac tag for  default voice. Empty uses system default")
+(defvar swiftmac-default-voice-string "[{voice :Alex}] [[pitch 1]]"
+  "Default swiftmac tag for  default . Empty uses system default")
 
 (defvar swiftmac-voice-table (make-hash-table)
   "Association between symbols and strings to set SwiftMac  voices.
@@ -110,7 +109,7 @@ COMMAND-STRING to the TTS engine."
 ;;;  voice definitions
 
 ;; the predefined voices:
-(swiftmac-define-voice 'paul  'swiftmac-default-voice-string)
+(swiftmac-define-voice 'paul  swiftmac-default-voice-string)
 
 ;; Modified voices:
 

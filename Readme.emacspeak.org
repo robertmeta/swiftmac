@@ -25,7 +25,7 @@ Project: https://github.com/robertmeta/swiftmac
   (setenv "SWIFTMAC_VOICE_VOLUME" "1.0") 
   ; set to right or left or setup in customize
   (setopt tts-notification-device "right") 
-  ; initialize Emacsepeak
+  ; initialize Emacspeak
   (require 'emacspeak-setup)
 #+END_SRC
 

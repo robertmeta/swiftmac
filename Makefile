@@ -60,7 +60,7 @@ contribute: tidy
 	mkdir -p ~/Projects/others/emacspeak/servers/mac-swiftmac/
 	rm -rf ~/Projects/others/emacspeak/servers/mac-swiftmac/*
 	cp -Rvf * ~/Projects/others/emacspeak/servers/mac-swiftmac
-	cp -Rvf .gitignore ~/Projects/others/emacspeak/servers/mac-swiftmac
+	cp -f .gitignore ~/Projects/others/emacspeak/servers/mac-swiftmac
 	cp -f .gitignore ~/Projects/others/emacspeak/servers/mac-swiftmac
 	cp -f Makefile.emacspeak ~/Projects/others/emacspeak/servers/mac-swiftmac/Makefile
 	cp -f Readme.emacspeak.org ~/Projects/others/emacspeak/servers/mac-swiftmac/Readme.org
@@ -77,6 +77,7 @@ contribute: tidy
 	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/Goals.org
 	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/log-swiftmac
 	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/Makefile.emacspeak
+	rm -f ~/Projects/others/emacspeak/servers/mac-swiftmac/swiftmac-voices.el
 
 clean:
 	swift package clean

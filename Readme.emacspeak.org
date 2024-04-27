@@ -10,7 +10,7 @@ Project: https://github.com/robertmeta/swiftmac
  - Restart emacs
 
 ** Recommended Settings
-#+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp
   ; pick your favorite voice 
   (setopt swiftmac-default-voice-string "[{voice :Alex}] [[pitch 1]]")
   ; general emacspeak stuff not specific to swiftmac
@@ -23,8 +23,11 @@ Project: https://github.com/robertmeta/swiftmac
   (setopt tts-notification-device "right") 
   ; initialize Emacspeak
   (require 'emacspeak-setup)
-  ; more options: servers/mac-swiftmac/Readme.org
+  ; more options: https://github.com/robertmeta/swiftmac/
 #+END_SRC
+
+#+RESULTS:
+: emacspeak-setup
 
 ** See long names for voices
  - swift show-voices.swift - will list them all

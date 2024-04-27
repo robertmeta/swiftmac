@@ -26,9 +26,6 @@ Project: https://github.com/robertmeta/swiftmac
   ; more options: https://github.com/robertmeta/swiftmac/
 #+END_SRC
 
-#+RESULTS:
-: emacspeak-setup
-
 ** See long names for voices
  - swift show-voices.swift - will list them all
 

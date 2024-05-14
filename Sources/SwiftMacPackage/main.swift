@@ -564,7 +564,7 @@ func ttsAllCapsBeep(_ p: String) async {
 }
 
 // MainActor because this is explicitly to be atomic
-@MainActor func instantTtsSyncState(_ p: String) async {
+func instantTtsSyncState(_ p: String) async {
   debugLogger.log("Enter: processAndQueueSync")
   let ps = p.split(separator: " ")
   if ps.count == 4 {
@@ -619,7 +619,7 @@ private func decodeIfNeeded(_ url: URL) async throws -> URL? {
   if url.pathExtension.lowercased() == "ogg" {
     debugLogger.log("Decoding OGG file at URL: \(url)")
     let decoder = OGGDecoder()
-    return try await withCheckedContinuation { continuation in
+    return await withCheckedContinuation { continuation in
       decoder.decode(url) { decodedUrl in
         continuation.resume(returning: decodedUrl)
       }

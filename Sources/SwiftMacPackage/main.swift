@@ -641,7 +641,7 @@ func doSpeak(_ what: String) async {
   let parts = await splitOnSquareStar(what)
   for part in parts {
     if part == "[*]" {
-      await doSilence("0")
+      //await doSilence("0")
     } else {
       let speakPart = await replacePunctuations(part)
       await _doSpeak(speakPart)

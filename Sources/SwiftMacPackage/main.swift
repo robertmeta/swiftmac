@@ -15,9 +15,9 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.7"
+let version = "2.7.1"
 let name = "swiftmac"
-var ss = await StateStore()  // just create new one to reset
+    var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
 let tonePlayer = TonePlayerActor()
 
@@ -305,13 +305,13 @@ func instantVersion() async {
 }
 
 func doSilence(_ p: String) async {
-  debugLogger.log("Enter: doSilence")
-  let oldPostDelay = await ss.postDelay
-  if let timeInterval = TimeInterval(p) {
-    await ss.setPostDelay(timeInterval / 1000)
-  }
-  await doSpeak("")
-  await ss.setPostDelay(oldPostDelay)
+  // debugLogger.log("Enter: doSilence")
+  // let oldPostDelay = await ss.postDelay
+  // if let timeInterval = TimeInterval(p) {
+  //   await ss.setPostDelay(timeInterval / 1000)
+  // }
+  // await doSpeak("")
+  // await ss.setPostDelay(oldPostDelay)
 }
 
 func instantTtsResume() async {

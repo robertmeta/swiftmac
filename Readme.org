@@ -1,8 +1,9 @@
-* swiftmac
+#+STARTUP: overview
 
+* Swiftmac
 ** Confirguration / Install
 
-See: Readme.emacspeak.org
+See: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
 ** Bonus configuration stuff
 
@@ -22,27 +23,6 @@ See: Readme.emacspeak.org
   (swiftmac-define-voice voice-monotone "[{voice en-US:Eddy}] [[pitch 1]]")
   (swiftmac-define-voice voice-monotone-extra "[{voice en-US:Eddy}] [[pitch 1.5]]")
 #+END_SRC
-
-** See long names for voices
-Footer
-© 2024 GitHub, Inc.
-Footer navigation
-Terms
-Privacy
-Security
-Status
-Docs
-Contact
-Manage cookies
-Do not share my personal information
-Address nits and make more clear and fixed an error by robertmeta · Pull Request #129 · tvraman/emacspeak
-
-
-
-
-
-
-
 
 ** Introduction 
 
@@ -76,7 +56,6 @@ will leave it in for now.
 
 ** Having Trouble?
 
-
 *** It emits warnings and notes
 
 I am aware of the current warnings, it is a goal to get it to build completely 
@@ -89,3 +68,69 @@ and your emacs version supports it. If that doesn't work, you can use the
 VoiceOver Utility that comes with MacOS to create an activity for Emacs.app 
 to turn off voiceover while in the Emacs window.  This only works if you are
 using a windowed version of Emacs (not terminal version). 
+
+** Design
+
+The server intends to provide primitives to support all the features used by
+emacspeak and swiftmac-voices.el.
+
+
+*** Supported Commands
+
+These are the commands sent via stdin and on thier own line.
+
+- =a=: queue audio icon
+- =c=: queue code
+- =d=: dispatch queue
+- =l=: instant letter
+- =p=: instant audio icon
+- =q=: queue speech
+- =s=: stop all (confirm with list)_
+- =sh=: queue silence
+- =t=: queue tone
+- =tts_pause=: instant pause speech engine (should stop?)
+- =tts_reset=: queue reset (to defaults?)
+- =tts_resume=: instant resume speech engine
+- =tts_say=: instant say no additional tweaking
+- =tts_set_character_scale=: queue char scale change
+- =tts_set_punctuations=: queue punct change
+- =tts_set_speech_rate=: queue rate change
+- =tts_split_caps=: queue split caps change
+- =tts_sync_state=: [decomp] queue multiple settings change
+- =version=: [decomp] say tts version
+
+Not Implemented yet:
+- =set_next_lang=:
+- =set_previous_lang=:
+- =set_lang=
+- =set_preferred_lang=
+
+
+Engine Specific:
+- =tts_exit=: instant exit
+- =tts_set_pitch_multiplier=: .5 to 2 pitch multiplier
+- =tts_set_sound_volume=: 0 to 1 (1 being 100% sound volume)
+- =tts_set_tone_volume=: 0 to 1 (1 being 100% tone volume)
+- =tts_set_voice=: queue voice change
+- =tts_set_voice_volume=: 0 to 1 (1 being 100% voice volume)
+
+Broken:
+- =tts_allcaps_beep=: queue caps beep change, setting only works on typing
+  input
+
+
+*** Supported Embeddings
+
+These are converted by the preprocessor into tts_ commands.
+
+- [*] - queue silence in place of this
+
+** Goals
+
+1. The server should be as dumb as possible.
+2. Major decisions should be configurable in lisp.
+3. System should be "usable by default" meaing:
+   once it builds, it works.
+4. Server will depend on only clearly defined and 
+   checked at compile time things. No secret deps
+   on command line tools.

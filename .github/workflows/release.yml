@@ -22,12 +22,14 @@ jobs:
     - name: Archive build
       run: |
         mkdir build
-        cp -r .build/release/* build/
+        cp .build/release/swiftmac build/
+        cp log-swiftmac build/
+        cp cloud-swiftmac build/
+        cp LICENSE build/
+        cp Readme.org build/
+        cp show-voices.swift build/
         tar -czf build.tar.gz build
       shell: bash
-
-    - name: List files for debugging
-      run: ls -alh
 
     - name: Create Release
       id: create_release

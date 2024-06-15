@@ -2,8 +2,10 @@
 
 * Swiftmac
 ** Confirguration / Install
+If using binary version, just copy the files from this directory
+into the emacspeaKs servers directory. 
 
-See: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
+Otherwise see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
 ** Bonus configuration stuff
 

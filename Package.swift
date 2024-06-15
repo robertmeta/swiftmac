@@ -21,7 +21,7 @@ let package = Package(
     // depends on.
     // .package(url: /* package url */, from: "1.0.0"),
     // .package(url: "https://github.com/robertmeta/OggDecoder.git", .upToNextMajor(from: "1.0.0"))
-    .package(url: "https://github.com/robertmeta/OggDecoder.git", .branch("main"))
+    .package(url: "https://github.com/robertmeta/OggDecoder.git", branch: "main")
   ],
   targets: [
     // Targets are the basic building blocks of a package.

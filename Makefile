@@ -81,3 +81,10 @@ contribute: tidy
 
 clean:
 	swift package clean
+	rm -rf .build
+	rm -rf Package.resolved
+
+super-nuke: clean
+	rm -rf ~/Library/Developer/Xcode/DerivedData
+	rm -rf ~/Library/Caches/org.swift.swiftpm
+	echo "Cache cleared and project rebuilt."

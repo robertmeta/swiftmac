@@ -6,7 +6,7 @@
         "packageRef" : {
           "identity" : "oggdecoder",
           "kind" : "remoteSourceControl",
-          "location" : "https://github.com/arkasas/OggDecoder.git",
+          "location" : "https://github.com/robertmeta/OggDecoder.git",
           "name" : "OggDecoder"
         },
         "path" : "/Users/rmelton/projects/robertmeta/swiftmac/.build/checkouts/OggDecoder/vorbis.xcframework",
@@ -20,7 +20,7 @@
         "packageRef" : {
           "identity" : "oggdecoder",
           "kind" : "remoteSourceControl",
-          "location" : "https://github.com/arkasas/OggDecoder.git",
+          "location" : "https://github.com/robertmeta/OggDecoder.git",
           "name" : "OggDecoder"
         },
         "path" : "/Users/rmelton/projects/robertmeta/swiftmac/.build/checkouts/OggDecoder/ogg.xcframework",
@@ -36,13 +36,13 @@
         "packageRef" : {
           "identity" : "oggdecoder",
           "kind" : "remoteSourceControl",
-          "location" : "https://github.com/arkasas/OggDecoder.git",
+          "location" : "https://github.com/robertmeta/OggDecoder.git",
           "name" : "OggDecoder"
         },
         "state" : {
           "checkoutState" : {
             "branch" : "main",
-            "revision" : "65e1465e593d2b0be6ac12256f2866a18d26e211"
+            "revision" : "229d1ca607072a961036ce2fac75c693a1bd7225"
           },
           "name" : "sourceControlCheckout"
         },

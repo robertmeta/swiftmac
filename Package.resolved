@@ -1,16 +1,15 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "OggDecoder",
-        "repositoryURL": "https://github.com/arkasas/OggDecoder.git",
-        "state": {
-          "branch": "main",
-          "revision": "65e1465e593d2b0be6ac12256f2866a18d26e211",
-          "version": null
-        }
+  "originHash" : "c576690cf5cca8480906267dfccd726818f0db0748fce2879f61b242b04b8eec",
+  "pins" : [
+    {
+      "identity" : "oggdecoder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/robertmeta/OggDecoder.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "229d1ca607072a961036ce2fac75c693a1bd7225"
       }
-    ]
-  },
-  "version": 1
+    }
+  ],
+  "version" : 3
 }

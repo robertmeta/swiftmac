@@ -22,13 +22,13 @@ jobs:
     - name: Archive build
       run: |
         mkdir swiftmac
+        cp -rf .build/release/ogg.framework swiftmac/
+        cp -rf .build/release/vorbis.framework swiftmac/
         cp .build/release/swiftmac swiftmac/
-        cp log-swiftmac swiftmac/
-        cp cloud-swiftmac swiftmac/
         cp LICENSE swiftmac/
-        cp -rf vorbis.framework swiftmac/
-        cp -rf ogg.framework swiftmac/
         cp Readme.org swiftmac/
+        cp cloud-swiftmac swiftmac/
+        cp log-swiftmac swiftmac/
         cp show-voices.swift swiftmac/
         tar -czf swiftmac.tar.gz swiftmac
       shell: bash

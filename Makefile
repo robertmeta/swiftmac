@@ -87,3 +87,22 @@ super-nuke: clean
 	@rm -rf ~/Library/Developer/Xcode/DerivedData
 	@rm -rf ~/Library/Caches/org.swift.swiftpm
 	@echo "Cache cleared and project rebuilt."
+
+GITHUB_USER = robertmeta
+REPO_NAME = swiftmac
+LATEST_RELEASE_URL = https://api.github.com/repos/$(GITHUB_USER)/$(REPO_NAME)/releases/latest
+DOWNLOAD_URL = $(shell curl -s $(LATEST_RELEASE_URL) | grep "browser_download_url" | cut -d '"' -f 4)
+
+.PHONY: download_latest_release
+download-latest-release:
+	@echo "Fetching latest release download URL..."
+	@echo "Latest release URL: $(DOWNLOAD_URL)"
+	@echo "Downloading latest release..."
+	@curl -L -o latest-release.tar.gz $(DOWNLOAD_URL)
+	@echo "Download complete. Saved as latest-release.tar.gz"
+
+install-binary: download-latest-release
+	@tar -zxf latest-release.tar.gz
+	@cp -rvf swiftmac/* $(EMACSPEAK)/servers
+	@rm latest-release.tar.gz
+	@rm -rf swiftmac/

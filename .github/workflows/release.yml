@@ -21,6 +21,8 @@ jobs:
 
     - name: Archive build
       run: |
+        TAG_NAME=$(echo ${{ github.ref }} | sed 's/refs\/tags\///')
+        ARCHIVE_NAME="swiftmac_${TAG_NAME}.tar.gz"
         mkdir build
         cp .build/release/swiftmac build/
         cp log-swiftmac build/
@@ -28,8 +30,12 @@ jobs:
         cp LICENSE build/
         cp Readme.org build/
         cp show-voices.swift build/
-        tar -czf ${{ github.ref }}.tar.gz build
+        tar -czf $ARCHIVE_NAME build
+        echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
       shell: bash
+
+    - name: List files for debugging
+      run: ls -alh
 
     - name: Create Release
       id: create_release
@@ -44,10 +50,9 @@ jobs:
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ github.ref }}.tar.gz
-        asset_name: ${{ github.ref }}.tar.gz
+        asset_path: ${{ env.ARCHIVE_NAME }}
+        asset_name: ${{ env.ARCHIVE_NAME }}
         asset_content_type: application/gzip
+        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}

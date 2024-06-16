@@ -26,6 +26,8 @@ jobs:
         cp log-swiftmac swiftmac/
         cp cloud-swiftmac swiftmac/
         cp LICENSE swiftmac/
+        cp -rf vorbis.framework swiftmac/
+        cp -rf ogg.framework swiftmac/
         cp Readme.org swiftmac/
         cp show-voices.swift swiftmac/
         tar -czf swiftmac.tar.gz swiftmac

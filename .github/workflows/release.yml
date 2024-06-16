@@ -40,9 +40,8 @@ jobs:
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
+        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
         draft: false
@@ -55,4 +54,3 @@ jobs:
         asset_path: ${{ env.ARCHIVE_NAME }}
         asset_name: ${{ env.ARCHIVE_NAME }}
         asset_content_type: application/gzip
-        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}

@@ -21,14 +21,14 @@ jobs:
 
     - name: Archive build
       run: |
-        mkdir build
-        cp .build/release/swiftmac build/
-        cp log-swiftmac build/
-        cp cloud-swiftmac build/
-        cp LICENSE build/
-        cp Readme.org build/
-        cp show-voices.swift build/
-        tar -czf build.tar.gz build
+        mkdir swiftmac
+        cp .build/release/swiftmac swiftmac/
+        cp log-swiftmac swiftmac/
+        cp cloud-swiftmac swiftmac/
+        cp LICENSE swiftmac/
+        cp Readme.org swiftmac/
+        cp show-voices.swift swiftmac/
+        tar -czf swiftmac.tar.gz swiftmac
       shell: bash
 
     - name: Create Release
@@ -48,6 +48,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: build.tar.gz
-        asset_name: build.tar.gz
+        asset_path: swiftmac.tar.gz
+        asset_name: swiftmac.tar.gz
         asset_content_type: application/gzip

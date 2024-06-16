@@ -2,9 +2,12 @@
 
 * Swiftmac
 ** Confirguration / Install
-If using binary version, just copy the files from this directory
-into the emacspeaKs servers directory. 
+*** swiftmac.tar.gz (binaries)
+Copy the extracted files to the $EMACSPEAK_DIR/servers and
+then add the swiftmac server to your emacs config, for more
+info see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
+*** source based
 Otherwise see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
 ** Bonus configuration stuff

@@ -1,13 +1,15 @@
 #+STARTUP: overview
 
-* Swiftmac
+* SwiftMac
 ** Confirguration / Install
 *** swiftmac.tar.gz (binaries)
+
 Copy the extracted files to the $EMACSPEAK_DIR/servers and
 then add the swiftmac server to your emacs config, for more
 info see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
 *** source based
+
 Otherwise see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
 ** Bonus configuration stuff

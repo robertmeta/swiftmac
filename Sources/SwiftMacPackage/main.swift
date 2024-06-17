@@ -17,7 +17,7 @@ import OggDecoder
 #endif
 let version = "2.7.5"
 let name = "swiftmac"
-    var ss = await StateStore()  // just create new one to reset
+var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
 let tonePlayer = TonePlayerActor()
 
@@ -325,7 +325,7 @@ func instantLetter(_ p: String) async {
   let oldPreDelay = await ss.preDelay
   if isFirstLetterCapital(p) {
     if await ss.allCapsBeep {
-      await doTone("500 50")
+      await doTone("800 50")
     } else {
       await ss.setPitchMultiplier(1.5)
     }
@@ -641,7 +641,7 @@ func doSpeak(_ what: String) async {
   let parts = await splitOnSquareStar(what)
   for part in parts {
     if part == "[*]" {
-      //await doSilence("0")
+      await doSilence("0")
     } else {
       let speakPart = await replacePunctuations(part)
       await _doSpeak(speakPart)

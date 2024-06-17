@@ -35,9 +35,9 @@ let package = Package(
       sources: [
         "logger.swift", "statestore.swift", "soundmanager.swift", "toneplayer.swift", "main.swift",
       ],
-        swiftSettings: [
-          .unsafeFlags(["-suppress-warnings"])
-            ]
+      swiftSettings: [
+        .unsafeFlags(["-suppress-warnings"])
+      ]
 
     )
   ]

@@ -305,13 +305,13 @@ func instantVersion() async {
 }
 
 func doSilence(_ p: String) async {
-  // debugLogger.log("Enter: doSilence")
-  // let oldPostDelay = await ss.postDelay
-  // if let timeInterval = TimeInterval(p) {
-  //   await ss.setPostDelay(timeInterval / 1000)
-  // }
-  // await doSpeak("")
-  // await ss.setPostDelay(oldPostDelay)
+  debugLogger.log("Enter: doSilence")
+  let oldPostDelay = await ss.postDelay
+  if let timeInterval = TimeInterval(p) {
+    await ss.setPostDelay(timeInterval / 1000)
+  }
+  await doSpeak("")
+  await ss.setPostDelay(oldPostDelay)
 }
 
 func instantTtsResume() async {

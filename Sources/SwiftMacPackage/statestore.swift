@@ -111,6 +111,18 @@ public actor StateStore {
     set { _voiceVolume = newValue }
   }
 
+  private var _nextPreDelay: TimeInterval = 0
+  public var nextPreDelay: TimeInterval {
+    get {
+      let value = _nextPreDelay
+      _nextPreDelay = 0
+      return value
+    }
+    set {
+      _nextPreDelay = newValue
+    }
+  }
+
   public init() async {
     self.soundVolume = 1.0
     if let f = Float(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
@@ -260,7 +272,12 @@ public actor StateStore {
     // If no matching voice is found, return the default voice identifier
     return defaultVoice.identifier
   }
+
   public func setVoiceVolume(_ value: Float) {
     self._voiceVolume = value
+  }
+
+  public func setNextPreDelay(_ value: TimeInterval) {
+    self._nextPreDelay = value
   }
 }

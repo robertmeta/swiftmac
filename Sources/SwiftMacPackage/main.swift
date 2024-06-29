@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "2.8.0"
+let version = "2.8.1"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
@@ -305,13 +305,11 @@ func instantVersion() async {
 }
 
 func doSilence(_ p: String) async {
+  // This sets up a delay on next spoken thing
   debugLogger.log("Enter: doSilence")
-  let oldPostDelay = await ss.postDelay
   if let timeInterval = TimeInterval(p) {
-    await ss.setPostDelay(timeInterval / 1000)
+    await ss.setNextPreDelay(timeInterval / 1000)
   }
-  await doSpeak("")
-  await ss.setPostDelay(oldPostDelay)
 }
 
 func instantTtsResume() async {
@@ -700,7 +698,8 @@ func _doSpeak(_ what: String) async {
   utterance.volume = await ss.voiceVolume
 
   // Set the pre-utterance delay (in seconds)
-  utterance.preUtteranceDelay = await ss.preDelay
+  // when nextPredelay is read, it resets to 0 for next go
+  utterance.preUtteranceDelay = await ss.nextPreDelay
 
   // Set the post-utterance delay (in seconds)
   utterance.postUtteranceDelay = await ss.postDelay

@@ -7,7 +7,7 @@ import PackageDescription
 let package = Package(
   name: "SwiftMacPackage",
   platforms: [
-    .macOS(.v11)
+    .macOS(.v13)
   ],
   products: [
     // Products define the executables and libraries a package

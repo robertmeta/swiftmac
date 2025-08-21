@@ -5,7 +5,7 @@ import Foundation
 import OggDecoder
 
 public actor StateStore {
-  // Removed singleton to allow multiple independent instances
+  static let shared = StateStore()
   private var _allCapsBeep: Bool = false
   public var allCapsBeep: Bool {
     get { _allCapsBeep }
@@ -124,7 +124,7 @@ public actor StateStore {
     }
   }
 
-  public init() {
+  private init() {
     self.soundVolume = 1.0
     if let f = Float(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
       self.soundVolume = f
@@ -280,5 +280,52 @@ public actor StateStore {
 
   public func setNextPreDelay(_ value: TimeInterval) {
     self._nextPreDelay = value
+  }
+  
+  // Batch read for speech settings to reduce actor calls
+  public func getSpeechSettings() -> (splitCaps: Bool, speechRate: Float, pitchMultiplier: Float, voiceVolume: Float, nextPreDelay: TimeInterval, postDelay: TimeInterval, voice: AVSpeechSynthesisVoice) {
+    let preDelay = _nextPreDelay
+    _nextPreDelay = 0  // Reset after reading
+    return (
+      splitCaps: _splitCaps,
+      speechRate: _speechRate, 
+      pitchMultiplier: _pitchMultiplier,
+      voiceVolume: _voiceVolume,
+      nextPreDelay: preDelay,
+      postDelay: _postDelay,
+      voice: _voice
+    )
+  }
+
+  public func reset() async {
+    _allCapsBeep = false
+    _characterScale = 1.2
+    _pendingQueue.removeAll()
+    _pitchMultiplier = 1.0
+    _postDelay = 0
+    _preDelay = 0
+    _punctuations = "all"
+    _audioTarget = "None"
+    _soundVolume = 1.0
+    _speechRate = 0.5
+    _splitCaps = false
+    _toneVolume = 1.0
+    _ttsDiscard = false
+    _voice = AVSpeechSynthesisVoice()
+    _voiceVolume = 1.0
+    _nextPreDelay = 0
+    voiceCache.removeAll()
+    
+    // Reapply environment variables
+    if let f = Float(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
+      self._soundVolume = f
+    }
+    if let f = Float(self.getEnvironmentVariable("SWIFTMAC_TONE_VOLUME")) {
+      self._toneVolume = f
+    }
+    if let f = Float(self.getEnvironmentVariable("SWIFTMAC_VOICE_VOLUME")) {
+      self._voiceVolume = f
+    }
+    self._audioTarget = self.getEnvironmentVariable("SWIFTMAC_AUDIO_TARGET")
   }
 }

@@ -4,19 +4,37 @@ import Foundation
 actor TonePlayerActor {
   private let audioPlayer = AVAudioPlayerNode()
   private let audioEngine = AVAudioEngine()
+  private var isEngineSetup = false
+
+  private func setupEngineIfNeeded() {
+    guard !isEngineSetup else { return }
+    
+    audioEngine.attach(audioPlayer)
+    let mixer = audioEngine.mainMixerNode
+    
+    guard let format = AVAudioFormat(
+      commonFormat: .pcmFormatFloat32, 
+      sampleRate: mixer.outputFormat(forBus: 0).sampleRate,
+      channels: AVAudioChannelCount(1), 
+      interleaved: false) else { return }
+    
+    audioEngine.connect(audioPlayer, to: mixer, format: format)
+    audioEngine.prepare()
+    
+    isEngineSetup = true
+  }
 
   func playPureTone(frequencyInHz: Int, amplitude: Float, durationInMillis: Int) async {
-    audioEngine.attach(audioPlayer)
+    setupEngineIfNeeded()
+    
     let mixer = audioEngine.mainMixerNode
     let sampleRateHz = Float(mixer.outputFormat(forBus: 0).sampleRate)
 
-    guard
-      let format = AVAudioFormat(
-        commonFormat: .pcmFormatFloat32, sampleRate: Double(sampleRateHz),
-        channels: AVAudioChannelCount(1), interleaved: false)
-    else { return }
-
-    audioEngine.connect(audioPlayer, to: mixer, format: format)
+    guard let format = AVAudioFormat(
+      commonFormat: .pcmFormatFloat32, 
+      sampleRate: Double(sampleRateHz),
+      channels: AVAudioChannelCount(1), 
+      interleaved: false) else { return }
 
     let totalDurationSeconds = Float(durationInMillis) / 1000
     let fadeDurationSeconds = totalDurationSeconds / 5
@@ -46,19 +64,41 @@ actor TonePlayerActor {
     }
 
     do {
-      try audioEngine.start()
-      audioPlayer.play()
-      audioPlayer.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
-
-        // Execution continues after the buffer is fully played
+      if !audioEngine.isRunning {
+        try audioEngine.start()
+      }
+      
+      audioPlayer.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+        Task { [weak self] in
+          await self?.handleBufferComplete()
+        }
+      }
+      
+      if !audioPlayer.isPlaying {
+        audioPlayer.play()
       }
     } catch {
-      print("Error: Engine start failure")
+      print("Error: Engine start failure: \(error)")
+    }
+  }
+  
+  private func handleBufferComplete() {
+    // Stop player after buffer completes to clean up resources
+    audioPlayer.stop()
+    // Stop engine if no more buffers are scheduled
+    if audioEngine.isRunning && !audioPlayer.isPlaying {
+      audioEngine.stop()
     }
   }
 
   func stop() {
     audioPlayer.stop()
-    audioEngine.stop()
+    if audioEngine.isRunning {
+      audioEngine.stop()
+    }
+  }
+  
+  deinit {
+    stop()
   }
 }

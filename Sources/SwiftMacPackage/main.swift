@@ -17,11 +17,12 @@ import OggDecoder
 #endif
 let version = "2.8.2"
 let name = "swiftmac"
+// Create instance-specific resources to allow concurrent execution
 var ss = await StateStore()  // just create new one to reset
 let speaker = AVSpeechSynthesizer()
 let tonePlayer = TonePlayerActor()
 
-// notification support
+// notification support - instance-specific to avoid conflicts
 let engine = AVAudioEngine()
 let playerNode = AVAudioPlayerNode()
 let environmentNode = AVAudioEnvironmentNode()
@@ -89,7 +90,14 @@ func parseCommandLineArguments() -> (port: Int?, shouldListen: Bool) {
 
 func startNetworkListener(port: NWEndpoint.Port) {
   debugLogger.log("in startNetworkListener")
-  let listener = try! NWListener(using: .tcp, on: port)
+  let listener: NWListener
+  do {
+    listener = try NWListener(using: .tcp, on: port)
+  } catch {
+    debugLogger.log("Failed to create listener on port \\(port): \\(error)")
+    print("Error: Could not bind to port \\(port). Port may be in use or insufficient permissions.")
+    return
+  }
 
   listener.stateUpdateHandler = { newState in
     switch newState {
@@ -172,11 +180,18 @@ func receiveData(from connection: NWConnection) {
 func main() async {
   debugLogger.log("Enter: main")
 
+  // Audio engines on macOS can coexist with proper configuration
+
   let (port, shouldListen) = parseCommandLineArguments()
 
   if shouldListen, let port = port {
     debugLogger.log("Starting network listener on port \(port)")
-    startNetworkListener(port: NWEndpoint.Port(rawValue: UInt16(port))!)
+    guard port >= 0 && port <= 65535, let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
+      debugLogger.log("Invalid port number: \(port)")
+      print("Error: Invalid port number \(port). Must be between 0 and 65535.")
+      return
+    }
+    startNetworkListener(port: nwPort)
   }
 
   if await notificationMode() {
@@ -279,7 +294,9 @@ func splitOnSquareStar(_ input: String) async -> [String] {
 func insertSpaceBeforeUppercase(_ input: String) -> String {
   debugLogger.log("Enter: insertSpaceBeforeUppercase")
   let pattern = "(?<=[a-z])(?=[A-Z])"
-  let regex = try! NSRegularExpression(pattern: pattern, options: [])
+  guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+    return input // Fallback to original if regex failed
+  }
   let range = NSRange(input.startIndex..., in: input)
   let modifiedString = regex.stringByReplacingMatches(
     in: input, options: [], range: range, withTemplate: " ")
@@ -349,11 +366,9 @@ func instantStopSpeaking() async {
 
 func isFirstLetterCapital(_ str: String) -> Bool {
   debugLogger.log("Enter: isFirstLetterCapital")
-  guard str.count > 0 else {
+  guard let firstChar = str.first else {
     return false
   }
-
-  let firstChar = str.first!
   return firstChar.isUppercase && firstChar.isLetter
 }
 
@@ -377,32 +392,32 @@ func impossibleQueue(_ cmd: String, _ params: String) async {
 func extractVoice(_ string: String) -> String? {
   debugLogger.log("Enter: extractVoice")
   let pattern = "\\[\\{voice\\s+([^\\}]+)\\}\\]"
-  let regex = try! NSRegularExpression(pattern: pattern, options: [])
+  guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return nil }
 
   let matches = regex.matches(
     in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
 
-  guard let match = matches.first else {
+  guard let match = matches.first,
+        let range = Range(match.range(at: 1), in: string) else {
     return nil
   }
 
-  let range = Range(match.range(at: 1), in: string)!
   return String(string[range])
 }
 
 func extractPitch(_ string: String) -> String? {
   debugLogger.log("Enter: extractPitch")
   let pattern = "\\[\\[pitch\\s+([^\\]]+)\\]\\]"
-  let regex = try! NSRegularExpression(pattern: pattern, options: [])
+  guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return nil }
 
   let matches = regex.matches(
     in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
 
-  guard let match = matches.first else {
+  guard let match = matches.first,
+        let range = Range(match.range(at: 1), in: string) else {
     return nil
   }
 
-  let range = Range(match.range(at: 1), in: string)!
   return String(string[range])
 }
 
@@ -581,13 +596,15 @@ func instantTtsSyncState(_ p: String) async {
 func doTone(_ p: String) async {
   debugLogger.log("Enter: doTone")
   let ps = p.split(separator: " ")
-  Task {
-    await tonePlayer.playPureTone(
-      frequencyInHz: Int(ps[0]) ?? 500,
-      amplitude: await ss.toneVolume,
-      durationInMillis: Int(ps[1]) ?? 75
-    )
+  guard ps.count >= 2 else {
+    debugLogger.log("Invalid tone parameters: \(p)")
+    return
   }
+  await tonePlayer.playPureTone(
+    frequencyInHz: Int(ps[0]) ?? 500,
+    amplitude: await ss.toneVolume,
+    durationInMillis: Int(ps[1]) ?? 75
+  )
 }
 
 func doPlaySound(_ path: String) async {
@@ -666,7 +683,7 @@ func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
   var lastEndIndex = input.startIndex
   // Iterate through the matches to split the string
   for match in matches {
-    let matchRange = Range(match.range, in: input)!
+    guard let matchRange = Range(match.range, in: input) else { continue }
     // Add substring from last match end to current match start
     results.append(String(input[lastEndIndex..<matchRange.lowerBound]))
     lastEndIndex = matchRange.lowerBound
@@ -707,13 +724,15 @@ func _doSpeak(_ what: String) async {
   // Set the voice
   utterance.voice = await ss.voice
 
-  // Start speaking
+  // Start speaking - AVSpeechSynthesizer must be used on main thread
   if await notificationMode() {
-    DispatchQueue.global().async {
+    await MainActor.run {
       speaker.write(utterance, toBufferCallback: bufferHandler)
     }
   } else {
-    speaker.speak(utterance)
+    await MainActor.run {
+      speaker.speak(utterance)
+    }
   }
 
 }

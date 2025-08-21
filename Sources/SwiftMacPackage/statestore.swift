@@ -5,6 +5,7 @@ import Foundation
 import OggDecoder
 
 public actor StateStore {
+  // Removed singleton to allow multiple independent instances
   private var _allCapsBeep: Bool = false
   public var allCapsBeep: Bool {
     get { _allCapsBeep }
@@ -123,7 +124,7 @@ public actor StateStore {
     }
   }
 
-  public init() async {
+  public init() {
     self.soundVolume = 1.0
     if let f = Float(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
       self.soundVolume = f

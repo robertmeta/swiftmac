@@ -7,6 +7,7 @@ class Logger {
   #if DEBUG
     private let fileURL: URL
     private let backgroundQueue: DispatchQueue
+    private var fileHandle: FileHandle?
 
     init(fileName: String) {
       let fileManager = FileManager.default
@@ -27,26 +28,28 @@ class Logger {
 
       backgroundQueue = DispatchQueue(
         label: "org.emacspeak.server.swiftmac.logger", qos: .background)
+      
+      // Initialize persistent file handle
+      do {
+        fileHandle = try FileHandle(forWritingTo: fileURL)
+      } catch {
+        print("Error opening log file handle: \(error)")
+      }
+    }
+    
+    deinit {
+      fileHandle?.closeFile()
     }
 
     func log(_ m: String) {
-      // let message = m + "\n"
-      let ts = ""
-      let message = ts + m + "\n"
+      let message = m + "\n"
       backgroundQueue.async { [weak self] in
-        guard let self = self else { return }
+        guard let self = self,
+              let handle = self.fileHandle,
+              let data = message.data(using: .utf8) else { return }
 
-        do {
-          let fileHandle = try FileHandle(forWritingTo: self.fileURL)
-          defer { fileHandle.closeFile() }
-
-          fileHandle.seekToEndOfFile()
-          if let data = message.data(using: .utf8) {
-            fileHandle.write(data)
-          }
-        } catch {
-          print("Error writing to log file: \(error)")
-        }
+        handle.seekToEndOfFile()
+        handle.write(data)
       }
     }
   #else

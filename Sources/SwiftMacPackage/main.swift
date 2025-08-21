@@ -17,49 +17,95 @@ import OggDecoder
 #endif
 let version = "2.8.2"
 let name = "swiftmac"
-var ss = await StateStore()  // just create new one to reset
+let ss = StateStore.shared
 let speaker = AVSpeechSynthesizer()
 let tonePlayer = TonePlayerActor()
 
-// notification support
-let engine = AVAudioEngine()
-let playerNode = AVAudioPlayerNode()
-let environmentNode = AVAudioEnvironmentNode()
-// Define a closure to handle the output buffer
-var outputFormat: AVAudioFormat?
-let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
-  guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
-
-  if pcmBuffer.frameLength > 0 {
-    if outputFormat == nil {
-      outputFormat = pcmBuffer.format
-      engine.connect(playerNode, to: environmentNode, format: outputFormat)
-      engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
-      Task {
-        if await ss.audioTarget == "right" {
-          playerNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
-        }
-        if await ss.audioTarget == "left" {
-          playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
-        }
-      }
-      engine.prepare()
-
-      do {
-        try engine.start()
-      } catch {
-        print("Error starting audio engine: \(error.localizedDescription)")
-        return
-      }
+// Audio engine actor for thread-safe notification audio
+actor NotificationAudioEngine {
+  private let engine = AVAudioEngine()
+  private let playerNode = AVAudioPlayerNode()
+  private let environmentNode = AVAudioEnvironmentNode()
+  private var isSetup = false
+  
+  func setupIfNeeded() async {
+    guard !isSetup else { return }
+    
+    engine.attach(playerNode)
+    engine.attach(environmentNode)
+    
+    let audioTarget = await ss.audioTarget
+    if audioTarget == "right" {
+      playerNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
+    } else if audioTarget == "left" {
+      playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
     }
-
-    // Schedule the buffer for playback
-    playerNode.scheduleBuffer(pcmBuffer)
-
-    if !playerNode.isPlaying {
-      playerNode.play()
+    
+    isSetup = true
+  }
+  
+  func handleBuffer(_ buffer: AVAudioBuffer) {
+    guard let pcmBuffer = buffer as? AVAudioPCMBuffer,
+          pcmBuffer.frameLength > 0 else { return }
+    
+    // Setup connections if this is the first buffer
+    if !isSetup {
+      let format = pcmBuffer.format  
+      engine.connect(playerNode, to: environmentNode, format: format)
+      engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
+      isSetup = true
+    }
+    
+    do {
+      if !engine.isRunning {
+        engine.prepare()
+        try engine.start()
+      }
+      
+      playerNode.scheduleBuffer(pcmBuffer)
+      
+      if !playerNode.isPlaying {
+        playerNode.play()
+      }
+    } catch {
+      print("Error in notification audio engine: \(error.localizedDescription)")
     }
   }
+  
+  func stop() {
+    if playerNode.isPlaying {
+      playerNode.stop()
+    }
+    if engine.isRunning {
+      engine.stop()
+    }
+  }
+  
+  deinit {
+    stop()
+  }
+}
+
+// notification support
+let notificationEngine = NotificationAudioEngine()
+
+// Safely compiled regexes
+struct RegexStore {
+  static let uppercaseRegex: Result<NSRegularExpression, Error> = {
+    Result { try NSRegularExpression(pattern: "(?<=[a-z])(?=[A-Z])", options: []) }
+  }()
+  
+  static let voiceRegex: Result<NSRegularExpression, Error> = {
+    Result { try NSRegularExpression(pattern: "\\[\\{voice\\s+([^\\}]+)\\}\\]", options: []) }
+  }()
+  
+  static let pitchRegex: Result<NSRegularExpression, Error> = {
+    Result { try NSRegularExpression(pattern: "\\[\\[pitch\\s+([^\\]]+)\\]\\]", options: []) }
+  }()
+  
+  static let capitalSplitRegex: Result<NSRegularExpression, Error> = {
+    Result { try NSRegularExpression(pattern: "(?<=\\s)(?=[A-Z])", options: []) }
+  }()
 }
 
 func notificationMode() async -> Bool {
@@ -89,7 +135,14 @@ func parseCommandLineArguments() -> (port: Int?, shouldListen: Bool) {
 
 func startNetworkListener(port: NWEndpoint.Port) {
   debugLogger.log("in startNetworkListener")
-  let listener = try! NWListener(using: .tcp, on: port)
+  let listener: NWListener
+  do {
+    listener = try NWListener(using: .tcp, on: port)
+  } catch {
+    debugLogger.log("Failed to create listener on port \(port): \(error)")
+    print("Error: Could not bind to port \(port). Port may be in use or insufficient permissions.")
+    return
+  }
 
   listener.stateUpdateHandler = { newState in
     switch newState {
@@ -122,20 +175,31 @@ func handleConnection(_ connection: NWConnection) {
       receiveData(from: connection)
     case .failed(let error):
       debugLogger.log("Connection failed with error: \(error)")
+      connection.cancel()
     case .waiting(let error):
       debugLogger.log("Connection waiting with error: \(error)")
+    case .cancelled:
+      debugLogger.log("Connection cancelled")
     default:
       break
     }
   }
 
   connection.start(queue: .main)
+  
+  // Set timeout for idle connections
+  DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5 minute timeout
+    if connection.state != .cancelled {
+      debugLogger.log("Connection timeout - cancelling")
+      connection.cancel()
+    }
+  }
 }
 
 func receiveData(from connection: NWConnection) {
   debugLogger.log("in receiveData")
 
-  connection.receive(minimumIncompleteLength: 1, maximumLength: 101024) {
+  connection.receive(minimumIncompleteLength: 1, maximumLength: 10240) { // Reduced buffer size
     data, _, isComplete, error in
     if let error = error {
       debugLogger.log("Error receiving data: \(error)")
@@ -149,11 +213,16 @@ func receiveData(from connection: NWConnection) {
       debugLogger.log("string in \(inputLines)")
       debugLogger.log("lines in \(inputLines)")
 
-      for inputLine in inputLines {
-        let trimmedLine = inputLine.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedLine.isEmpty {
-          Task {
-            await processInputLine(trimmedLine)
+      // Process all lines in a single Task to reduce overhead
+      let nonEmptyLines = inputLines.compactMap { line in
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+      }
+      
+      if !nonEmptyLines.isEmpty {
+        Task {
+          for line in nonEmptyLines {
+            await processInputLine(line)
           }
         }
       }
@@ -162,8 +231,19 @@ func receiveData(from connection: NWConnection) {
     if isComplete {
       debugLogger.log("Connection closed")
       connection.cancel()
-    } else {
+    } else if connection.state == .ready {
       receiveData(from: connection)
+    } else {
+      debugLogger.log("Connection no longer ready, stopping receive")
+    }
+  }
+}
+
+// I/O Actor to handle stdin reading without blocking main thread
+actor IOHandler {
+  func startReadingInput() async {
+    while let line = readLine() {
+      await processInputLine(line)
     }
   }
 }
@@ -176,22 +256,23 @@ func main() async {
 
   if shouldListen, let port = port {
     debugLogger.log("Starting network listener on port \(port)")
-    startNetworkListener(port: NWEndpoint.Port(rawValue: UInt16(port))!)
+    guard port >= 0 && port <= 65535, let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
+      debugLogger.log("Invalid port number: \(port)")
+      print("Error: Invalid port number \(port). Must be between 0 and 65535.")
+      return
+    }
+    startNetworkListener(port: nwPort)
   }
 
   if await notificationMode() {
     await instantTtsSay("notification mode on")
-
-    // Setup notification audio routing
-    engine.attach(playerNode)
-    engine.attach(environmentNode)
+    await notificationEngine.setupIfNeeded()
   } else {
     await instantVersion()
   }
 
-  while let line = readLine() {
-    await processInputLine(line)
-  }
+  let ioHandler = IOHandler()
+  await ioHandler.startReadingInput()
 }
 
 func processInputLine(_ line: String) async {
@@ -278,8 +359,9 @@ func splitOnSquareStar(_ input: String) async -> [String] {
 
 func insertSpaceBeforeUppercase(_ input: String) -> String {
   debugLogger.log("Enter: insertSpaceBeforeUppercase")
-  let pattern = "(?<=[a-z])(?=[A-Z])"
-  let regex = try! NSRegularExpression(pattern: pattern, options: [])
+  guard case .success(let regex) = RegexStore.uppercaseRegex else {
+    return input // Fallback to original if regex failed
+  }
   let range = NSRange(input.startIndex..., in: input)
   let modifiedString = regex.stringByReplacingMatches(
     in: input, options: [], range: range, withTemplate: " ")
@@ -289,7 +371,7 @@ func insertSpaceBeforeUppercase(_ input: String) -> String {
 @MainActor func instantTtsReset() async {
   debugLogger.log("Enter: instantTtsReset")
   await instantStopSpeaking()
-  ss = await StateStore()
+  await ss.reset()
 }
 
 func instantVersion() async {
@@ -342,18 +424,15 @@ func instantStopSpeaking() async {
   if speaker.isSpeaking {
     speaker.stopSpeaking(at: .immediate)
   }
-  if playerNode.isPlaying {
-    playerNode.stop()
-  }
+  await notificationEngine.stop()
 }
 
 func isFirstLetterCapital(_ str: String) -> Bool {
   debugLogger.log("Enter: isFirstLetterCapital")
-  guard str.count > 0 else {
+  guard let firstChar = str.first else {
     return false
   }
 
-  let firstChar = str.first!
   return firstChar.isUppercase && firstChar.isLetter
 }
 
@@ -376,33 +455,33 @@ func impossibleQueue(_ cmd: String, _ params: String) async {
 
 func extractVoice(_ string: String) -> String? {
   debugLogger.log("Enter: extractVoice")
-  let pattern = "\\[\\{voice\\s+([^\\}]+)\\}\\]"
-  let regex = try! NSRegularExpression(pattern: pattern, options: [])
-
+  guard case .success(let regex) = RegexStore.voiceRegex else {
+    return nil
+  }
   let matches = regex.matches(
     in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
 
-  guard let match = matches.first else {
+  guard let match = matches.first,
+        let range = Range(match.range(at: 1), in: string) else {
     return nil
   }
 
-  let range = Range(match.range(at: 1), in: string)!
   return String(string[range])
 }
 
 func extractPitch(_ string: String) -> String? {
   debugLogger.log("Enter: extractPitch")
-  let pattern = "\\[\\[pitch\\s+([^\\]]+)\\]\\]"
-  let regex = try! NSRegularExpression(pattern: pattern, options: [])
-
+  guard case .success(let regex) = RegexStore.pitchRegex else {
+    return nil
+  }
   let matches = regex.matches(
     in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
 
-  guard let match = matches.first else {
+  guard let match = matches.first,
+        let range = Range(match.range(at: 1), in: string) else {
     return nil
   }
 
-  let range = Range(match.range(at: 1), in: string)!
   return String(string[range])
 }
 
@@ -432,52 +511,63 @@ func replacePunctuations(_ s: String) async -> String {
   return replaceBasePuncs(s)
 }
 
+// Optimized punctuation replacement using single-pass character iteration
+func replacePunctuationsOptimized(_ line: String, mode: String) -> String {
+  debugLogger.log("Enter: replacePunctuationsOptimized")
+  
+  let basePuncs = ["%": " percent ", "$": " dollar "]
+  let somePuncs = [
+    "#": " pound ", "-": " dash ", "\"": " quote ",
+    "(": " leftParen ", ")": " rightParen ", "*": " star ",
+    ";": " semi ", ":": " colon ", "\n": "", "\\": " backslash ",
+    "/": " slash ", "+": " plus ", "=": " equals ",
+    "~": " tilda ", "`": " backquote ", "!": " exclamation ",
+    "^": " caret "
+  ]
+  let allPuncs = [
+    "<": " less than ", ">": " greater than ", "'": " apostrophe ",
+    "@": " at sign ", "_": " underline ", ".": " dot ",
+    ",": " comma "
+  ]
+  
+  var replacements = basePuncs
+  
+  if mode == "some" || mode == "all" {
+    replacements.merge(somePuncs) { _, new in new }
+  }
+  if mode == "all" {
+    replacements.merge(allPuncs) { _, new in new }
+    replacements["*"] = " star " // Override for all mode
+  }
+  
+  // Single-pass replacement
+  var result = ""
+  result.reserveCapacity(line.count * 2) // Pre-allocate for efficiency
+  
+  for char in line {
+    if let replacement = replacements[String(char)] {
+      result += replacement
+    } else {
+      result.append(char)
+    }
+  }
+  
+  return result
+}
+
 /* This is used for "none" puncts */
 func replaceBasePuncs(_ line: String) -> String {
-  debugLogger.log("Enter: replaceBasePuncs")
-  return
-    line
-    .replacingOccurrences(of: "%", with: " percent ")
-    .replacingOccurrences(of: "$", with: " dollar ")
-
+  return replacePunctuationsOptimized(line, mode: "none")
 }
 
 /* this is used for "some" puncts */
 func replaceSomePuncs(_ line: String) -> String {
-  debugLogger.log("Enter: replaceSomePuncs")
-  return replaceBasePuncs(line)
-    .replacingOccurrences(of: "#", with: " pound ")
-    .replacingOccurrences(of: "-", with: " dash ")
-    .replacingOccurrences(of: "\"", with: " quote ")
-    .replacingOccurrences(of: "(", with: " leftParen ")
-    .replacingOccurrences(of: ")", with: " rightParen ")
-    .replacingOccurrences(of: "*", with: " star ")
-    .replacingOccurrences(of: ";", with: " semi ")
-    .replacingOccurrences(of: ":", with: " colon ")
-    .replacingOccurrences(of: "\n", with: "")
-    .replacingOccurrences(of: "\\", with: " backslash ")
-    .replacingOccurrences(of: "/", with: " slash ")
-    .replacingOccurrences(of: "+", with: " plus ")
-    .replacingOccurrences(of: "=", with: " equals ")
-    .replacingOccurrences(of: "~", with: " tilda ")
-    .replacingOccurrences(of: "`", with: " backquote ")
-    .replacingOccurrences(of: "!", with: " exclamation ")
-    .replacingOccurrences(of: "^", with: " caret ")
+  return replacePunctuationsOptimized(line, mode: "some")
 }
 
 /* this is used for "all" puncts */
 func replaceAllPuncs(_ line: String) -> String {
-  debugLogger.log("Enter: replaceAllPuncs")
-  return replaceSomePuncs(line)
-    .replacingOccurrences(of: "<", with: " less than ")
-    .replacingOccurrences(of: ">", with: " greater than ")
-    .replacingOccurrences(of: "'", with: " apostrophe ")
-    .replacingOccurrences(of: "*", with: " star ")
-    .replacingOccurrences(of: "@", with: " at sign ")
-    .replacingOccurrences(of: "_", with: " underline ")
-    .replacingOccurrences(of: ".", with: " dot ")
-    .replacingOccurrences(of: ",", with: " comma ")
-
+  return replacePunctuationsOptimized(line, mode: "all")
 }
 
 func ttsSplitCaps(_ p: String) async {
@@ -581,13 +671,11 @@ func instantTtsSyncState(_ p: String) async {
 func doTone(_ p: String) async {
   debugLogger.log("Enter: doTone")
   let ps = p.split(separator: " ")
-  Task {
-    await tonePlayer.playPureTone(
-      frequencyInHz: Int(ps[0]) ?? 500,
-      amplitude: await ss.toneVolume,
-      durationInMillis: Int(ps[1]) ?? 75
-    )
-  }
+  await tonePlayer.playPureTone(
+    frequencyInHz: Int(ps[0]) ?? 500,
+    amplitude: await ss.toneVolume,
+    durationInMillis: Int(ps[1]) ?? 75
+  )
 }
 
 func doPlaySound(_ path: String) async {
@@ -602,10 +690,8 @@ func doPlaySound(_ path: String) async {
     }
 
     debugLogger.log("Playing sound from URL: \(url)")
-    let volume = await ss.soundVolume  // Assuming this is a property call or async method
-    Task {
-      await SoundManager.shared.playSound(from: url, volume: volume)
-    }
+    let volume = await ss.soundVolume
+    await SoundManager.shared.playSound(from: url, volume: volume)
   } catch {
     debugLogger.log("An error occurred while trying to play sound: \(error)")
     // Handle error or simply log it to allow continuation of program execution
@@ -648,17 +734,11 @@ func doSpeak(_ what: String) async {
 }
 
 func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
-  // Regular expression pattern to match a space followed by an uppercase letter
-  // Using lookbehind and lookahead to ensure the uppercase letter is not consumed during split
-  let pattern = "(?<=\\s)(?=[A-Z])"
-
-  // Attempt to create a regular expression
-  guard let regex = try? NSRegularExpression(pattern: pattern) else {
-    // If regex can't be created, return the original string in an array as a fallback
-    return [input]
-  }
-
   // Use the regular expression to find matches, which are the split points in the string
+  guard case .success(let regex) = RegexStore.capitalSplitRegex else {
+    return [input] // Fallback to original string if regex failed
+  }
+  
   let range = NSRange(input.startIndex..., in: input)
   let matches = regex.matches(in: input, options: [], range: range)
 
@@ -666,7 +746,7 @@ func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
   var lastEndIndex = input.startIndex
   // Iterate through the matches to split the string
   for match in matches {
-    let matchRange = Range(match.range, in: input)!
+    guard let matchRange = Range(match.range, in: input) else { continue }
     // Add substring from last match end to current match start
     results.append(String(input[lastEndIndex..<matchRange.lowerBound]))
     lastEndIndex = matchRange.lowerBound
@@ -680,40 +760,38 @@ func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
 func _doSpeak(_ what: String) async {
   debugLogger.log("Enter: _doSpeak :: '\(what)'")
 
+  // Batch read all speech settings in one actor call for better performance
+  let settings = await ss.getSpeechSettings()
+  
   var temp: String
-  if await ss.splitCaps {
+  if settings.splitCaps {
     temp = insertSpaceBeforeUppercase(what)
   } else {
     temp = what
   }
   let utterance = AVSpeechUtterance(string: temp)
 
-  // Set the rate of speech (0.5 to 1.0)
-  utterance.rate = await ss.speechRate
+  // Set all speech parameters from batched read
+  utterance.rate = settings.speechRate
+  utterance.pitchMultiplier = settings.pitchMultiplier
+  utterance.volume = settings.voiceVolume
+  utterance.preUtteranceDelay = settings.nextPreDelay
+  utterance.postUtteranceDelay = settings.postDelay
+  utterance.voice = settings.voice
 
-  // Set the pitch multiplier (0.5 to 2.0)
-  utterance.pitchMultiplier = await ss.pitchMultiplier
-
-  // Set the volume (0.0 to 1.0)
-  utterance.volume = await ss.voiceVolume
-
-  // Set the pre-utterance delay (in seconds)
-  // when nextPredelay is read, it resets to 0 for next go
-  utterance.preUtteranceDelay = await ss.nextPreDelay
-
-  // Set the post-utterance delay (in seconds)
-  utterance.postUtteranceDelay = await ss.postDelay
-
-  // Set the voice
-  utterance.voice = await ss.voice
-
-  // Start speaking
+  // Start speaking - AVSpeechSynthesizer must be used on main thread
   if await notificationMode() {
-    DispatchQueue.global().async {
-      speaker.write(utterance, toBufferCallback: bufferHandler)
+    await MainActor.run {
+      speaker.write(utterance) { buffer in
+        Task {
+          await notificationEngine.handleBuffer(buffer)
+        }
+      }
     }
   } else {
-    speaker.speak(utterance)
+    await MainActor.run {
+      speaker.speak(utterance)
+    }
   }
 
 }

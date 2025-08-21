@@ -10,19 +10,32 @@ actor SoundManager {
             let player = try AVAudioPlayer(contentsOf: url)
             player.volume = volume
             player.prepareToPlay()
-            player.play()
-
-            // Generate a unique ID for each player instance to handle multiple instances for the same URL
+            
+            // Generate a unique ID for each player instance
             let playerId = UUID()
             audioPlayers[playerId] = player
-
-            // Use Task.sleep to delay the cleanup
-            try await Task.sleep(nanoseconds: UInt64(player.duration * 1_000_000_000))
+            
+            // Set up completion handling before starting playback
+            player.play()
+            
+            // Calculate safe cleanup delay - ensure minimum duration and handle edge cases
+            let duration = max(player.duration, 0.1) // Minimum 100ms
+            let cleanupDelay = duration + 0.1 // Add 100ms buffer
+            
+            // Use Task.sleep with safe duration
+            try await Task.sleep(nanoseconds: UInt64(cleanupDelay * 1_000_000_000))
 
             // Cleanup the player after it finishes
-            audioPlayers[playerId] = nil
+            await cleanupPlayer(playerId)
         } catch {
             print("Error loading sound: \(error)")
+        }
+    }
+    
+    private func cleanupPlayer(_ playerId: UUID) {
+        if let player = audioPlayers[playerId] {
+            player.stop()
+            audioPlayers[playerId] = nil
         }
     }
 }

@@ -17,7 +17,7 @@ import OggDecoder
 #endif
 let version = "2.8.2"
 let name = "swiftmac"
-let ss = StateStore.shared
+var ss = await StateStore()
 let speaker = AVSpeechSynthesizer()
 let tonePlayer = TonePlayerActor()
 

@@ -5,7 +5,6 @@ import Foundation
 import OggDecoder
 
 public actor StateStore {
-  static let shared = StateStore()
   private var _allCapsBeep: Bool = false
   public var allCapsBeep: Bool {
     get { _allCapsBeep }
@@ -100,7 +99,7 @@ public actor StateStore {
     set { _ttsDiscard = newValue }
   }
 
-  private var _voice: AVSpeechSynthesisVoice = AVSpeechSynthesisVoice()
+  private var _voice: AVSpeechSynthesisVoice = AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first ?? AVSpeechSynthesisVoice()
   public var voice: AVSpeechSynthesisVoice {
     get { _voice }
     set { _voice = newValue }
@@ -124,7 +123,7 @@ public actor StateStore {
     }
   }
 
-  private init() {
+  public init() {
     self.soundVolume = 1.0
     if let f = Float(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
       self.soundVolume = f
@@ -230,7 +229,7 @@ public actor StateStore {
         self._voice = voice
         voiceCache[cacheKey] = voice
       } else {
-        self._voice = AVSpeechSynthesisVoice()
+        self._voice = AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first ?? AVSpeechSynthesisVoice()
       }
     }
   }
@@ -238,7 +237,7 @@ public actor StateStore {
   private func getVoiceIdentifier(language: String?, voiceName: String?) -> String {
     debugLogger.log("Enter: getVoiceIdentifier")
 
-    let defaultVoice = AVSpeechSynthesisVoice()
+    let defaultVoice = AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first ?? AVSpeechSynthesisVoice()
 
     let voices = AVSpeechSynthesisVoice.speechVoices()
 
@@ -311,7 +310,7 @@ public actor StateStore {
     _splitCaps = false
     _toneVolume = 1.0
     _ttsDiscard = false
-    _voice = AVSpeechSynthesisVoice()
+    _voice = AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first ?? AVSpeechSynthesisVoice()
     _voiceVolume = 1.0
     _nextPreDelay = 0
     voiceCache.removeAll()

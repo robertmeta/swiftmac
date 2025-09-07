@@ -8,7 +8,15 @@
       "Bash(git commit:*)",
       "Bash(make:*)",
       "Bash(./bin/debug/swiftmac:*)",
-      "Bash(./.build/arm64-apple-macosx/debug/swiftmac)"
+      "Bash(./.build/arm64-apple-macosx/debug/swiftmac)",
+      "Bash(chmod:*)",
+      "Bash(./test-multiple-instances.sh:*)",
+      "Read(//private/tmp/**)",
+      "Read(//tmp/**)",
+      "Bash(./test-dual-mode.sh:*)",
+      "Bash(./test-proper-dual.sh:*)",
+      "Bash(SWIFTMAC_AUDIO_TARGET=right timeout 3 ./.build/debug/swiftmac -p 2222)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

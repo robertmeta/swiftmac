@@ -68,7 +68,7 @@ actor TonePlayerActor {
         try audioEngine.start()
       }
       
-      audioPlayer.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+      audioPlayer.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
         Task { [weak self] in
           await self?.handleBufferComplete()
         }

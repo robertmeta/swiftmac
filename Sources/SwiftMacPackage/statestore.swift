@@ -18,9 +18,16 @@ public actor StateStore {
   }
 
   private var _pendingQueue: [(String, String)] = []
+  private var pendingQueueHead: Int = 0
   public var pendingQueue: [(String, String)] {
-    get { _pendingQueue }
-    set { _pendingQueue = newValue }
+    get {
+      guard pendingQueueHead < _pendingQueue.count else { return [] }
+      return Array(_pendingQueue[pendingQueueHead...])
+    }
+    set {
+      _pendingQueue = newValue
+      pendingQueueHead = 0
+    }
   }
 
   public func appendToPendingQueue(_ item: (String, String)) {
@@ -28,15 +35,25 @@ public actor StateStore {
   }
 
   public func popFromPendingQueue() -> (String, String)? {
-    if !_pendingQueue.isEmpty {
-      return _pendingQueue.removeFirst()
+    guard pendingQueueHead < _pendingQueue.count else { return nil }
+    let item = _pendingQueue[pendingQueueHead]
+    pendingQueueHead += 1
+
+    if pendingQueueHead == _pendingQueue.count {
+      _pendingQueue.removeAll(keepingCapacity: true)
+      pendingQueueHead = 0
+    } else if pendingQueueHead > 32 && pendingQueueHead > _pendingQueue.count / 2 {
+      _pendingQueue.removeFirst(pendingQueueHead)
+      pendingQueueHead = 0
     }
-    return nil
+
+    return item
   }
 
   // Clear the pending queue
   public func clearPendingQueue() {
-    _pendingQueue.removeAll()
+    _pendingQueue.removeAll(keepingCapacity: true)
+    pendingQueueHead = 0
   }
 
   private var _pitchMultiplier: Float = 1.0
@@ -112,15 +129,16 @@ public actor StateStore {
   }
 
   private var _nextPreDelay: TimeInterval = 0
+
+  public func consumeNextPreDelay() -> TimeInterval {
+    let value = _nextPreDelay
+    _nextPreDelay = 0
+    return value
+  }
+
   public var nextPreDelay: TimeInterval {
-    get {
-      let value = _nextPreDelay
-      _nextPreDelay = 0
-      return value
-    }
-    set {
-      _nextPreDelay = newValue
-    }
+    get { _nextPreDelay }
+    set { _nextPreDelay = newValue }
   }
 
   public init() {
@@ -282,17 +300,26 @@ public actor StateStore {
   }
   
   // Batch read for speech settings to reduce actor calls
-  public func getSpeechSettings() -> (splitCaps: Bool, speechRate: Float, pitchMultiplier: Float, voiceVolume: Float, nextPreDelay: TimeInterval, postDelay: TimeInterval, voice: AVSpeechSynthesisVoice) {
-    let preDelay = _nextPreDelay
-    _nextPreDelay = 0  // Reset after reading
+  public func getSpeechSettings() -> (
+    splitCaps: Bool,
+    speechRate: Float,
+    pitchMultiplier: Float,
+    voiceVolume: Float,
+    nextPreDelay: TimeInterval,
+    postDelay: TimeInterval,
+    voice: AVSpeechSynthesisVoice,
+    audioTarget: String
+  ) {
+    let preDelay = consumeNextPreDelay()
     return (
       splitCaps: _splitCaps,
-      speechRate: _speechRate, 
+      speechRate: _speechRate,
       pitchMultiplier: _pitchMultiplier,
       voiceVolume: _voiceVolume,
       nextPreDelay: preDelay,
       postDelay: _postDelay,
-      voice: _voice
+      voice: _voice,
+      audioTarget: _audioTarget
     )
   }
 
@@ -300,6 +327,7 @@ public actor StateStore {
     _allCapsBeep = false
     _characterScale = 1.2
     _pendingQueue.removeAll()
+    pendingQueueHead = 0
     _pitchMultiplier = 1.0
     _postDelay = 0
     _preDelay = 0

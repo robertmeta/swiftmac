@@ -15,50 +15,122 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "3.0.4"
+let version = "3.1.0"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
-let speaker = AVSpeechSynthesizer()
+
+@MainActor
+final class SpeakerManager {
+  static let shared = SpeakerManager()
+  let synthesizer = AVSpeechSynthesizer()
+
+  private init() {}
+}
+
 let tonePlayer = TonePlayerActor()
+
+let networkQueue = DispatchQueue(label: "org.emacspeak.server.swiftmac.network")
+let commandLineChannel = CommandLineChannel()
+let connectionBufferManager = ConnectionBufferManager()
+
+actor ConnectionBufferManager {
+  private var buffers: [ObjectIdentifier: Data] = [:]
+
+  func extractLines(from data: Data, for connection: NWConnection) -> [String] {
+    let connectionID = ObjectIdentifier(connection)
+    var buffer = buffers[connectionID] ?? Data()
+    buffer.append(data)
+
+    var lines: [String] = []
+    let newline: UInt8 = 0x0A
+
+    while let newlineIndex = buffer.firstIndex(of: newline) {
+      let lineSlice = buffer[..<newlineIndex]
+      var lineData = Data(lineSlice)
+      if let lastByte = lineData.last, lastByte == 0x0D {
+        lineData.removeLast()
+      }
+
+      let lineString = String(decoding: lineData, as: UTF8.self)
+      lines.append(lineString)
+
+      let removeEndIndex = buffer.index(after: newlineIndex)
+      buffer.removeSubrange(..<removeEndIndex)
+    }
+
+    buffers[connectionID] = buffer
+    return lines
+  }
+
+  func clear(for connection: NWConnection) {
+    buffers.removeValue(forKey: ObjectIdentifier(connection))
+  }
+}
+
+final class CommandLineChannel: Sendable {
+  private let continuation: AsyncStream<String>.Continuation
+  let stream: AsyncStream<String>
+
+  init() {
+    var tempContinuation: AsyncStream<String>.Continuation!
+    stream = AsyncStream<String> { continuation in
+      tempContinuation = continuation
+    }
+    continuation = tempContinuation
+  }
+
+  func emit(_ line: String) {
+    continuation.yield(line)
+  }
+
+  func finish() {
+    continuation.finish()
+  }
+}
 
 // notification support
 let engine = AVAudioEngine()
 let playerNode = AVAudioPlayerNode()
 let environmentNode = AVAudioEnvironmentNode()
-// Define a closure to handle the output buffer
+
+// Thread-safe setup for notification audio
+let setupLock = NSLock()
 var outputFormat: AVAudioFormat?
+
 let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
-  guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
+  guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else { return }
 
-  if pcmBuffer.frameLength > 0 {
-    if outputFormat == nil {
-      outputFormat = pcmBuffer.format
-      engine.connect(playerNode, to: environmentNode, format: outputFormat)
-      engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
-      Task {
-        if await ss.audioTarget == "right" {
-          playerNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
-        }
-        if await ss.audioTarget == "left" {
-          playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
-        }
-      }
-      engine.prepare()
-
-      do {
-        try engine.start()
-      } catch {
-        print("Error starting audio engine: \(error.localizedDescription)")
-        return
+  setupLock.lock()
+  let needsSetup = outputFormat == nil
+  if needsSetup {
+    outputFormat = pcmBuffer.format
+    engine.connect(playerNode, to: environmentNode, format: outputFormat)
+    engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
+    Task {
+      let target = await ss.audioTarget
+      if target == "right" {
+        playerNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
+      } else if target == "left" {
+        playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
       }
     }
+    engine.prepare()
 
-    // Schedule the buffer for playback
-    playerNode.scheduleBuffer(pcmBuffer)
-
-    if !playerNode.isPlaying {
-      playerNode.play()
+    do {
+      try engine.start()
+    } catch {
+      print("Error starting audio engine: \(error.localizedDescription)")
+      setupLock.unlock()
+      return
     }
+  }
+  setupLock.unlock()
+
+  // Schedule the buffer for playback
+  playerNode.scheduleBuffer(pcmBuffer)
+
+  if !playerNode.isPlaying {
+    playerNode.play()
   }
 }
 
@@ -109,7 +181,7 @@ func startNetworkListener(port: NWEndpoint.Port) {
     handleConnection(newConnection)
   }
 
-  listener.start(queue: .main)
+  listener.start(queue: networkQueue)
 }
 
 func handleConnection(_ connection: NWConnection) {
@@ -129,7 +201,7 @@ func handleConnection(_ connection: NWConnection) {
     }
   }
 
-  connection.start(queue: .main)
+  connection.start(queue: networkQueue)
 }
 
 func receiveData(from connection: NWConnection) {
@@ -140,20 +212,21 @@ func receiveData(from connection: NWConnection) {
     if let error = error {
       debugLogger.log("Error receiving data: \(error)")
       connection.cancel()
+      Task {
+        await connectionBufferManager.clear(for: connection)
+      }
       return
     }
 
     if let data = data, !data.isEmpty {
-      let inputString = String(data: data, encoding: .utf8) ?? ""
-      let inputLines = inputString.components(separatedBy: CharacterSet.newlines)
-      debugLogger.log("string in \(inputLines)")
-      debugLogger.log("lines in \(inputLines)")
+      Task {
+        let lines = await connectionBufferManager.extractLines(from: data, for: connection)
+        debugLogger.log("received batch of \(lines.count) line(s)")
 
-      for inputLine in inputLines {
-        let trimmedLine = inputLine.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedLine.isEmpty {
-          Task {
-            await processInputLine(trimmedLine)
+        for inputLine in lines {
+          let trimmedLine = inputLine.trimmingCharacters(in: .whitespacesAndNewlines)
+          if !trimmedLine.isEmpty {
+            commandLineChannel.emit(trimmedLine)
           }
         }
       }
@@ -162,6 +235,9 @@ func receiveData(from connection: NWConnection) {
     if isComplete {
       debugLogger.log("Connection closed")
       connection.cancel()
+      Task {
+        await connectionBufferManager.clear(for: connection)
+      }
     } else {
       receiveData(from: connection)
     }
@@ -173,6 +249,12 @@ func main() async {
   debugLogger.log("Enter: main")
 
   let (port, shouldListen) = parseCommandLineArguments()
+
+  Task {
+    for await line in commandLineChannel.stream {
+      await processInputLine(line)
+    }
+  }
 
   if shouldListen, let port = port {
     debugLogger.log("Starting network listener on port \(port)")
@@ -192,8 +274,9 @@ func main() async {
   // Only read from stdin if NOT in network listening mode
   if !shouldListen {
     while let line = readLine() {
-      await processInputLine(line)
+      commandLineChannel.emit(line)
     }
+    commandLineChannel.finish()
   } else {
     // Keep the program running for network mode
     // Use a continuous async sleep to keep the async context alive
@@ -203,11 +286,12 @@ func main() async {
   }
 }
 
+
 func processInputLine(_ line: String) async {
   debugLogger.log("Enter: processInputLine")
 
   debugLogger.log("got line \(line)")
-  let (cmd, params) = await isolateCmdAndParams(line)
+  let (cmd, params) = isolateCmdAndParams(line)
   switch cmd {
   case "a": await processAndQueueAudioIcon(params)
   case "c": await processAndQueueCodes(params)
@@ -269,19 +353,17 @@ func queueLine(_ cmd: String, _ params: String) async {
   await ss.appendToPendingQueue((cmd, params))
 }
 
-func splitOnSquareStar(_ input: String) async -> [String] {
+func splitOnSquareStar(_ input: String) -> [String] {
   let separator = "[*]"
-  var result: [String] = []
-
   let parts = input.components(separatedBy: separator)
+
+  var result: [String] = []
   for (index, part) in parts.enumerated() {
     result.append(part)
-    // Add the separator back except after the last part
     if index < parts.count - 1 {
       result.append(separator)
     }
   }
-
   return result
 }
 
@@ -295,10 +377,11 @@ func insertSpaceBeforeUppercase(_ input: String) -> String {
   return modifiedString
 }
 
-@MainActor func instantTtsReset() async {
+@MainActor
+func instantTtsReset() async {
   debugLogger.log("Enter: instantTtsReset")
   await instantStopSpeaking()
-  ss = await StateStore()
+  await ss.reset()
 }
 
 func instantVersion() async {
@@ -321,9 +404,10 @@ func doSilence(_ p: String) async {
   }
 }
 
+@MainActor
 func instantTtsResume() async {
   debugLogger.log("Enter: instantTtsResume")
-  speaker.continueSpeaking()
+  SpeakerManager.shared.synthesizer.continueSpeaking()
 }
 
 func instantLetter(_ p: String) async {
@@ -346,8 +430,10 @@ func instantLetter(_ p: String) async {
   await ss.setPreDelay(oldPreDelay)
 }
 
+@MainActor
 func instantStopSpeaking() async {
   debugLogger.log("Enter: instantStopSpeaking")
+  let speaker = SpeakerManager.shared.synthesizer
   if speaker.isSpeaking {
     speaker.stopSpeaking(at: .immediate)
   }
@@ -358,17 +444,16 @@ func instantStopSpeaking() async {
 
 func isFirstLetterCapital(_ str: String) -> Bool {
   debugLogger.log("Enter: isFirstLetterCapital")
-  guard str.count > 0 else {
+  guard let firstChar = str.first else {
     return false
   }
-
-  let firstChar = str.first!
   return firstChar.isUppercase && firstChar.isLetter
 }
 
+@MainActor
 func instantTtsPause() async {
   debugLogger.log("Enter: instantTtsPause")
-  speaker.pauseSpeaking(at: .immediate)
+  SpeakerManager.shared.synthesizer.pauseSpeaking(at: .immediate)
 }
 
 func unknownLine(_ cmd: String, _ params: String) async {
@@ -590,13 +675,11 @@ func instantTtsSyncState(_ p: String) async {
 func doTone(_ p: String) async {
   debugLogger.log("Enter: doTone")
   let ps = p.split(separator: " ")
-  Task {
-    await tonePlayer.playPureTone(
-      frequencyInHz: Int(ps[0]) ?? 500,
-      amplitude: await ss.toneVolume,
-      durationInMillis: Int(ps[1]) ?? 75
-    )
-  }
+  await tonePlayer.playPureTone(
+    frequencyInHz: Int(ps[0]) ?? 500,
+    amplitude: await ss.toneVolume,
+    durationInMillis: Int(ps[1]) ?? 75
+  )
 }
 
 func doPlaySound(_ path: String) async {
@@ -604,20 +687,17 @@ func doPlaySound(_ path: String) async {
   let soundURL = URL(fileURLWithPath: path)
 
   do {
-    let decodedURL: URL? = try await decodeIfNeeded(soundURL)
+    let decodedURL = try await decodeIfNeeded(soundURL)
     guard let url = decodedURL else {
       debugLogger.log("Failed to get audio file URL from path: \(path)")
       return
     }
 
     debugLogger.log("Playing sound from URL: \(url)")
-    let volume = await ss.soundVolume  // Assuming this is a property call or async method
-    Task {
-      await SoundManager.shared.playSound(from: url, volume: volume)
-    }
+    let volume = await ss.soundVolume
+    await SoundManager.shared.playSound(from: url, volume: volume)
   } catch {
     debugLogger.log("An error occurred while trying to play sound: \(error)")
-    // Handle error or simply log it to allow continuation of program execution
   }
 }
 
@@ -644,8 +724,9 @@ func instantTtsSay(_ p: String) async {
 }
 
 // Because all speaking must handle [*]
+@MainActor
 func doSpeak(_ what: String) async {
-  let parts = await splitOnSquareStar(what)
+  let parts = splitOnSquareStar(what)
   for part in parts {
     if part == "[*]" {
       await doSilence("0")
@@ -656,75 +737,55 @@ func doSpeak(_ what: String) async {
   }
 }
 
-func splitStringAtSpaceBeforeCapitalLetter(_ input: String) async -> [String] {
-  // Regular expression pattern to match a space followed by an uppercase letter
-  // Using lookbehind and lookahead to ensure the uppercase letter is not consumed during split
+func splitStringAtSpaceBeforeCapitalLetter(_ input: String) -> [String] {
   let pattern = "(?<=\\s)(?=[A-Z])"
 
-  // Attempt to create a regular expression
   guard let regex = try? NSRegularExpression(pattern: pattern) else {
-    // If regex can't be created, return the original string in an array as a fallback
     return [input]
   }
 
-  // Use the regular expression to find matches, which are the split points in the string
   let range = NSRange(input.startIndex..., in: input)
   let matches = regex.matches(in: input, options: [], range: range)
 
   var results = [String]()
   var lastEndIndex = input.startIndex
-  // Iterate through the matches to split the string
+
   for match in matches {
-    let matchRange = Range(match.range, in: input)!
-    // Add substring from last match end to current match start
+    guard let matchRange = Range(match.range, in: input) else { continue }
     results.append(String(input[lastEndIndex..<matchRange.lowerBound]))
     lastEndIndex = matchRange.lowerBound
   }
-  // Add the remaining part of the string after the last match
   results.append(String(input[lastEndIndex...]))
 
   return results
 }
 
+@MainActor
 func _doSpeak(_ what: String) async {
   debugLogger.log("Enter: _doSpeak :: '\(what)'")
 
-  var temp: String
-  if await ss.splitCaps {
-    temp = insertSpaceBeforeUppercase(what)
-  } else {
-    temp = what
-  }
-  let utterance = AVSpeechUtterance(string: temp)
+  let settings = await ss.getSpeechSettings()
 
-  // Set the rate of speech (0.5 to 1.0)
-  utterance.rate = await ss.speechRate
+  let textToSpeak = settings.splitCaps ? insertSpaceBeforeUppercase(what) : what
+  let utterance = AVSpeechUtterance(string: textToSpeak)
 
-  // Set the pitch multiplier (0.5 to 2.0)
-  utterance.pitchMultiplier = await ss.pitchMultiplier
+  utterance.rate = settings.speechRate
+  utterance.pitchMultiplier = settings.pitchMultiplier
+  utterance.volume = settings.voiceVolume
+  utterance.preUtteranceDelay = settings.nextPreDelay
+  utterance.postUtteranceDelay = settings.postDelay
+  utterance.voice = settings.voice
 
-  // Set the volume (0.0 to 1.0)
-  utterance.volume = await ss.voiceVolume
-
-  // Set the pre-utterance delay (in seconds)
-  // when nextPredelay is read, it resets to 0 for next go
-  utterance.preUtteranceDelay = await ss.nextPreDelay
-
-  // Set the post-utterance delay (in seconds)
-  utterance.postUtteranceDelay = await ss.postDelay
-
-  // Set the voice
-  utterance.voice = await ss.voice
-
-  // Start speaking
-  if await notificationMode() {
+  let speaker = SpeakerManager.shared.synthesizer
+  // Use audioTarget from settings to determine notification mode
+  let isNotificationMode = settings.audioTarget == "right" || settings.audioTarget == "left"
+  if isNotificationMode {
     DispatchQueue.global().async {
       speaker.write(utterance, toBufferCallback: bufferHandler)
     }
   } else {
     speaker.speak(utterance)
   }
-
 }
 
 func instantTtsExit() async {
@@ -732,30 +793,24 @@ func instantTtsExit() async {
   exit(0)
 }
 
-func isolateCommand(_ line: String) async -> String {
+func isolateCommand(_ line: String) -> String {
   debugLogger.log("Enter: isolateCommand")
-  var cmd = line.trimmingCharacters(in: .whitespacesAndNewlines)
+  let cmd = line.trimmingCharacters(in: .whitespacesAndNewlines)
   if let firstIndex = cmd.firstIndex(of: " ") {
-    cmd.replaceSubrange(firstIndex..<cmd.endIndex, with: "")
-    return cmd
+    return String(cmd[..<firstIndex])
   }
   return cmd
 }
 
-func isolateCmdAndParams(_ line: String) async -> (String, String) {
+func isolateCmdAndParams(_ line: String) -> (String, String) {
   debugLogger.log("Enter: isolateParams")
-  let justCmd = await isolateCommand(line)
+  let justCmd = isolateCommand(line)
   let cmd = justCmd + " "
 
   var params = line.replacingOccurrences(of: "^" + cmd, with: "", options: .regularExpression)
   params = params.trimmingCharacters(in: .whitespacesAndNewlines)
   if params.hasPrefix("{") && params.hasSuffix("}") {
-    if let lastIndex = params.lastIndex(of: "}") {
-      params.replaceSubrange(lastIndex...lastIndex, with: "")
-    }
-    if let firstIndex = params.firstIndex(of: "{") {
-      params.replaceSubrange(firstIndex...firstIndex, with: "")
-    }
+    params = String(params.dropFirst().dropLast())
   }
   debugLogger.log("Exit: isolateParams: \(params)")
   return (justCmd, params)

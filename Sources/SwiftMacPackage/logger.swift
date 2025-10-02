@@ -44,8 +44,18 @@ class Logger {
     func log(_ m: String) {
       let message = m + "\n"
       backgroundQueue.async { [weak self] in
-        guard let self = self,
-              let handle = self.fileHandle,
+        guard let self = self else { return }
+
+        // Reopen handle if it was closed/deleted
+        if self.fileHandle == nil {
+          self.fileHandle = try? FileHandle(forWritingTo: self.fileURL)
+          if self.fileHandle == nil {
+            FileManager.default.createFile(atPath: self.fileURL.path, contents: nil)
+            self.fileHandle = try? FileHandle(forWritingTo: self.fileURL)
+          }
+        }
+
+        guard let handle = self.fileHandle,
               let data = message.data(using: .utf8) else { return }
 
         handle.seekToEndOfFile()

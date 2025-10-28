@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "3.1.0"
+let version = "3.2.0"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 

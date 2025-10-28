@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "3.3.0"
+let version = "3.2.0"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 
@@ -718,11 +718,11 @@ func doTone(_ p: String) async {
   }
   await AudioTaskManager.shared.addTask(task)
 
-  // Wait for the tone to finish playing
-  await task.value
-
   // Clean up after task completes
-  await AudioTaskManager.shared.removeTask(task)
+  Task {
+    _ = await task.value
+    await AudioTaskManager.shared.removeTask(task)
+  }
 }
 
 func doPlaySound(_ path: String) async {
@@ -744,11 +744,11 @@ func doPlaySound(_ path: String) async {
     }
     await AudioTaskManager.shared.addTask(task)
 
-    // Wait for the audio to finish playing
-    await task.value
-
     // Clean up after task completes
-    await AudioTaskManager.shared.removeTask(task)
+    Task {
+      _ = await task.value
+      await AudioTaskManager.shared.removeTask(task)
+    }
   } catch {
     debugLogger.log("An error occurred while trying to play sound: \(error)")
   }

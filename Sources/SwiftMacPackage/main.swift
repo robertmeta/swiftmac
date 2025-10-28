@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "3.2.0"
+let version = "3.1.0"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 
@@ -25,27 +25,6 @@ final class SpeakerManager {
   let synthesizer = AVSpeechSynthesizer()
 
   private init() {}
-}
-
-// Track active audio tasks so they can be cancelled
-actor AudioTaskManager {
-  static let shared = AudioTaskManager()
-  private var activeTasks: Set<Task<Void, Never>> = []
-
-  func addTask(_ task: Task<Void, Never>) {
-    activeTasks.insert(task)
-  }
-
-  func removeTask(_ task: Task<Void, Never>) {
-    activeTasks.remove(task)
-  }
-
-  func cancelAll() {
-    for task in activeTasks {
-      task.cancel()
-    }
-    activeTasks.removeAll()
-  }
 }
 
 let tonePlayer = TonePlayerActor()
@@ -283,17 +262,13 @@ func main() async {
   }
 
   if await notificationMode() {
-    await Task { @MainActor in
-      await instantTtsSay("notification mode on")
-    }.value
+    await instantTtsSay("notification mode on")
 
     // Setup notification audio routing
     engine.attach(playerNode)
     engine.attach(environmentNode)
   } else {
-    await Task { @MainActor in
-      await instantVersion()
-    }.value
+    await instantVersion()
   }
 
   // Only read from stdin if NOT in network listening mode
@@ -321,17 +296,17 @@ func processInputLine(_ line: String) async {
   case "a": await processAndQueueAudioIcon(params)
   case "c": await processAndQueueCodes(params)
   case "d": await dispatchPendingQueue()
-  case "l": await Task { @MainActor in await instantLetter(params) }.value
+  case "l": await instantLetter(params)
   case "p": await doPlaySound(params)
   case "q": await queueLine(cmd, params)
-  case "s": await Task { @MainActor in await instantStopSpeaking() }.value
+  case "s": await instantStopSpeaking()
   case "sh": await queueLine(cmd, params)
   case "t": await queueLine(cmd, params)
   case "tts_allcaps_beep": await queueLine(cmd, params)
   case "set_lang": await ttsSetVoice(params)
   case "tts_exit": await instantTtsExit()
-  case "tts_reset": await Task { @MainActor in await instantTtsReset() }.value
-  case "tts_say": await Task { @MainActor in await instantTtsSay(params) }.value
+  case "tts_reset": await instantTtsReset()
+  case "tts_say": await instantTtsSay(params)
   case "tts_set_character_scale": await queueLine(cmd, params)
   case "tts_set_pitch_multiplier": await queueLine(cmd, params)
   case "tts_set_punctuations": await queueLine(cmd, params)
@@ -342,7 +317,7 @@ func processInputLine(_ line: String) async {
   case "tts_set_voice_volume": await queueLine(cmd, params)
   case "tts_split_caps": await queueLine(cmd, params)
   case "tts_sync_state": await instantTtsSyncState(params)
-  case "version": await Task { @MainActor in await instantVersion() }.value
+  case "version": await instantVersion()
   default: await unknownLine(cmd, params)
   }
 }
@@ -356,7 +331,7 @@ func dispatchPendingQueue() async {
     debugLogger.log("got queued \(cmd) \(params)")
     switch cmd {
     case "p": await doPlaySound(params)  // just like p in mainloop
-    case "q": await Task { @MainActor in await doSpeak(params) }.value
+    case "q": await doSpeak(params)
     case "sh": await doSilence(params)
     case "t": await doTone(params)
     case "tts_allcaps_beep": await ttsAllCapsBeep(params)
@@ -409,7 +384,6 @@ func instantTtsReset() async {
   await ss.reset()
 }
 
-@MainActor
 func instantVersion() async {
   debugLogger.log("Enter: instantVersion")
   let sayVersion = version.replacingOccurrences(of: ".", with: " dot ")
@@ -436,7 +410,6 @@ func instantTtsResume() async {
   SpeakerManager.shared.synthesizer.continueSpeaking()
 }
 
-@MainActor
 func instantLetter(_ p: String) async {
   debugLogger.log("Enter: unknownLine")
   let oldPitchMultiplier = await ss.pitchMultiplier
@@ -467,11 +440,6 @@ func instantStopSpeaking() async {
   if playerNode.isPlaying {
     playerNode.stop()
   }
-  // Cancel all pending audio/tone tasks
-  await AudioTaskManager.shared.cancelAll()
-  // Stop all active audio icons and tones
-  await SoundManager.shared.stop()
-  await tonePlayer.stop()
 }
 
 func isFirstLetterCapital(_ str: String) -> Bool {
@@ -707,22 +675,11 @@ func instantTtsSyncState(_ p: String) async {
 func doTone(_ p: String) async {
   debugLogger.log("Enter: doTone")
   let ps = p.split(separator: " ")
-  let volume = await ss.toneVolume
-
-  let task = Task {
-    await tonePlayer.playPureTone(
-      frequencyInHz: Int(ps[0]) ?? 500,
-      amplitude: volume,
-      durationInMillis: Int(ps[1]) ?? 75
-    )
-  }
-  await AudioTaskManager.shared.addTask(task)
-
-  // Clean up after task completes
-  Task {
-    _ = await task.value
-    await AudioTaskManager.shared.removeTask(task)
-  }
+  await tonePlayer.playPureTone(
+    frequencyInHz: Int(ps[0]) ?? 500,
+    amplitude: await ss.toneVolume,
+    durationInMillis: Int(ps[1]) ?? 75
+  )
 }
 
 func doPlaySound(_ path: String) async {
@@ -738,17 +695,7 @@ func doPlaySound(_ path: String) async {
 
     debugLogger.log("Playing sound from URL: \(url)")
     let volume = await ss.soundVolume
-
-    let task = Task {
-      await SoundManager.shared.playSound(from: url, volume: volume)
-    }
-    await AudioTaskManager.shared.addTask(task)
-
-    // Clean up after task completes
-    Task {
-      _ = await task.value
-      await AudioTaskManager.shared.removeTask(task)
-    }
+    await SoundManager.shared.playSound(from: url, volume: volume)
   } catch {
     debugLogger.log("An error occurred while trying to play sound: \(error)")
   }
@@ -769,7 +716,6 @@ private func decodeIfNeeded(_ url: URL) async throws -> URL? {
   }
 }
 
-@MainActor
 func instantTtsSay(_ p: String) async {
   debugLogger.log("Enter: instantTtsSay")
   debugLogger.log("ttsSay: \(p)")

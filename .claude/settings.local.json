@@ -16,11 +16,7 @@
       "Bash(./test-dual-mode.sh:*)",
       "Bash(./test-proper-dual.sh:*)",
       "Bash(SWIFTMAC_AUDIO_TARGET=right timeout 3 ./.build/debug/swiftmac -p 2222)",
-      "Bash(pkill:*)",
-      "Bash(./.build/debug/swiftmac:*)",
-      "Bash(timeout:*)",
-      "Bash(SWIFTMAC_AUDIO_TARGET=none echo \"version\")",
-      "Bash(export SWIFTMAC_AUDIO_TARGET=none)"
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

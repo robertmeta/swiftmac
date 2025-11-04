@@ -21,7 +21,8 @@
       "Bash(timeout:*)",
       "Bash(SWIFTMAC_AUDIO_TARGET=none echo \"version\")",
       "Bash(export SWIFTMAC_AUDIO_TARGET=none)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(export EMACSPEAK_DIR=\"$HOME/.emacspeak\")"
     ],
     "deny": [],
     "ask": []

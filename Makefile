@@ -11,7 +11,7 @@ quick: debug
 release: clean
 	@swift build -c release 
 
-debug: clean
+debug:
 	@swift build 
 
 support-files:
@@ -106,3 +106,11 @@ install-binary: download-latest-release
 	@cp -rvf swiftmac/* $(EMACSPEAK)/servers
 	@rm latest-release.tar.gz
 	@rm -rf swiftmac/
+
+test-emacs: debug
+	@echo "Launching clean Emacs with debug build..."
+	@DTK_PROGRAM="$(CURDIR)/.build/debug/swiftmac" emacs -Q -l "$(CURDIR)/minimal-emacspeak-init.el"
+
+test-emacs-release: release
+	@echo "Launching clean Emacs with release build..."
+	@DTK_PROGRAM="$(CURDIR)/.build/release/swiftmac" emacs -Q -l "$(CURDIR)/minimal-emacspeak-init.el"

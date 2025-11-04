@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "3.2.1"
+let version = "3.5.0"
 let name = "swiftmac"
 var ss = await StateStore()  // just create new one to reset
 
@@ -467,11 +467,9 @@ func instantStopSpeaking() async {
   if playerNode.isPlaying {
     playerNode.stop()
   }
-  // Cancel all pending audio/tone tasks
-  await AudioTaskManager.shared.cancelAll()
-  // Stop all active audio icons and tones
-  await SoundManager.shared.stop()
-  await tonePlayer.stop()
+  // NOTE: We do NOT cancel audio icons and tones here
+  // This allows beeps/audio to overlap with speech
+  // Only speech itself is stopped
 }
 
 func isFirstLetterCapital(_ str: String) -> Bool {

@@ -14,7 +14,7 @@ actor TonePlayerActor {
     
     guard let format = AVAudioFormat(
       commonFormat: .pcmFormatFloat32, 
-      sampleRate: mixer.outputFormat(forBus: 0).sampleRate,
+      sampleRate: 44_100,
       channels: AVAudioChannelCount(1), 
       interleaved: false) else { return }
     
@@ -28,7 +28,7 @@ actor TonePlayerActor {
     setupEngineIfNeeded()
     
     let mixer = audioEngine.mainMixerNode
-    let sampleRateHz = Float(mixer.outputFormat(forBus: 0).sampleRate)
+    let sampleRateHz: Float = 44_100
 
     guard let format = AVAudioFormat(
       commonFormat: .pcmFormatFloat32, 

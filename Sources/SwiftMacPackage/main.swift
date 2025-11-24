@@ -17,7 +17,7 @@ import OggDecoder
 #endif
 let version = "3.5.0"
 let name = "swiftmac"
-var ss = await StateStore()  // just create new one to reset
+var ss = StateStore()  // just create new one to reset
 
 @MainActor
 final class SpeakerManager {

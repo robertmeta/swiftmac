@@ -25,11 +25,13 @@ support-files:
 	@sort -o $(SERVERS)/.servers $(SERVERS)/.servers
 
 install: release support-files backup-if-exists
+	@rm -f $(SERVERS)/swiftmac
 	@cp .build/release/swiftmac $(SERVERS)/swiftmac
 	@cp -rf .build/release/ogg.framework $(SERVERS)/ogg.framework
 	@cp -rf .build/release/vorbis.framework $(SERVERS)/vorbis.framework
 
 install-debug: debug support-files backup-if-exists
+	@rm -f $(SERVERS)/swiftmac
 	@cp .build/debug/swiftmac $(SERVERS)/swiftmac
 
 backup-if-exists:

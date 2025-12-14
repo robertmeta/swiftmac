@@ -18,7 +18,7 @@ support-files:
 	@cp cloud-swiftmac $(SERVERS)/cloud-swiftmac
 	@cp swiftmac-voices.el $(LISP)/swiftmac-voices.el
 	@cp log-swiftmac $(SERVERS)/log-swiftmac
-	@sed -i '' '/swiftmac/d' $(SERVERS)/.servers
+	@sed -i.bak '/swiftmac/d' $(SERVERS)/.servers && rm $(SERVERS)/.servers.bak
 	@echo "swiftmac" >>  $(SERVERS)/.servers
 	@echo "log-swiftmac" >> $(SERVERS)/.servers
 	@echo "cloud-swiftmac" >> $(SERVERS)/.servers

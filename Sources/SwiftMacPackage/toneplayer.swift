@@ -5,35 +5,39 @@ actor TonePlayerActor {
   private let audioPlayer = AVAudioPlayerNode()
   private let audioEngine = AVAudioEngine()
   private var isEngineSetup = false
+  private var cachedSampleRate: Double = 44_100 // Default fallback
 
   private func setupEngineIfNeeded() {
     guard !isEngineSetup else { return }
-    
+
+    // Get the device's actual sample rate from the output node
+    let deviceSampleRate = audioEngine.outputNode.outputFormat(forBus: 0).sampleRate
+    cachedSampleRate = deviceSampleRate > 0 ? deviceSampleRate : 44_100
+
     audioEngine.attach(audioPlayer)
     let mixer = audioEngine.mainMixerNode
-    
+
     guard let format = AVAudioFormat(
-      commonFormat: .pcmFormatFloat32, 
-      sampleRate: 44_100,
-      channels: AVAudioChannelCount(1), 
+      commonFormat: .pcmFormatFloat32,
+      sampleRate: cachedSampleRate,
+      channels: AVAudioChannelCount(1),
       interleaved: false) else { return }
-    
+
     audioEngine.connect(audioPlayer, to: mixer, format: format)
     audioEngine.prepare()
-    
+
     isEngineSetup = true
   }
 
   func playPureTone(frequencyInHz: Int, amplitude: Float, durationInMillis: Int) async {
     setupEngineIfNeeded()
-    
-    let mixer = audioEngine.mainMixerNode
-    let sampleRateHz: Float = 44_100
+
+    let sampleRateHz = Float(cachedSampleRate)
 
     guard let format = AVAudioFormat(
-      commonFormat: .pcmFormatFloat32, 
-      sampleRate: Double(sampleRateHz),
-      channels: AVAudioChannelCount(1), 
+      commonFormat: .pcmFormatFloat32,
+      sampleRate: cachedSampleRate,
+      channels: AVAudioChannelCount(1),
       interleaved: false) else { return }
 
     let totalDurationSeconds = Float(durationInMillis) / 1000

@@ -118,23 +118,80 @@ let environmentNode = AVAudioEnvironmentNode()
 let setupLock = NSLock()
 var outputFormat: AVAudioFormat?
 
+// Silence detection and trimming functions
+func detectSilenceBounds(buffer: AVAudioPCMBuffer, threshold: Float = 0.01) -> (start: Int, end: Int)? {
+  guard let channelData = buffer.floatChannelData?[0] else { return nil }
+  let frameLength = Int(buffer.frameLength)
+
+  // Find first non-silent sample
+  var start = 0
+  for i in 0..<frameLength {
+    if abs(channelData[i]) > threshold {
+      start = i
+      break
+    }
+  }
+
+  // Find last non-silent sample
+  var end = frameLength - 1
+  for i in stride(from: frameLength - 1, through: 0, by: -1) {
+    if abs(channelData[i]) > threshold {
+      end = i
+      break
+    }
+  }
+
+  // If no audio found, return nil
+  if start >= end {
+    return nil
+  }
+
+  return (start, end)
+}
+
+func trimSilence(buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+  guard let bounds = detectSilenceBounds(buffer: buffer) else {
+    // All silence, return minimal buffer
+    return buffer
+  }
+
+  let trimmedLength = bounds.end - bounds.start + 1
+  guard let format = buffer.format as? AVAudioFormat,
+        let trimmedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(trimmedLength)) else {
+    return buffer
+  }
+
+  trimmedBuffer.frameLength = AVAudioFrameCount(trimmedLength)
+
+  // Copy non-silent audio data
+  for channel in 0..<Int(buffer.format.channelCount) {
+    guard let sourceData = buffer.floatChannelData?[channel],
+          let destData = trimmedBuffer.floatChannelData?[channel] else {
+      continue
+    }
+
+    for i in 0..<trimmedLength {
+      destData[i] = sourceData[bounds.start + i]
+    }
+  }
+
+  return trimmedBuffer
+}
+
 let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else { return }
+
+  // Trim silence from buffer for faster response
+  guard let trimmedBuffer = trimSilence(buffer: pcmBuffer) else { return }
 
   setupLock.lock()
   let needsSetup = outputFormat == nil
   if needsSetup {
-    outputFormat = pcmBuffer.format
+    outputFormat = trimmedBuffer.format
+    engine.attach(playerNode)
+    engine.attach(environmentNode)
     engine.connect(playerNode, to: environmentNode, format: outputFormat)
     engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
-    Task {
-      let target = await ss.audioTarget
-      if target == "right" {
-        playerNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
-      } else if target == "left" {
-        playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
-      }
-    }
     engine.prepare()
 
     do {
@@ -145,10 +202,23 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
       return
     }
   }
+
+  // Update 3D position based on audio target (notification mode)
+  Task {
+    let target = await ss.audioTarget
+    if target == "right" {
+      environmentNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
+    } else if target == "left" {
+      environmentNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
+    } else {
+      // Normal mode: center position
+      environmentNode.position = AVAudio3DPoint(x: 0, y: 0, z: 0)
+    }
+  }
   setupLock.unlock()
 
-  // Schedule the buffer for playback
-  playerNode.scheduleBuffer(pcmBuffer)
+  // Schedule the trimmed buffer for playback (faster response, no padding)
+  playerNode.scheduleBuffer(trimmedBuffer)
 
   if !playerNode.isPlaying {
     playerNode.play()
@@ -829,14 +899,9 @@ func _doSpeak(_ what: String) async {
   utterance.voice = settings.voice
 
   let speaker = SpeakerManager.shared.synthesizer
-  // Use audioTarget from settings to determine notification mode
-  let isNotificationMode = settings.audioTarget == "right" || settings.audioTarget == "left"
-  if isNotificationMode {
-    DispatchQueue.global().async {
-      speaker.write(utterance, toBufferCallback: bufferHandler)
-    }
-  } else {
-    speaker.speak(utterance)
+  // Always use buffer approach for silence trimming and better responsiveness
+  DispatchQueue.global().async {
+    speaker.write(utterance, toBufferCallback: bufferHandler)
   }
 }
 

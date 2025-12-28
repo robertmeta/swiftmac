@@ -829,14 +829,9 @@ func _doSpeak(_ what: String) async {
   utterance.voice = settings.voice
 
   let speaker = SpeakerManager.shared.synthesizer
-  // Use audioTarget from settings to determine notification mode
-  let isNotificationMode = settings.audioTarget == "right" || settings.audioTarget == "left"
-  if isNotificationMode {
-    DispatchQueue.global().async {
-      speaker.write(utterance, toBufferCallback: bufferHandler)
-    }
-  } else {
-    speaker.speak(utterance)
+  // Always use buffer approach for consistent audio handling (no trimming yet)
+  DispatchQueue.global().async {
+    speaker.write(utterance, toBufferCallback: bufferHandler)
   }
 }
 

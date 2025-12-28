@@ -200,9 +200,46 @@ public actor StateStore {
 
     self.audioTarget = self.getEnvironmentVariable("SWIFTMAC_AUDIO_TARGET")
 
+    // Parse audio routing configurations from environment variables
+    if let routing = parseDeviceAndChannel(
+      getEnvironmentVariable("SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL")
+    ) {
+      self._speechRouting = routing
+    }
+
+    if let routing = parseDeviceAndChannel(
+      getEnvironmentVariable("SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL")
+    ) {
+      self._notificationRouting = routing
+    }
+
+    if let routing = parseDeviceAndChannel(
+      getEnvironmentVariable("SWIFTMAC_TONE_DEVICE_AND_CHANNEL")
+    ) {
+      self._toneRouting = routing
+    }
+
+    if let routing = parseDeviceAndChannel(
+      getEnvironmentVariable("SWIFTMAC_SOUNDEFFECT_DEVICE_AND_CHANNEL")
+    ) {
+      self._soundEffectRouting = routing
+    }
+
     debugLogger.log("soundVolume \(self.soundVolume)")
     debugLogger.log("toneVolume \(self.toneVolume)")
     debugLogger.log("voiceVolume \(self.voiceVolume)")
+    debugLogger.log(
+      "speechRouting device:\(self._speechRouting.deviceID) channel:\(self._speechRouting.channelMode)"
+    )
+    debugLogger.log(
+      "notificationRouting device:\(self._notificationRouting.deviceID) channel:\(self._notificationRouting.channelMode)"
+    )
+    debugLogger.log(
+      "toneRouting device:\(self._toneRouting.deviceID) channel:\(self._toneRouting.channelMode)"
+    )
+    debugLogger.log(
+      "soundEffectRouting device:\(self._soundEffectRouting.deviceID) channel:\(self._soundEffectRouting.channelMode)"
+    )
   }
 
   public func getCharacterRate() async -> Float {
@@ -211,6 +248,22 @@ public actor StateStore {
 
   private func getEnvironmentVariable(_ variable: String) -> String {
     return ProcessInfo.processInfo.environment[variable] ?? ""
+  }
+
+  private func parseDeviceAndChannel(_ value: String) -> AudioRouting? {
+    guard !value.isEmpty else { return nil }
+
+    let parts = value.split(separator: ":")
+    guard let deviceID = UInt32(parts[0]) else { return nil }
+
+    let channelMode: ChannelMode
+    if parts.count > 1 {
+      channelMode = ChannelMode(rawValue: String(parts[1])) ?? .both
+    } else {
+      channelMode = .both
+    }
+
+    return AudioRouting(deviceID: deviceID, channelMode: channelMode)
   }
 
   public func setAllCapsBeep(_ value: Bool) {
@@ -396,5 +449,22 @@ public actor StateStore {
       self._voiceVolume = f
     }
     self._audioTarget = self.getEnvironmentVariable("SWIFTMAC_AUDIO_TARGET")
+  }
+
+  // Audio routing setters
+  public func setSpeechRouting(_ routing: AudioRouting) {
+    self._speechRouting = routing
+  }
+
+  public func setNotificationRouting(_ routing: AudioRouting) {
+    self._notificationRouting = routing
+  }
+
+  public func setToneRouting(_ routing: AudioRouting) {
+    self._toneRouting = routing
+  }
+
+  public func setSoundEffectRouting(_ routing: AudioRouting) {
+    self._soundEffectRouting = routing
   }
 }

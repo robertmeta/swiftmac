@@ -467,6 +467,11 @@ func instantStopSpeaking() async {
   if playerNode.isPlaying {
     playerNode.stop()
   }
+  // Reset playerNode to flush all scheduled buffers
+  // This prevents old audio from playing after stop
+  playerNode.reset()
+
+  debugLogger.log("Speech stopped and buffers flushed")
   // NOTE: We do NOT cancel audio icons and tones here
   // This allows beeps/audio to overlap with speech
   // Only speech itself is stopped

@@ -165,6 +165,64 @@ class ChunkQueue {
 
 let chunkQueue = ChunkQueue()
 
+// Aggressive silence trimming - safe now because chunks are single-buffer units
+func detectSilenceBounds(buffer: AVAudioPCMBuffer, threshold: Float = 0.01) -> (start: Int, end: Int)? {
+  guard let channelData = buffer.floatChannelData?[0] else { return nil }
+  let frameLength = Int(buffer.frameLength)
+
+  // Find first non-silent sample
+  var start = 0
+  for i in 0..<frameLength {
+    if abs(channelData[i]) > threshold {
+      start = i
+      break
+    }
+  }
+
+  // Find last non-silent sample
+  var end = frameLength - 1
+  for i in stride(from: frameLength - 1, through: 0, by: -1) {
+    if abs(channelData[i]) > threshold {
+      end = i
+      break
+    }
+  }
+
+  if start >= end {
+    return nil
+  }
+
+  return (start, end)
+}
+
+func trimSilence(buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+  guard let bounds = detectSilenceBounds(buffer: buffer) else {
+    return buffer
+  }
+
+  let trimmedLength = bounds.end - bounds.start + 1
+  guard let format = buffer.format as? AVAudioFormat,
+        let trimmedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(trimmedLength)) else {
+    return buffer
+  }
+
+  trimmedBuffer.frameLength = AVAudioFrameCount(trimmedLength)
+
+  // Copy non-silent audio data
+  for channel in 0..<Int(buffer.format.channelCount) {
+    guard let sourceData = buffer.floatChannelData?[channel],
+          let destData = trimmedBuffer.floatChannelData?[channel] else {
+      continue
+    }
+
+    for i in 0..<trimmedLength {
+      destData[i] = sourceData[bounds.start + i]
+    }
+  }
+
+  return trimmedBuffer
+}
+
 let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
 
@@ -174,10 +232,13 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
     return
   }
 
+  // Trim silence aggressively (safe because chunks are single-buffer units)
+  guard let trimmedBuffer = trimSilence(buffer: pcmBuffer) else { return }
+
   setupLock.lock()
   let needsSetup = outputFormat == nil
   if needsSetup {
-    outputFormat = pcmBuffer.format
+    outputFormat = trimmedBuffer.format
     engine.connect(playerNode, to: environmentNode, format: outputFormat)
     engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
     Task {
@@ -200,8 +261,8 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   }
   setupLock.unlock()
 
-  // Schedule the buffer for playback
-  playerNode.scheduleBuffer(pcmBuffer)
+  // Schedule the trimmed buffer for playback
+  playerNode.scheduleBuffer(trimmedBuffer)
 
   if !playerNode.isPlaying {
     playerNode.play()

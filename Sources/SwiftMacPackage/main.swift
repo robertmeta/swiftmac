@@ -282,14 +282,14 @@ func main() async {
     startNetworkListener(port: NWEndpoint.Port(rawValue: UInt16(port))!)
   }
 
+  // Setup audio engine for buffer-based playback (needed for all modes now)
+  engine.attach(playerNode)
+  engine.attach(environmentNode)
+
   if await notificationMode() {
     await Task { @MainActor in
       await instantTtsSay("notification mode on")
     }.value
-
-    // Setup notification audio routing
-    engine.attach(playerNode)
-    engine.attach(environmentNode)
   } else {
     await Task { @MainActor in
       await instantVersion()

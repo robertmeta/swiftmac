@@ -118,8 +118,61 @@ let environmentNode = AVAudioEnvironmentNode()
 let setupLock = NSLock()
 var outputFormat: AVAudioFormat?
 
+// Chunk queue for sequential playback
+class ChunkQueue {
+  private var chunks: [AVSpeechUtterance] = []
+  private var isProcessing = false
+  private let lock = NSLock()
+
+  func enqueue(_ utterances: [AVSpeechUtterance]) {
+    lock.lock()
+    chunks.append(contentsOf: utterances)
+    lock.unlock()
+    processNext()
+  }
+
+  func processNext() {
+    lock.lock()
+    guard !isProcessing, !chunks.isEmpty else {
+      lock.unlock()
+      return
+    }
+
+    isProcessing = true
+    let utterance = chunks.removeFirst()
+    lock.unlock()
+
+    // Synthesize this chunk
+    DispatchQueue.global().async {
+      SpeakerManager.shared.synthesizer.write(utterance, toBufferCallback: bufferHandler)
+    }
+  }
+
+  func notifyComplete() {
+    lock.lock()
+    isProcessing = false
+    lock.unlock()
+    processNext()
+  }
+
+  func clear() {
+    lock.lock()
+    chunks.removeAll()
+    isProcessing = false
+    lock.unlock()
+  }
+}
+
+let chunkQueue = ChunkQueue()
+
 let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
-  guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else { return }
+  guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
+
+  // Detect end of utterance - notify chunk queue to process next
+  if pcmBuffer.frameLength == 0 {
+    chunkQueue.notifyComplete()
+    return
+  }
 
   setupLock.lock()
   let needsSetup = outputFormat == nil
@@ -392,6 +445,32 @@ func splitOnSquareStar(_ input: String) -> [String] {
   return result
 }
 
+// Split text into small chunks (15 words) to ensure single-buffer utterances
+func chunkText(_ text: String, maxWords: Int = 15) -> [String] {
+  let words = text.split(separator: " ", omittingEmptySubsequences: true)
+
+  guard words.count > maxWords else {
+    return [text]
+  }
+
+  var chunks: [String] = []
+  var currentChunk: [String.SubSequence] = []
+
+  for word in words {
+    currentChunk.append(word)
+    if currentChunk.count >= maxWords {
+      chunks.append(currentChunk.joined(separator: " "))
+      currentChunk = []
+    }
+  }
+
+  if !currentChunk.isEmpty {
+    chunks.append(currentChunk.joined(separator: " "))
+  }
+
+  return chunks
+}
+
 func insertSpaceBeforeUppercase(_ input: String) -> String {
   debugLogger.log("Enter: insertSpaceBeforeUppercase")
   let pattern = "(?<=[a-z])(?=[A-Z])"
@@ -470,6 +549,9 @@ func instantStopSpeaking() async {
   // Reset playerNode to flush all scheduled buffers
   // This prevents old audio from playing after stop
   playerNode.reset()
+
+  // Clear any pending chunks
+  chunkQueue.clear()
 
   debugLogger.log("Speech stopped and buffers flushed")
   // NOTE: We do NOT cancel audio icons and tones here
@@ -824,20 +906,30 @@ func _doSpeak(_ what: String) async {
   let settings = await ss.getSpeechSettings()
 
   let textToSpeak = settings.splitCaps ? insertSpaceBeforeUppercase(what) : what
-  let utterance = AVSpeechUtterance(string: textToSpeak)
 
-  utterance.rate = settings.speechRate
-  utterance.pitchMultiplier = settings.pitchMultiplier
-  utterance.volume = settings.voiceVolume
-  utterance.preUtteranceDelay = settings.nextPreDelay
-  utterance.postUtteranceDelay = settings.postDelay
-  utterance.voice = settings.voice
+  // Split into chunks for single-buffer utterances
+  let textChunks = chunkText(textToSpeak)
+  debugLogger.log("Split text into \(textChunks.count) chunks")
 
-  let speaker = SpeakerManager.shared.synthesizer
-  // Always use buffer approach for consistent audio handling (no trimming yet)
-  DispatchQueue.global().async {
-    speaker.write(utterance, toBufferCallback: bufferHandler)
+  // Create utterances for each chunk
+  var utterances: [AVSpeechUtterance] = []
+  for (index, chunk) in textChunks.enumerated() {
+    let utterance = AVSpeechUtterance(string: chunk)
+
+    utterance.rate = settings.speechRate
+    utterance.pitchMultiplier = settings.pitchMultiplier
+    utterance.volume = settings.voiceVolume
+
+    // Only first chunk gets pre-delay, only last gets post-delay
+    utterance.preUtteranceDelay = (index == 0) ? settings.nextPreDelay : 0
+    utterance.postUtteranceDelay = (index == textChunks.count - 1) ? settings.postDelay : 0
+    utterance.voice = settings.voice
+
+    utterances.append(utterance)
   }
+
+  // Enqueue all chunks for sequential playback
+  chunkQueue.enqueue(utterances)
 }
 
 func instantTtsExit() async {

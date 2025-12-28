@@ -1,8 +1,29 @@
 import AVFoundation
 import AppKit
+import CoreAudio
 import Darwin
 import Foundation
 import OggDecoder
+
+// MARK: - Audio Routing Types
+
+public enum ChannelMode: String, Sendable {
+  case left
+  case right
+  case both
+}
+
+public struct AudioRouting: Sendable {
+  var deviceID: AudioDeviceID  // UInt32, 0 means system default
+  var channelMode: ChannelMode
+
+  init(deviceID: AudioDeviceID = 0, channelMode: ChannelMode = .both) {
+    self.deviceID = deviceID
+    self.channelMode = channelMode
+  }
+}
+
+// MARK: - StateStore Actor
 
 public actor StateStore {
   private var _allCapsBeep: Bool = false
@@ -84,6 +105,27 @@ public actor StateStore {
   public var audioTarget: String {
     get { _audioTarget.lowercased() }
     set { _audioTarget = newValue }
+  }
+
+  // Audio routing configurations for device/channel control
+  private var _speechRouting: AudioRouting = AudioRouting()
+  public var speechRouting: AudioRouting {
+    get { _speechRouting }
+  }
+
+  private var _notificationRouting: AudioRouting = AudioRouting(channelMode: .left)
+  public var notificationRouting: AudioRouting {
+    get { _notificationRouting }
+  }
+
+  private var _toneRouting: AudioRouting = AudioRouting()
+  public var toneRouting: AudioRouting {
+    get { _toneRouting }
+  }
+
+  private var _soundEffectRouting: AudioRouting = AudioRouting()
+  public var soundEffectRouting: AudioRouting {
+    get { _soundEffectRouting }
   }
 
   private var _soundVolume: Float = 1

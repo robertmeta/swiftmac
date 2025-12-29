@@ -535,6 +535,9 @@ func processInputLine(_ line: String) async {
   case "tts_split_caps": await queueLine(cmd, params)
   case "tts_sync_state": await instantTtsSyncState(params)
   case "version": await Task { @MainActor in await instantVersion() }.value
+  // Channel control commands
+  case "tts_set_speech_channel": await setSpeechChannel(params)
+  case "tts_set_notification_channel": await setNotificationChannel(params)
   default: await unknownLine(cmd, params)
   }
 }
@@ -881,6 +884,42 @@ func instantSetSpeechRate(_ p: String) async {
   if let f = Float(p) {
     await ss.setSpeechRate(f)
   }
+}
+
+// MARK: - Channel Control Commands
+
+func setSpeechChannel(_ params: String) async {
+  debugLogger.log("Enter: setSpeechChannel with params: \(params)")
+  guard let mode = ChannelMode(rawValue: params.lowercased()) else {
+    debugLogger.log("Invalid channel mode: \(params). Use: left, right, or both")
+    return
+  }
+
+  var routing = await ss.speechRouting
+  routing.channelMode = mode
+  await ss.setSpeechRouting(routing)
+
+  // Update cached config for immediate effect
+  cachedSpeechRouting = routing
+
+  debugLogger.log("Switched speech channel to \(mode)")
+}
+
+func setNotificationChannel(_ params: String) async {
+  debugLogger.log("Enter: setNotificationChannel with params: \(params)")
+  guard let mode = ChannelMode(rawValue: params.lowercased()) else {
+    debugLogger.log("Invalid channel mode: \(params). Use: left, right, or both")
+    return
+  }
+
+  var routing = await ss.notificationRouting
+  routing.channelMode = mode
+  await ss.setNotificationRouting(routing)
+
+  // Update cached config for immediate effect
+  cachedNotificationRouting = routing
+
+  debugLogger.log("Switched notification channel to \(mode)")
 }
 
 func ttsSetPitchMultiplier(_ p: String) async {

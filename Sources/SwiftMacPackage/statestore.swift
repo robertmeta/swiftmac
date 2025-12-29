@@ -479,21 +479,4 @@ public actor StateStore {
   public func setSoundEffectRouting(_ routing: AudioRouting) {
     self._soundEffectRouting = routing
   }
-
-  // Runtime device switching
-  public func setSpeechDevice(_ deviceID: AudioDeviceID) {
-    self._speechRouting.deviceID = deviceID
-  }
-
-  public func setNotificationDevice(_ deviceID: AudioDeviceID) {
-    self._notificationRouting.deviceID = deviceID
-  }
-
-  public func setSpeechChannel(_ mode: ChannelMode) {
-    self._speechRouting.channelMode = mode
-  }
-
-  public func setNotificationChannel(_ mode: ChannelMode) {
-    self._notificationRouting.channelMode = mode
-  }
 }

@@ -1,7 +1,7 @@
 #+STARTUP: overview
 
 * SwiftMac
-** Confirguration / Install
+** Configuration / Install
 *** swiftmac.tar.gz (binaries)
 
 Copy the extracted files to the $EMACSPEAK_DIR/servers and

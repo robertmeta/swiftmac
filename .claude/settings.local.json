@@ -25,7 +25,12 @@
       "Bash(export EMACSPEAK_DIR=\"$HOME/.emacspeak\")",
       "Bash(git config:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL=\"125:both\" SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL=\"110:left\" em:*)",
+      "Bash(pbcopy:*)",
+      "Bash(grep:*)",
+      "Bash(SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL=\"125:both\" SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL=\"110:left\" emc)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

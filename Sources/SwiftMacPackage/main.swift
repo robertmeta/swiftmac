@@ -16,7 +16,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "4.1.0"
+let version = "4.2.0"
 let name = "swiftmac"
 var ss = StateStore()  // just create new one to reset
 
@@ -122,7 +122,6 @@ var cachedSpeechRouting: AudioRouting = AudioRouting()
 var cachedNotificationRouting: AudioRouting = AudioRouting(channelMode: .left)
 var currentAudioMode: String = "both"
 var isNotificationServer: Bool = false
-var currentDeviceID: AudioDeviceID = 0  // Track current device for change detection
 
 // Chunk queue for sequential playback
 class ChunkQueue {
@@ -311,18 +310,6 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: routing.channelMode)
 
   setupLock.lock()
-
-  // Check if device changed - if so, reset engine
-  let deviceChanged = (currentDeviceID != routing.deviceID && outputFormat != nil)
-  if deviceChanged {
-    debugLogger.log("Device changed from \(currentDeviceID) to \(routing.deviceID), resetting engine")
-    playerNode.stop()
-    engine.stop()
-    engine.reset()
-    outputFormat = nil
-    currentDeviceID = routing.deviceID
-  }
-
   let needsSetup = outputFormat == nil
   if needsSetup {
     outputFormat = channelBuffer.format
@@ -338,8 +325,6 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
       }
       #endif
     }
-
-    currentDeviceID = routing.deviceID
 
     engine.connect(playerNode, to: environmentNode, format: outputFormat)
     engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
@@ -560,8 +545,6 @@ func processInputLine(_ line: String) async {
   // Channel control commands
   case "tts_set_speech_channel": await setSpeechChannel(params)
   case "tts_set_notification_channel": await setNotificationChannel(params)
-  case "tts_set_speech_device": await setSpeechDevice(params)
-  case "tts_set_notification_device": await setNotificationDevice(params)
   default: await unknownLine(cmd, params)
   }
 }
@@ -683,7 +666,7 @@ func instantTtsResume() async {
 
 @MainActor
 func instantLetter(_ p: String) async {
-  debugLogger.log("Enter: unknownLine")
+  debugLogger.log("Enter: instantLetter")
   let oldPitchMultiplier = await ss.pitchMultiplier
   let oldPreDelay = await ss.preDelay
   if isFirstLetterCapital(p) {
@@ -836,7 +819,7 @@ func replaceSomePuncs(_ line: String) -> String {
     .replacingOccurrences(of: "/", with: " slash ")
     .replacingOccurrences(of: "+", with: " plus ")
     .replacingOccurrences(of: "=", with: " equals ")
-    .replacingOccurrences(of: "~", with: " tilda ")
+    .replacingOccurrences(of: "~", with: " tilde ")
     .replacingOccurrences(of: "`", with: " backquote ")
     .replacingOccurrences(of: "!", with: " exclamation ")
     .replacingOccurrences(of: "^", with: " caret ")
@@ -849,7 +832,6 @@ func replaceAllPuncs(_ line: String) -> String {
     .replacingOccurrences(of: "<", with: " less than ")
     .replacingOccurrences(of: ">", with: " greater than ")
     .replacingOccurrences(of: "'", with: " apostrophe ")
-    .replacingOccurrences(of: "*", with: " star ")
     .replacingOccurrences(of: "@", with: " at sign ")
     .replacingOccurrences(of: "_", with: " underline ")
     .replacingOccurrences(of: ".", with: " dot ")
@@ -944,72 +926,6 @@ func setNotificationChannel(_ params: String) async {
   cachedNotificationRouting = routing
 
   debugLogger.log("Switched notification channel to \(mode)")
-}
-
-func setSpeechDevice(_ params: String) async {
-  debugLogger.log("Enter: setSpeechDevice with params: \(params)")
-  guard let deviceID = AudioDeviceID(params) else {
-    debugLogger.log("Invalid device ID: \(params)")
-    return
-  }
-
-  await ss.setSpeechDevice(deviceID)
-
-  // Update cached config for immediate effect
-  cachedSpeechRouting.deviceID = deviceID
-
-  // Clear any pending chunks
-  chunkQueue.clear()
-
-  // Reset engine immediately to switch device
-  setupLock.lock()
-  if outputFormat != nil {
-    debugLogger.log("Resetting engine for device switch to \(deviceID)")
-    playerNode.stop()
-    engine.stop()
-    engine.reset()
-    // Re-attach nodes after reset
-    engine.attach(playerNode)
-    engine.attach(environmentNode)
-    outputFormat = nil
-    currentDeviceID = 0  // Will be set on next buffer
-  }
-  setupLock.unlock()
-
-  debugLogger.log("Switched speech device to \(deviceID)")
-}
-
-func setNotificationDevice(_ params: String) async {
-  debugLogger.log("Enter: setNotificationDevice with params: \(params)")
-  guard let deviceID = AudioDeviceID(params) else {
-    debugLogger.log("Invalid device ID: \(params)")
-    return
-  }
-
-  await ss.setNotificationDevice(deviceID)
-
-  // Update cached config for immediate effect
-  cachedNotificationRouting.deviceID = deviceID
-
-  // Clear any pending chunks
-  chunkQueue.clear()
-
-  // Reset engine immediately to switch device
-  setupLock.lock()
-  if outputFormat != nil {
-    debugLogger.log("Resetting engine for device switch to \(deviceID)")
-    playerNode.stop()
-    engine.stop()
-    engine.reset()
-    // Re-attach nodes after reset
-    engine.attach(playerNode)
-    engine.attach(environmentNode)
-    outputFormat = nil
-    currentDeviceID = 0  // Will be set on next buffer
-  }
-  setupLock.unlock()
-
-  debugLogger.log("Switched notification device to \(deviceID)")
 }
 
 func ttsSetPitchMultiplier(_ p: String) async {

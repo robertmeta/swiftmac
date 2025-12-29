@@ -14,7 +14,6 @@ actor SoundManager {
 
     private var activePlayers: [UUID: SoundPlayer] = [:]
     private var activeTasks: [UUID: Task<Void, Never>] = [:]
-    private var currentDeviceID: AudioDeviceID = 0
 
     func playSound(from url: URL, volume: Float, routing: AudioRouting) async {
         let playerId = UUID()

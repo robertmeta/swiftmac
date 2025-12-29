@@ -1,5 +1,6 @@
 import AVFoundation
 import AppKit
+import CoreAudio
 import Darwin
 import Foundation
 import Network
@@ -15,7 +16,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "4.1.0"
+let version = "4.2.0"
 let name = "swiftmac"
 var ss = StateStore()  // just create new one to reset
 
@@ -120,6 +121,7 @@ var outputFormat: AVAudioFormat?
 var cachedSpeechRouting: AudioRouting = AudioRouting()
 var cachedNotificationRouting: AudioRouting = AudioRouting(channelMode: .left)
 var currentAudioMode: String = "both"
+var isNotificationServer: Bool = false
 
 // Chunk queue for sequential playback
 class ChunkQueue {
@@ -301,18 +303,29 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   // Trim silence aggressively (safe because chunks are single-buffer units)
   guard let trimmedBuffer = trimSilence(buffer: pcmBuffer) else { return }
 
-  // Determine channel mode synchronously using cached values
-  let channelMode = (currentAudioMode == "left" || currentAudioMode == "right")
-    ? cachedNotificationRouting.channelMode
-    : cachedSpeechRouting.channelMode
+  // Determine routing (device + channel) based on server type
+  let routing = isNotificationServer ? cachedNotificationRouting : cachedSpeechRouting
 
   // Apply PCM channel manipulation (synchronous)
-  let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: channelMode)
+  let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: routing.channelMode)
 
   setupLock.lock()
   let needsSetup = outputFormat == nil
   if needsSetup {
     outputFormat = channelBuffer.format
+
+    // Set output device if specified (0 means system default)
+    if routing.deviceID != 0 {
+      #if os(macOS)
+      do {
+        try engine.outputNode.auAudioUnit.setDeviceID(routing.deviceID)
+        debugLogger.log("Set output device to \(routing.deviceID)")
+      } catch {
+        debugLogger.log("Failed to set output device: \(error)")
+      }
+      #endif
+    }
+
     engine.connect(playerNode, to: environmentNode, format: outputFormat)
     engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
 
@@ -343,14 +356,7 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
 }
 
 func notificationMode() async -> Bool {
-  let at = await ss.audioTarget.lowercased()
-  if at == "right" {
-    return true
-  }
-  if at == "left" {
-    return true
-  }
-  return false
+  return await ss.isNotificationServer
 }
 
 func parseCommandLineArguments() -> (port: Int?, shouldListen: Bool) {
@@ -477,6 +483,7 @@ func main() async {
   cachedSpeechRouting = await ss.speechRouting
   cachedNotificationRouting = await ss.notificationRouting
   currentAudioMode = await ss.audioTarget.lowercased()
+  isNotificationServer = await ss.isNotificationServer
 
   if await notificationMode() {
     await Task { @MainActor in
@@ -659,7 +666,7 @@ func instantTtsResume() async {
 
 @MainActor
 func instantLetter(_ p: String) async {
-  debugLogger.log("Enter: unknownLine")
+  debugLogger.log("Enter: instantLetter")
   let oldPitchMultiplier = await ss.pitchMultiplier
   let oldPreDelay = await ss.preDelay
   if isFirstLetterCapital(p) {
@@ -812,7 +819,7 @@ func replaceSomePuncs(_ line: String) -> String {
     .replacingOccurrences(of: "/", with: " slash ")
     .replacingOccurrences(of: "+", with: " plus ")
     .replacingOccurrences(of: "=", with: " equals ")
-    .replacingOccurrences(of: "~", with: " tilda ")
+    .replacingOccurrences(of: "~", with: " tilde ")
     .replacingOccurrences(of: "`", with: " backquote ")
     .replacingOccurrences(of: "!", with: " exclamation ")
     .replacingOccurrences(of: "^", with: " caret ")
@@ -825,7 +832,6 @@ func replaceAllPuncs(_ line: String) -> String {
     .replacingOccurrences(of: "<", with: " less than ")
     .replacingOccurrences(of: ">", with: " greater than ")
     .replacingOccurrences(of: "'", with: " apostrophe ")
-    .replacingOccurrences(of: "*", with: " star ")
     .replacingOccurrences(of: "@", with: " at sign ")
     .replacingOccurrences(of: "_", with: " underline ")
     .replacingOccurrences(of: ".", with: " dot ")

@@ -107,6 +107,11 @@ public actor StateStore {
     set { _audioTarget = newValue }
   }
 
+  private var _isNotificationServer: Bool = false
+  public var isNotificationServer: Bool {
+    get { _isNotificationServer }
+  }
+
   // Audio routing configurations for device/channel control
   private var _speechRouting: AudioRouting = AudioRouting()
   public var speechRouting: AudioRouting {
@@ -199,6 +204,13 @@ public actor StateStore {
     }
 
     self.audioTarget = self.getEnvironmentVariable("SWIFTMAC_AUDIO_TARGET")
+
+    // Check if this is a notification server
+    // Support both new explicit flag and legacy audioTarget detection
+    let notificationServerFlag = self.getEnvironmentVariable("SWIFTMAC_NOTIFICATION_SERVER")
+    let explicitFlag = (notificationServerFlag == "1" || notificationServerFlag.lowercased() == "true")
+    let legacyMode = (self._audioTarget.lowercased() == "left" || self._audioTarget.lowercased() == "right")
+    self._isNotificationServer = explicitFlag || legacyMode
 
     // Parse audio routing configurations from environment variables
     if let routing = parseDeviceAndChannel(

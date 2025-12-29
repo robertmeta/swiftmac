@@ -1,7 +1,7 @@
 #+STARTUP: overview
 
 * SwiftMac
-** Confirguration / Install
+** Configuration / Install
 *** swiftmac.tar.gz (binaries)
 
 Copy the extracted files to the $EMACSPEAK_DIR/servers and
@@ -31,31 +31,107 @@ Otherwise see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
   (swiftmac-define-voice voice-monotone-extra "[{voice en-US:Eddy}] [[pitch 1.5]]")
 #+END_SRC
 
-** Channel Control
+** Multi-Device and Channel Routing
 
-SwiftMac supports stereo channel control for separating different audio types. Useful for distinguishing notifications from main speech on headphones.
+SwiftMac supports routing different audio types to different physical devices AND channels. All four audio types can be independently configured:
+- Speech (main spoken output)
+- Notifications (auditory icons/beeps)
+- Tones (generated tones)
+- Sound effects (played audio files)
 
-*** Runtime Commands
+*** Finding Your Device IDs
 
-Change audio channels on the fly:
+Run this to list available audio output devices:
 
-- =tts_set_speech_channel {left|right|both}=: Route speech to left, right, or both channels
-- =tts_set_notification_channel {left|right|both}=: Route notifications to left, right, or both channels
-
-*** Common Use Case: Separate Notifications from Speech
-
-Route speech to both channels and notifications to left channel only:
-
-#+BEGIN_SRC emacs-lisp
-  ; At startup (or add to your config)
-  (setenv "SWIFTMAC_AUDIO_TARGET" "left")  ; Enables notification mode
+#+BEGIN_SRC shell
+make list-devices
 #+END_SRC
 
-Default behavior:
-- Speech: both channels (stereo)
-- Notifications: left channel only (when in notification mode)
+Example output:
+#+BEGIN_EXAMPLE
+[DEFAULT] DeviceID: 125 | "Audioengine D1" | Channels: 2
+          DeviceID: 110 | "LG Ultra HD" | Channels: 2
+          DeviceID: 89 | "MacBook Pro Speakers" | Channels: 2
+#+END_EXAMPLE
 
-You can change channels during use with the runtime commands above.
+*** Configuration Format
+
+Set environment variables in your Emacs init file (BEFORE loading emacspeak):
+
+#+BEGIN_SRC emacs-lisp
+  (setenv "SWIFTMAC_<TYPE>_DEVICE_AND_CHANNEL" "<deviceID>:<channel>")
+#+END_SRC
+
+Where:
+- =<TYPE>=: SPEECH, NOTIFICATION, TONE, or SOUNDEFFECT
+- =<deviceID>=: Numeric ID from =make list-devices= (or 0 for system default)
+- =<channel>=: left, right, or both
+
+*** Example Configurations
+
+**** All Audio to One Device (Simple Setup)
+#+BEGIN_SRC emacs-lisp
+  ; Everything to Audioengine D1, stereo
+  (setenv "SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL" "125:both")
+  (setenv "SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL" "125:both")
+  (setenv "SWIFTMAC_TONE_DEVICE_AND_CHANNEL" "125:both")
+  (setenv "SWIFTMAC_SOUNDEFFECT_DEVICE_AND_CHANNEL" "125:both")
+#+END_SRC
+
+**** Separate Devices for Speech and Notifications
+#+BEGIN_SRC emacs-lisp
+  ; Speech to headphones, notifications to monitor speakers
+  (setenv "SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL" "125:both")  ; Audioengine D1
+  (setenv "SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL" "110:both")  ; LG Ultra HD
+  (setenv "SWIFTMAC_TONE_DEVICE_AND_CHANNEL" "125:both")
+  (setenv "SWIFTMAC_SOUNDEFFECT_DEVICE_AND_CHANNEL" "110:both")
+
+  ; IMPORTANT: Enable notification server for multi-device routing
+  (setopt tts-notification-device "left")
+#+END_SRC
+
+**** Same Device, Different Channels
+#+BEGIN_SRC emacs-lisp
+  ; Speech in both ears, notifications in left ear only
+  (setenv "SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL" "125:both")
+  (setenv "SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL" "125:left")
+  (setenv "SWIFTMAC_TONE_DEVICE_AND_CHANNEL" "125:both")
+  (setenv "SWIFTMAC_SOUNDEFFECT_DEVICE_AND_CHANNEL" "125:left")
+
+  (setopt tts-notification-device "left")  ; Enable notification server
+#+END_SRC
+
+**** All Four Audio Types to Different Outputs
+#+BEGIN_SRC emacs-lisp
+  ; Maximum separation for complex audio setups
+  (setenv "SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL" "125:both")  ; Speech -> Audioengine D1
+  (setenv "SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL" "110:left")  ; Notifications -> LG left
+  (setenv "SWIFTMAC_TONE_DEVICE_AND_CHANNEL" "89:both")  ; Tones -> MacBook speakers
+  (setenv "SWIFTMAC_SOUNDEFFECT_DEVICE_AND_CHANNEL" "110:right")  ; Sounds -> LG right
+
+  (setopt tts-notification-device "left")  ; Enable notification server
+#+END_SRC
+
+*** Runtime Channel Commands
+
+Change ONLY the channel (not device) on the fly:
+
+- =tts_set_speech_channel {left|right|both}=
+- =tts_set_notification_channel {left|right|both}=
+
+Note: Runtime device switching (changing the physical device) is not yet supported. Restart Emacs to change devices.
+
+*** How Multi-Device Routing Works
+
+Emacspeak spawns two separate swiftmac processes:
+1. *Speech process* (main): Handles regular speech output
+2. *Notification process*: Handles auditory icons and notifications
+
+The =tts-notification-device= setting triggers Emacspeak to spawn the second process with =SWIFTMAC_AUDIO_TARGET= set, which swiftmac detects as notification mode.
+
+Each process reads its own device configuration from the environment variables, allowing speech and notifications to output to different physical devices.
+
+For more details, see =MULTI-DEVICE-SETUP.md=.
 
 ** Introduction 
 

@@ -1,5 +1,6 @@
 import AVFoundation
 import AppKit
+import CoreAudio
 import Darwin
 import Foundation
 import Network
@@ -120,6 +121,8 @@ var outputFormat: AVAudioFormat?
 var cachedSpeechRouting: AudioRouting = AudioRouting()
 var cachedNotificationRouting: AudioRouting = AudioRouting(channelMode: .left)
 var currentAudioMode: String = "both"
+var isNotificationServer: Bool = false
+var currentDeviceID: AudioDeviceID = 0  // Track current device for change detection
 
 // Chunk queue for sequential playback
 class ChunkQueue {
@@ -301,18 +304,43 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   // Trim silence aggressively (safe because chunks are single-buffer units)
   guard let trimmedBuffer = trimSilence(buffer: pcmBuffer) else { return }
 
-  // Determine channel mode synchronously using cached values
-  let channelMode = (currentAudioMode == "left" || currentAudioMode == "right")
-    ? cachedNotificationRouting.channelMode
-    : cachedSpeechRouting.channelMode
+  // Determine routing (device + channel) based on server type
+  let routing = isNotificationServer ? cachedNotificationRouting : cachedSpeechRouting
 
   // Apply PCM channel manipulation (synchronous)
-  let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: channelMode)
+  let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: routing.channelMode)
 
   setupLock.lock()
+
+  // Check if device changed - if so, reset engine
+  let deviceChanged = (currentDeviceID != routing.deviceID && outputFormat != nil)
+  if deviceChanged {
+    debugLogger.log("Device changed from \(currentDeviceID) to \(routing.deviceID), resetting engine")
+    playerNode.stop()
+    engine.stop()
+    engine.reset()
+    outputFormat = nil
+    currentDeviceID = routing.deviceID
+  }
+
   let needsSetup = outputFormat == nil
   if needsSetup {
     outputFormat = channelBuffer.format
+
+    // Set output device if specified (0 means system default)
+    if routing.deviceID != 0 {
+      #if os(macOS)
+      do {
+        try engine.outputNode.auAudioUnit.setDeviceID(routing.deviceID)
+        debugLogger.log("Set output device to \(routing.deviceID)")
+      } catch {
+        debugLogger.log("Failed to set output device: \(error)")
+      }
+      #endif
+    }
+
+    currentDeviceID = routing.deviceID
+
     engine.connect(playerNode, to: environmentNode, format: outputFormat)
     engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
 
@@ -343,14 +371,7 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
 }
 
 func notificationMode() async -> Bool {
-  let at = await ss.audioTarget.lowercased()
-  if at == "right" {
-    return true
-  }
-  if at == "left" {
-    return true
-  }
-  return false
+  return await ss.isNotificationServer
 }
 
 func parseCommandLineArguments() -> (port: Int?, shouldListen: Bool) {
@@ -477,6 +498,7 @@ func main() async {
   cachedSpeechRouting = await ss.speechRouting
   cachedNotificationRouting = await ss.notificationRouting
   currentAudioMode = await ss.audioTarget.lowercased()
+  isNotificationServer = await ss.isNotificationServer
 
   if await notificationMode() {
     await Task { @MainActor in
@@ -538,6 +560,8 @@ func processInputLine(_ line: String) async {
   // Channel control commands
   case "tts_set_speech_channel": await setSpeechChannel(params)
   case "tts_set_notification_channel": await setNotificationChannel(params)
+  case "tts_set_speech_device": await setSpeechDevice(params)
+  case "tts_set_notification_device": await setNotificationDevice(params)
   default: await unknownLine(cmd, params)
   }
 }
@@ -920,6 +944,72 @@ func setNotificationChannel(_ params: String) async {
   cachedNotificationRouting = routing
 
   debugLogger.log("Switched notification channel to \(mode)")
+}
+
+func setSpeechDevice(_ params: String) async {
+  debugLogger.log("Enter: setSpeechDevice with params: \(params)")
+  guard let deviceID = AudioDeviceID(params) else {
+    debugLogger.log("Invalid device ID: \(params)")
+    return
+  }
+
+  await ss.setSpeechDevice(deviceID)
+
+  // Update cached config for immediate effect
+  cachedSpeechRouting.deviceID = deviceID
+
+  // Clear any pending chunks
+  chunkQueue.clear()
+
+  // Reset engine immediately to switch device
+  setupLock.lock()
+  if outputFormat != nil {
+    debugLogger.log("Resetting engine for device switch to \(deviceID)")
+    playerNode.stop()
+    engine.stop()
+    engine.reset()
+    // Re-attach nodes after reset
+    engine.attach(playerNode)
+    engine.attach(environmentNode)
+    outputFormat = nil
+    currentDeviceID = 0  // Will be set on next buffer
+  }
+  setupLock.unlock()
+
+  debugLogger.log("Switched speech device to \(deviceID)")
+}
+
+func setNotificationDevice(_ params: String) async {
+  debugLogger.log("Enter: setNotificationDevice with params: \(params)")
+  guard let deviceID = AudioDeviceID(params) else {
+    debugLogger.log("Invalid device ID: \(params)")
+    return
+  }
+
+  await ss.setNotificationDevice(deviceID)
+
+  // Update cached config for immediate effect
+  cachedNotificationRouting.deviceID = deviceID
+
+  // Clear any pending chunks
+  chunkQueue.clear()
+
+  // Reset engine immediately to switch device
+  setupLock.lock()
+  if outputFormat != nil {
+    debugLogger.log("Resetting engine for device switch to \(deviceID)")
+    playerNode.stop()
+    engine.stop()
+    engine.reset()
+    // Re-attach nodes after reset
+    engine.attach(playerNode)
+    engine.attach(environmentNode)
+    outputFormat = nil
+    currentDeviceID = 0  // Will be set on next buffer
+  }
+  setupLock.unlock()
+
+  debugLogger.log("Switched notification device to \(deviceID)")
 }
 
 func ttsSetPitchMultiplier(_ p: String) async {

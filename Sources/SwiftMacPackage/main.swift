@@ -117,6 +117,9 @@ let environmentNode = AVAudioEnvironmentNode()
 // Thread-safe setup for notification audio
 let setupLock = NSLock()
 var outputFormat: AVAudioFormat?
+var cachedSpeechRouting: AudioRouting = AudioRouting()
+var cachedNotificationRouting: AudioRouting = AudioRouting(channelMode: .left)
+var currentAudioMode: String = "both"
 
 // Chunk queue for sequential playback
 class ChunkQueue {
@@ -298,46 +301,44 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   // Trim silence aggressively (safe because chunks are single-buffer units)
   guard let trimmedBuffer = trimSilence(buffer: pcmBuffer) else { return }
 
-  // Apply PCM channel manipulation in async context
-  Task {
-    let isNotification = await notificationMode()
-    let routing = isNotification ? await ss.notificationRouting : await ss.speechRouting
-    let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: routing.channelMode)
+  // Determine channel mode synchronously using cached values
+  let channelMode = (currentAudioMode == "left" || currentAudioMode == "right")
+    ? cachedNotificationRouting.channelMode
+    : cachedSpeechRouting.channelMode
 
-    setupLock.lock()
-    let needsSetup = outputFormat == nil
-    if needsSetup {
-      outputFormat = channelBuffer.format
-      engine.connect(playerNode, to: environmentNode, format: outputFormat)
-      engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
+  // Apply PCM channel manipulation (synchronous)
+  let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: channelMode)
 
-      let target = await ss.audioTarget
-      if target == "right" {
-        environmentNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
-      } else if target == "left" {
-        environmentNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
-      }
+  setupLock.lock()
+  let needsSetup = outputFormat == nil
+  if needsSetup {
+    outputFormat = channelBuffer.format
+    engine.connect(playerNode, to: environmentNode, format: outputFormat)
+    engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
 
-      engine.prepare()
-
-      do {
-        try engine.start()
-      } catch {
-        print("Error starting audio engine: \(error.localizedDescription)")
-        setupLock.unlock()
-        return
-      }
+    if currentAudioMode == "right" {
+      environmentNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
+    } else if currentAudioMode == "left" {
+      environmentNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
     }
-    setupLock.unlock()
 
-    // Schedule the channel-processed buffer for playback
-    await MainActor.run {
-      playerNode.scheduleBuffer(channelBuffer)
+    engine.prepare()
 
-      if !playerNode.isPlaying {
-        playerNode.play()
-      }
+    do {
+      try engine.start()
+    } catch {
+      print("Error starting audio engine: \(error.localizedDescription)")
+      setupLock.unlock()
+      return
     }
+  }
+  setupLock.unlock()
+
+  // Schedule the channel-processed buffer for playback
+  playerNode.scheduleBuffer(channelBuffer)
+
+  if !playerNode.isPlaying {
+    playerNode.play()
   }
 }
 
@@ -471,6 +472,11 @@ func main() async {
   // Setup audio engine for buffer-based playback (needed for all modes now)
   engine.attach(playerNode)
   engine.attach(environmentNode)
+
+  // Cache routing configs and mode for sync access in bufferHandler
+  cachedSpeechRouting = await ss.speechRouting
+  cachedNotificationRouting = await ss.notificationRouting
+  currentAudioMode = await ss.audioTarget.lowercased()
 
   if await notificationMode() {
     await Task { @MainActor in

@@ -14,12 +14,12 @@ Otherwise see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
 ** Bonus configuration stuff
 
-#+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp
   ; control volume
   ; these are between 0.0 and 1.0
-  (setenv "SWIFTMAC_TONE_VOLUME" "0.1") 
-  (setenv "SWIFTMAC_SOUND_VOLUME" "0.1") 
-  (setenv "SWIFTMAC_VOICE_VOLUME" "1.0") 
+  (setenv "SWIFTMAC_TONE_VOLUME" "0.1")
+  (setenv "SWIFTMAC_SOUND_VOLUME" "0.1")
+  (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")
   ; examples of messing with voices
   (swiftmac-define-voice voice-bolden "[{voice en_US:Fred}] [[pitch 0.8]]")
   (swiftmac-define-voice voice-animate "[{voice en-US:Kit}] [[pitch 1]]")
@@ -30,6 +30,32 @@ Otherwise see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
   (swiftmac-define-voice voice-monotone "[{voice en-US:Eddy}] [[pitch 1]]")
   (swiftmac-define-voice voice-monotone-extra "[{voice en-US:Eddy}] [[pitch 1.5]]")
 #+END_SRC
+
+** Channel Control
+
+SwiftMac supports stereo channel control for separating different audio types. Useful for distinguishing notifications from main speech on headphones.
+
+*** Runtime Commands
+
+Change audio channels on the fly:
+
+- =tts_set_speech_channel {left|right|both}=: Route speech to left, right, or both channels
+- =tts_set_notification_channel {left|right|both}=: Route notifications to left, right, or both channels
+
+*** Common Use Case: Separate Notifications from Speech
+
+Route speech to both channels and notifications to left channel only:
+
+#+BEGIN_SRC emacs-lisp
+  ; At startup (or add to your config)
+  (setenv "SWIFTMAC_AUDIO_TARGET" "left")  ; Enables notification mode
+#+END_SRC
+
+Default behavior:
+- Speech: both channels (stereo)
+- Notifications: left channel only (when in notification mode)
+
+You can change channels during use with the runtime commands above.
 
 ** Introduction 
 

@@ -1,42 +1,120 @@
 import AVFoundation
 import Foundation
+import CoreAudio
 
 actor TonePlayerActor {
   private let audioPlayer = AVAudioPlayerNode()
   private let audioEngine = AVAudioEngine()
   private var isEngineSetup = false
-  private var cachedSampleRate: Double = 44_100 // Default fallback
+  private var currentDeviceID: AudioDeviceID = 0
+  private var outputFormat: AVAudioFormat?
 
-  private func setupEngineIfNeeded() {
+  private func setupEngineIfNeeded(deviceID: AudioDeviceID) {
+    // Reset if device changed
+    if isEngineSetup && deviceID != currentDeviceID {
+      audioEngine.stop()
+      audioEngine.reset()
+      isEngineSetup = false
+    }
+
     guard !isEngineSetup else { return }
 
-    // Get the device's actual sample rate from the output node
-    let deviceSampleRate = audioEngine.outputNode.outputFormat(forBus: 0).sampleRate
-    cachedSampleRate = deviceSampleRate > 0 ? deviceSampleRate : 44_100
-
     audioEngine.attach(audioPlayer)
+
+    // Set output device if specified (0 means system default)
+    if deviceID != 0 {
+      #if os(macOS)
+      do {
+        try audioEngine.outputNode.auAudioUnit.setDeviceID(deviceID)
+      } catch {
+        debugLogger.log("Failed to set tone output device: \(error)")
+      }
+      #endif
+    }
+
     let mixer = audioEngine.mainMixerNode
 
     guard let format = AVAudioFormat(
       commonFormat: .pcmFormatFloat32,
-      sampleRate: cachedSampleRate,
-      channels: AVAudioChannelCount(1),
+      sampleRate: 44_100,
+      channels: AVAudioChannelCount(2),  // Changed to stereo for channel routing
       interleaved: false) else { return }
 
+    outputFormat = format
     audioEngine.connect(audioPlayer, to: mixer, format: format)
     audioEngine.prepare()
 
+    currentDeviceID = deviceID
     isEngineSetup = true
   }
 
-  func playPureTone(frequencyInHz: Int, amplitude: Float, durationInMillis: Int) async {
-    setupEngineIfNeeded()
+  // PCM channel manipulation - copied from main.swift for consistency
+  private func applyChannelMode(to inputBuffer: AVAudioPCMBuffer, mode: ChannelMode) -> AVAudioPCMBuffer {
+    let inputFormat = inputBuffer.format
+    let frameCount = Int(inputBuffer.frameLength)
 
-    let sampleRateHz = Float(cachedSampleRate)
-
-    guard let format = AVAudioFormat(
+    guard let outputFormat = AVAudioFormat(
       commonFormat: .pcmFormatFloat32,
-      sampleRate: cachedSampleRate,
+      sampleRate: inputFormat.sampleRate,
+      channels: 2,
+      interleaved: false
+    ) else {
+      return inputBuffer
+    }
+
+    guard let outputBuffer = AVAudioPCMBuffer(
+      pcmFormat: outputFormat,
+      frameCapacity: inputBuffer.frameCapacity
+    ) else {
+      return inputBuffer
+    }
+
+    outputBuffer.frameLength = inputBuffer.frameLength
+
+    guard let inputChannel0 = inputBuffer.floatChannelData?[0],
+      let outputLeft = outputBuffer.floatChannelData?[0],
+      let outputRight = outputBuffer.floatChannelData?[1]
+    else {
+      return inputBuffer
+    }
+
+    let inputChannel1 = inputFormat.channelCount > 1 ? inputBuffer.floatChannelData?[1] : nil
+
+    switch mode {
+    case .left:
+      memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+      memset(outputRight, 0, frameCount * MemoryLayout<Float>.size)
+
+    case .right:
+      memset(outputLeft, 0, frameCount * MemoryLayout<Float>.size)
+      if let rightInput = inputChannel1 {
+        memcpy(outputRight, rightInput, frameCount * MemoryLayout<Float>.size)
+      } else {
+        memcpy(outputRight, inputChannel0, frameCount * MemoryLayout<Float>.size)
+      }
+
+    case .both:
+      if let rightInput = inputChannel1 {
+        memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+        memcpy(outputRight, rightInput, frameCount * MemoryLayout<Float>.size)
+      } else {
+        memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+        memcpy(outputRight, inputChannel0, frameCount * MemoryLayout<Float>.size)
+      }
+    }
+
+    return outputBuffer
+  }
+
+  func playPureTone(frequencyInHz: Int, amplitude: Float, durationInMillis: Int, routing: AudioRouting) async {
+    setupEngineIfNeeded(deviceID: routing.deviceID)
+
+    let sampleRateHz: Float = 44_100
+
+    // Generate tone in mono first
+    guard let monoFormat = AVAudioFormat(
+      commonFormat: .pcmFormatFloat32,
+      sampleRate: Double(sampleRateHz),
       channels: AVAudioChannelCount(1),
       interleaved: false) else { return }
 
@@ -44,12 +122,13 @@ actor TonePlayerActor {
     let fadeDurationSeconds = totalDurationSeconds / 5
     let numberOfSamples = AVAudioFrameCount(sampleRateHz * totalDurationSeconds)
 
-    guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: numberOfSamples) else {
+    guard let monoBuffer = AVAudioPCMBuffer(pcmFormat: monoFormat, frameCapacity: numberOfSamples) else {
       return
     }
-    buffer.frameLength = numberOfSamples
+    monoBuffer.frameLength = numberOfSamples
 
-    if let channelData = buffer.floatChannelData?[0] {
+    // Generate tone waveform
+    if let channelData = monoBuffer.floatChannelData?[0] {
       let angularFrequency = Float(frequencyInHz * 2) * .pi
       for i in 0..<Int(numberOfSamples) {
         let time = Float(i) / sampleRateHz
@@ -67,17 +146,20 @@ actor TonePlayerActor {
       }
     }
 
+    // Apply channel routing to the generated tone
+    let routedBuffer = applyChannelMode(to: monoBuffer, mode: routing.channelMode)
+
     do {
       if !audioEngine.isRunning {
         try audioEngine.start()
       }
-      
-      audioPlayer.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
+
+      audioPlayer.scheduleBuffer(routedBuffer, completionCallbackType: .dataPlayedBack) { _ in
         Task { [weak self] in
           await self?.handleBufferComplete()
         }
       }
-      
+
       if !audioPlayer.isPlaying {
         audioPlayer.play()
       }

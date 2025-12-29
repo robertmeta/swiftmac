@@ -15,7 +15,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "4.0.0"
+let version = "4.1.0"
 let name = "swiftmac"
 var ss = StateStore()  // just create new one to reset
 
@@ -117,8 +117,58 @@ let environmentNode = AVAudioEnvironmentNode()
 // Thread-safe setup for notification audio
 let setupLock = NSLock()
 var outputFormat: AVAudioFormat?
+var cachedSpeechRouting: AudioRouting = AudioRouting()
+var cachedNotificationRouting: AudioRouting = AudioRouting(channelMode: .left)
+var currentAudioMode: String = "both"
 
-// Silence detection and trimming functions
+// Chunk queue for sequential playback
+class ChunkQueue {
+  private var chunks: [AVSpeechUtterance] = []
+  private var isProcessing = false
+  private let lock = NSLock()
+
+  func enqueue(_ utterances: [AVSpeechUtterance]) {
+    lock.lock()
+    chunks.append(contentsOf: utterances)
+    lock.unlock()
+    processNext()
+  }
+
+  func processNext() {
+    lock.lock()
+    guard !isProcessing, !chunks.isEmpty else {
+      lock.unlock()
+      return
+    }
+
+    isProcessing = true
+    let utterance = chunks.removeFirst()
+    lock.unlock()
+
+    // Synthesize this chunk
+    DispatchQueue.global().async {
+      SpeakerManager.shared.synthesizer.write(utterance, toBufferCallback: bufferHandler)
+    }
+  }
+
+  func notifyComplete() {
+    lock.lock()
+    isProcessing = false
+    lock.unlock()
+    processNext()
+  }
+
+  func clear() {
+    lock.lock()
+    chunks.removeAll()
+    isProcessing = false
+    lock.unlock()
+  }
+}
+
+let chunkQueue = ChunkQueue()
+
+// Aggressive silence trimming - safe now because chunks are single-buffer units
 func detectSilenceBounds(buffer: AVAudioPCMBuffer, threshold: Float = 0.01) -> (start: Int, end: Int)? {
   guard let channelData = buffer.floatChannelData?[0] else { return nil }
   let frameLength = Int(buffer.frameLength)
@@ -141,7 +191,6 @@ func detectSilenceBounds(buffer: AVAudioPCMBuffer, threshold: Float = 0.01) -> (
     }
   }
 
-  // If no audio found, return nil
   if start >= end {
     return nil
   }
@@ -151,7 +200,6 @@ func detectSilenceBounds(buffer: AVAudioPCMBuffer, threshold: Float = 0.01) -> (
 
 func trimSilence(buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
   guard let bounds = detectSilenceBounds(buffer: buffer) else {
-    // All silence, return minimal buffer
     return buffer
   }
 
@@ -178,20 +226,102 @@ func trimSilence(buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
   return trimmedBuffer
 }
 
-let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
-  guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else { return }
+// Apply channel mode to buffer via PCM manipulation
+func applyChannelMode(to inputBuffer: AVAudioPCMBuffer, mode: ChannelMode) -> AVAudioPCMBuffer {
+  let inputFormat = inputBuffer.format
+  let frameCount = Int(inputBuffer.frameLength)
 
-  // Trim silence from buffer for faster response
+  // Create stereo output format
+  guard
+    let outputFormat = AVAudioFormat(
+      commonFormat: .pcmFormatFloat32,
+      sampleRate: inputFormat.sampleRate,  // Preserve sample rate!
+      channels: 2,
+      interleaved: false
+    )
+  else {
+    return inputBuffer
+  }
+
+  guard
+    let outputBuffer = AVAudioPCMBuffer(
+      pcmFormat: outputFormat,
+      frameCapacity: inputBuffer.frameCapacity
+    )
+  else {
+    return inputBuffer
+  }
+
+  outputBuffer.frameLength = inputBuffer.frameLength
+
+  guard let inputChannel0 = inputBuffer.floatChannelData?[0],
+    let outputLeft = outputBuffer.floatChannelData?[0],
+    let outputRight = outputBuffer.floatChannelData?[1]
+  else {
+    return inputBuffer
+  }
+
+  let inputChannel1 = inputFormat.channelCount > 1 ? inputBuffer.floatChannelData?[1] : nil
+
+  switch mode {
+  case .left:
+    memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+    memset(outputRight, 0, frameCount * MemoryLayout<Float>.size)
+
+  case .right:
+    memset(outputLeft, 0, frameCount * MemoryLayout<Float>.size)
+    if let rightInput = inputChannel1 {
+      memcpy(outputRight, rightInput, frameCount * MemoryLayout<Float>.size)
+    } else {
+      memcpy(outputRight, inputChannel0, frameCount * MemoryLayout<Float>.size)
+    }
+
+  case .both:
+    if let rightInput = inputChannel1 {
+      memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+      memcpy(outputRight, rightInput, frameCount * MemoryLayout<Float>.size)
+    } else {
+      memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+      memcpy(outputRight, inputChannel0, frameCount * MemoryLayout<Float>.size)
+    }
+  }
+
+  return outputBuffer
+}
+
+let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
+  guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
+
+  // Detect end of utterance - notify chunk queue to process next
+  if pcmBuffer.frameLength == 0 {
+    chunkQueue.notifyComplete()
+    return
+  }
+
+  // Trim silence aggressively (safe because chunks are single-buffer units)
   guard let trimmedBuffer = trimSilence(buffer: pcmBuffer) else { return }
+
+  // Determine channel mode synchronously using cached values
+  let channelMode = (currentAudioMode == "left" || currentAudioMode == "right")
+    ? cachedNotificationRouting.channelMode
+    : cachedSpeechRouting.channelMode
+
+  // Apply PCM channel manipulation (synchronous)
+  let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: channelMode)
 
   setupLock.lock()
   let needsSetup = outputFormat == nil
   if needsSetup {
-    outputFormat = trimmedBuffer.format
-    engine.attach(playerNode)
-    engine.attach(environmentNode)
+    outputFormat = channelBuffer.format
     engine.connect(playerNode, to: environmentNode, format: outputFormat)
     engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
+
+    if currentAudioMode == "right" {
+      environmentNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
+    } else if currentAudioMode == "left" {
+      environmentNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
+    }
+
     engine.prepare()
 
     do {
@@ -202,23 +332,10 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
       return
     }
   }
-
-  // Update 3D position based on audio target (notification mode)
-  Task {
-    let target = await ss.audioTarget
-    if target == "right" {
-      environmentNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
-    } else if target == "left" {
-      environmentNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
-    } else {
-      // Normal mode: center position
-      environmentNode.position = AVAudio3DPoint(x: 0, y: 0, z: 0)
-    }
-  }
   setupLock.unlock()
 
-  // Schedule the trimmed buffer for playback (faster response, no padding)
-  playerNode.scheduleBuffer(trimmedBuffer)
+  // Schedule the channel-processed buffer for playback
+  playerNode.scheduleBuffer(channelBuffer)
 
   if !playerNode.isPlaying {
     playerNode.play()
@@ -352,14 +469,19 @@ func main() async {
     startNetworkListener(port: NWEndpoint.Port(rawValue: UInt16(port))!)
   }
 
+  // Setup audio engine for buffer-based playback (needed for all modes now)
+  engine.attach(playerNode)
+  engine.attach(environmentNode)
+
+  // Cache routing configs and mode for sync access in bufferHandler
+  cachedSpeechRouting = await ss.speechRouting
+  cachedNotificationRouting = await ss.notificationRouting
+  currentAudioMode = await ss.audioTarget.lowercased()
+
   if await notificationMode() {
     await Task { @MainActor in
       await instantTtsSay("notification mode on")
     }.value
-
-    // Setup notification audio routing
-    engine.attach(playerNode)
-    engine.attach(environmentNode)
   } else {
     await Task { @MainActor in
       await instantVersion()
@@ -413,6 +535,9 @@ func processInputLine(_ line: String) async {
   case "tts_split_caps": await queueLine(cmd, params)
   case "tts_sync_state": await instantTtsSyncState(params)
   case "version": await Task { @MainActor in await instantVersion() }.value
+  // Channel control commands
+  case "tts_set_speech_channel": await setSpeechChannel(params)
+  case "tts_set_notification_channel": await setNotificationChannel(params)
   default: await unknownLine(cmd, params)
   }
 }
@@ -460,6 +585,32 @@ func splitOnSquareStar(_ input: String) -> [String] {
     }
   }
   return result
+}
+
+// Split text into small chunks (15 words) to ensure single-buffer utterances
+func chunkText(_ text: String, maxWords: Int = 15) -> [String] {
+  let words = text.split(separator: " ", omittingEmptySubsequences: true)
+
+  guard words.count > maxWords else {
+    return [text]
+  }
+
+  var chunks: [String] = []
+  var currentChunk: [String.SubSequence] = []
+
+  for word in words {
+    currentChunk.append(word)
+    if currentChunk.count >= maxWords {
+      chunks.append(currentChunk.joined(separator: " "))
+      currentChunk = []
+    }
+  }
+
+  if !currentChunk.isEmpty {
+    chunks.append(currentChunk.joined(separator: " "))
+  }
+
+  return chunks
 }
 
 func insertSpaceBeforeUppercase(_ input: String) -> String {
@@ -537,6 +688,14 @@ func instantStopSpeaking() async {
   if playerNode.isPlaying {
     playerNode.stop()
   }
+  // Reset playerNode to flush all scheduled buffers
+  // This prevents old audio from playing after stop
+  playerNode.reset()
+
+  // Clear any pending chunks
+  chunkQueue.clear()
+
+  debugLogger.log("Speech stopped and buffers flushed")
   // NOTE: We do NOT cancel audio icons and tones here
   // This allows beeps/audio to overlap with speech
   // Only speech itself is stopped
@@ -727,6 +886,42 @@ func instantSetSpeechRate(_ p: String) async {
   }
 }
 
+// MARK: - Channel Control Commands
+
+func setSpeechChannel(_ params: String) async {
+  debugLogger.log("Enter: setSpeechChannel with params: \(params)")
+  guard let mode = ChannelMode(rawValue: params.lowercased()) else {
+    debugLogger.log("Invalid channel mode: \(params). Use: left, right, or both")
+    return
+  }
+
+  var routing = await ss.speechRouting
+  routing.channelMode = mode
+  await ss.setSpeechRouting(routing)
+
+  // Update cached config for immediate effect
+  cachedSpeechRouting = routing
+
+  debugLogger.log("Switched speech channel to \(mode)")
+}
+
+func setNotificationChannel(_ params: String) async {
+  debugLogger.log("Enter: setNotificationChannel with params: \(params)")
+  guard let mode = ChannelMode(rawValue: params.lowercased()) else {
+    debugLogger.log("Invalid channel mode: \(params). Use: left, right, or both")
+    return
+  }
+
+  var routing = await ss.notificationRouting
+  routing.channelMode = mode
+  await ss.setNotificationRouting(routing)
+
+  // Update cached config for immediate effect
+  cachedNotificationRouting = routing
+
+  debugLogger.log("Switched notification channel to \(mode)")
+}
+
 func ttsSetPitchMultiplier(_ p: String) async {
   debugLogger.log("Enter: ttsSetPitchMultiplier")
   if let f = Float(p) {
@@ -776,12 +971,14 @@ func doTone(_ p: String) async {
   debugLogger.log("Enter: doTone")
   let ps = p.split(separator: " ")
   let volume = await ss.toneVolume
+  let routing = await ss.toneRouting
 
   let task = Task {
     await tonePlayer.playPureTone(
       frequencyInHz: Int(ps[0]) ?? 500,
       amplitude: volume,
-      durationInMillis: Int(ps[1]) ?? 75
+      durationInMillis: Int(ps[1]) ?? 75,
+      routing: routing
     )
   }
   await AudioTaskManager.shared.addTask(task)
@@ -806,9 +1003,10 @@ func doPlaySound(_ path: String) async {
 
     debugLogger.log("Playing sound from URL: \(url)")
     let volume = await ss.soundVolume
+    let routing = await ss.soundEffectRouting
 
     let task = Task {
-      await SoundManager.shared.playSound(from: url, volume: volume)
+      await SoundManager.shared.playSound(from: url, volume: volume, routing: routing)
     }
     await AudioTaskManager.shared.addTask(task)
 
@@ -889,20 +1087,30 @@ func _doSpeak(_ what: String) async {
   let settings = await ss.getSpeechSettings()
 
   let textToSpeak = settings.splitCaps ? insertSpaceBeforeUppercase(what) : what
-  let utterance = AVSpeechUtterance(string: textToSpeak)
 
-  utterance.rate = settings.speechRate
-  utterance.pitchMultiplier = settings.pitchMultiplier
-  utterance.volume = settings.voiceVolume
-  utterance.preUtteranceDelay = settings.nextPreDelay
-  utterance.postUtteranceDelay = settings.postDelay
-  utterance.voice = settings.voice
+  // Split into chunks for single-buffer utterances
+  let textChunks = chunkText(textToSpeak)
+  debugLogger.log("Split text into \(textChunks.count) chunks")
 
-  let speaker = SpeakerManager.shared.synthesizer
-  // Always use buffer approach for silence trimming and better responsiveness
-  DispatchQueue.global().async {
-    speaker.write(utterance, toBufferCallback: bufferHandler)
+  // Create utterances for each chunk
+  var utterances: [AVSpeechUtterance] = []
+  for (index, chunk) in textChunks.enumerated() {
+    let utterance = AVSpeechUtterance(string: chunk)
+
+    utterance.rate = settings.speechRate
+    utterance.pitchMultiplier = settings.pitchMultiplier
+    utterance.volume = settings.voiceVolume
+
+    // Only first chunk gets pre-delay, only last gets post-delay
+    utterance.preUtteranceDelay = (index == 0) ? settings.nextPreDelay : 0
+    utterance.postUtteranceDelay = (index == textChunks.count - 1) ? settings.postDelay : 0
+    utterance.voice = settings.voice
+
+    utterances.append(utterance)
   }
+
+  // Enqueue all chunks for sequential playback
+  chunkQueue.enqueue(utterances)
 }
 
 func instantTtsExit() async {

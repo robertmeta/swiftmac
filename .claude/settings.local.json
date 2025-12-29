@@ -23,9 +23,9 @@
       "Bash(export SWIFTMAC_AUDIO_TARGET=none)",
       "Bash(git checkout:*)",
       "Bash(export EMACSPEAK_DIR=\"$HOME/.emacspeak\")",
-      "Bash(echo:*)",
-      "Bash(EMACSPEAK_DIR=\"$HOME/.emacspeak\" make install:*)",
-      "Bash(git merge:*)"
+      "Bash(git config:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

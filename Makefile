@@ -1,10 +1,19 @@
-ifndef EMACSPEAK_DIR
-$(error EMACSPEAK_DIR is not set)
-endif
+# Targets that don't require EMACSPEAK_DIR
+list-devices:
+	@swift list-audio-devices.swift
 
+# Set up EMACSPEAK paths if EMACSPEAK_DIR is set
+ifdef EMACSPEAK_DIR
 EMACSPEAK := $(EMACSPEAK_DIR)
 SERVERS := $(EMACSPEAK)/servers
 LISP := $(EMACSPEAK)/lisp
+endif
+
+# Helper to check EMACSPEAK_DIR for targets that need it
+check-emacspeak:
+ifndef EMACSPEAK_DIR
+	$(error EMACSPEAK_DIR is not set)
+endif
 
 quick: debug
 
@@ -14,7 +23,7 @@ release: clean
 debug:
 	@swift build 
 
-support-files:
+support-files: check-emacspeak
 	@cp cloud-swiftmac $(SERVERS)/cloud-swiftmac
 	@cp swiftmac-voices.el $(LISP)/swiftmac-voices.el
 	@cp log-swiftmac $(SERVERS)/log-swiftmac
@@ -24,13 +33,13 @@ support-files:
 	@echo "cloud-swiftmac" >> $(SERVERS)/.servers
 	@sort -o $(SERVERS)/.servers $(SERVERS)/.servers
 
-install: release support-files backup-if-exists
+install: check-emacspeak release support-files backup-if-exists
 	@rm -f $(SERVERS)/swiftmac
 	@cp .build/release/swiftmac $(SERVERS)/swiftmac
 	@cp -rf .build/release/ogg.framework $(SERVERS)/ogg.framework
 	@cp -rf .build/release/vorbis.framework $(SERVERS)/vorbis.framework
 
-install-debug: debug support-files backup-if-exists
+install-debug: check-emacspeak debug support-files backup-if-exists
 	@rm -f $(SERVERS)/swiftmac
 	@cp .build/debug/swiftmac $(SERVERS)/swiftmac
 

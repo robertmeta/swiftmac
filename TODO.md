@@ -2,23 +2,53 @@
 
 ## Unimplemented Features
 
-### 1. Multi-Device Routing (BLOCKED)
+### 1. Multi-Device Routing
 
-**Status:** Blocked by unresolved technical issue
+**Status:** ✅ WORKING (via environment variables)
 
 **Goal:** Route different audio types to different physical devices (e.g., speech to headphones, notifications to monitor speakers)
 
-**Problem:** Any implementation using separate AVAudioEngine instances causes "chipmunk speed" - speech plays extremely fast and unintelligible. Multiple debugging approaches have failed:
+**Solution:** Emacspeak's dual-process architecture + device selection in bufferHandler
 
-- Separate engine managers with async methods
-- Nonisolated synchronous methods on engine actors
-- Minimal pass-through engines with no processing
+**How It Works:**
+- Emacspeak spawns TWO swiftmac processes (speech + notification)
+- Each process configured via environment variables at startup
+- `SWIFTMAC_NOTIFICATION_SERVER=1` flag identifies notification process
+- bufferHandler selects device based on `isNotificationServer` flag
+- All 4 audio types support device/channel routing
 
-**Mystery:** Tones and sound effects successfully use separate engines (TonePlayerActor, AVAudioPlayer) without issues. The difference appears to be that they're called via `await` on their own timeline, while speech buffers come from AVSpeechSynthesizer's synchronous callback requiring immediate consumption.
+**Configuration:**
+```elisp
+;; In init.el:
+(setenv "SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL" "125:both")      ; Speech -> Audioengine D1
+(setenv "SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL" "110:left") ; Notifications -> LG Ultra HD
+(setenv "SWIFTMAC_TONE_DEVICE_AND_CHANNEL" "125:both")
+(setenv "SWIFTMAC_SOUNDEFFECT_DEVICE_AND_CHANNEL" "110:right")
+(setopt tts-notification-device "left")  ; Enable notification server
+```
 
-**Current Workaround:** Single AVAudioEngine with inline PCM channel manipulation provides channel control (left/right/both) but cannot route to different physical devices.
+**Key Insight:**
+The "chipmunk speed" issue was audio DOUBLING - both processes playing simultaneously when we tried separate engines within one process. The dual-process architecture was already the solution!
 
-**Needs:** Deep investigation into why AVAudioEngine instances interfere with AVSpeechSynthesizer's buffer delivery pipeline.
+**See:** MULTI-DEVICE-SETUP.md for full documentation
+
+### Future Enhancement: Runtime Device Switching
+
+**Status:** Planned (not yet working)
+
+**Goal:** Switch audio devices on-the-fly without restarting Emacs
+
+**Runtime Commands (implemented but not functional):**
+- `tts_set_speech_device <deviceID>`
+- `tts_set_notification_device <deviceID>`
+- `tts_set_speech_channel <left|right|both>`
+- `tts_set_notification_channel <left|right|both>`
+
+**Issue:** Engine reset/reconnect on device change needs debugging
+- Commands execute but device doesn't actually switch
+- Likely needs different approach than current engine.reset() + re-attach
+
+**Workaround:** Restart Emacs with different ENV variables to change devices
 
 ### 2. Buffer System for Tones and Sound Effects
 

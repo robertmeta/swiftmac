@@ -223,6 +223,69 @@ func trimSilence(buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
   return trimmedBuffer
 }
 
+// Apply channel mode to buffer via PCM manipulation
+func applyChannelMode(to inputBuffer: AVAudioPCMBuffer, mode: ChannelMode) -> AVAudioPCMBuffer {
+  let inputFormat = inputBuffer.format
+  let frameCount = Int(inputBuffer.frameLength)
+
+  // Create stereo output format
+  guard
+    let outputFormat = AVAudioFormat(
+      commonFormat: .pcmFormatFloat32,
+      sampleRate: inputFormat.sampleRate,  // Preserve sample rate!
+      channels: 2,
+      interleaved: false
+    )
+  else {
+    return inputBuffer
+  }
+
+  guard
+    let outputBuffer = AVAudioPCMBuffer(
+      pcmFormat: outputFormat,
+      frameCapacity: inputBuffer.frameCapacity
+    )
+  else {
+    return inputBuffer
+  }
+
+  outputBuffer.frameLength = inputBuffer.frameLength
+
+  guard let inputChannel0 = inputBuffer.floatChannelData?[0],
+    let outputLeft = outputBuffer.floatChannelData?[0],
+    let outputRight = outputBuffer.floatChannelData?[1]
+  else {
+    return inputBuffer
+  }
+
+  let inputChannel1 = inputFormat.channelCount > 1 ? inputBuffer.floatChannelData?[1] : nil
+
+  switch mode {
+  case .left:
+    memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+    memset(outputRight, 0, frameCount * MemoryLayout<Float>.size)
+
+  case .right:
+    memset(outputLeft, 0, frameCount * MemoryLayout<Float>.size)
+    if let rightInput = inputChannel1 {
+      memcpy(outputRight, rightInput, frameCount * MemoryLayout<Float>.size)
+    } else {
+      memcpy(outputRight, inputChannel0, frameCount * MemoryLayout<Float>.size)
+    }
+
+  case .both:
+    if let rightInput = inputChannel1 {
+      memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+      memcpy(outputRight, rightInput, frameCount * MemoryLayout<Float>.size)
+    } else {
+      memcpy(outputLeft, inputChannel0, frameCount * MemoryLayout<Float>.size)
+      memcpy(outputRight, inputChannel0, frameCount * MemoryLayout<Float>.size)
+    }
+  }
+
+  return outputBuffer
+}
+
 let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
 
@@ -235,37 +298,46 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
   // Trim silence aggressively (safe because chunks are single-buffer units)
   guard let trimmedBuffer = trimSilence(buffer: pcmBuffer) else { return }
 
-  setupLock.lock()
-  let needsSetup = outputFormat == nil
-  if needsSetup {
-    outputFormat = trimmedBuffer.format
-    engine.connect(playerNode, to: environmentNode, format: outputFormat)
-    engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
-    Task {
+  // Apply PCM channel manipulation in async context
+  Task {
+    let isNotification = await notificationMode()
+    let routing = isNotification ? await ss.notificationRouting : await ss.speechRouting
+    let channelBuffer = applyChannelMode(to: trimmedBuffer, mode: routing.channelMode)
+
+    setupLock.lock()
+    let needsSetup = outputFormat == nil
+    if needsSetup {
+      outputFormat = channelBuffer.format
+      engine.connect(playerNode, to: environmentNode, format: outputFormat)
+      engine.connect(environmentNode, to: engine.mainMixerNode, format: nil)
+
       let target = await ss.audioTarget
       if target == "right" {
-        playerNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
+        environmentNode.position = AVAudio3DPoint(x: 1, y: 0, z: 0)
       } else if target == "left" {
-        playerNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
+        environmentNode.position = AVAudio3DPoint(x: -1, y: 0, z: 0)
+      }
+
+      engine.prepare()
+
+      do {
+        try engine.start()
+      } catch {
+        print("Error starting audio engine: \(error.localizedDescription)")
+        setupLock.unlock()
+        return
       }
     }
-    engine.prepare()
+    setupLock.unlock()
 
-    do {
-      try engine.start()
-    } catch {
-      print("Error starting audio engine: \(error.localizedDescription)")
-      setupLock.unlock()
-      return
+    // Schedule the channel-processed buffer for playback
+    await MainActor.run {
+      playerNode.scheduleBuffer(channelBuffer)
+
+      if !playerNode.isPlaying {
+        playerNode.play()
+      }
     }
-  }
-  setupLock.unlock()
-
-  // Schedule the trimmed buffer for playback
-  playerNode.scheduleBuffer(trimmedBuffer)
-
-  if !playerNode.isPlaying {
-    playerNode.play()
   }
 }
 

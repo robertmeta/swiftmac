@@ -23,7 +23,8 @@
       "Bash(export SWIFTMAC_AUDIO_TARGET=none)",
       "Bash(git checkout:*)",
       "Bash(export EMACSPEAK_DIR=\"$HOME/.emacspeak\")",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

@@ -971,12 +971,14 @@ func doTone(_ p: String) async {
   debugLogger.log("Enter: doTone")
   let ps = p.split(separator: " ")
   let volume = await ss.toneVolume
+  let routing = await ss.toneRouting
 
   let task = Task {
     await tonePlayer.playPureTone(
       frequencyInHz: Int(ps[0]) ?? 500,
       amplitude: volume,
-      durationInMillis: Int(ps[1]) ?? 75
+      durationInMillis: Int(ps[1]) ?? 75,
+      routing: routing
     )
   }
   await AudioTaskManager.shared.addTask(task)
@@ -1001,9 +1003,10 @@ func doPlaySound(_ path: String) async {
 
     debugLogger.log("Playing sound from URL: \(url)")
     let volume = await ss.soundVolume
+    let routing = await ss.soundEffectRouting
 
     let task = Task {
-      await SoundManager.shared.playSound(from: url, volume: volume)
+      await SoundManager.shared.playSound(from: url, volume: volume, routing: routing)
     }
     await AudioTaskManager.shared.addTask(task)
 

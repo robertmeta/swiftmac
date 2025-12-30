@@ -181,3 +181,36 @@ test-emacs: debug
 test-emacs-release: release
 	@echo "Launching clean Emacs with release build..."
 	@DTK_PROGRAM="$(CURDIR)/.build/release/swiftmac" emacs -Q -l "$(CURDIR)/examples/minimal-emacspeak-init.el"
+
+update-brew:
+	@echo "Updating Homebrew formula..."
+	@VERSION=$$(grep 'let version = ' Sources/SwiftMacPackage/main.swift | sed 's/.*"\(.*\)".*/\1/'); \
+	echo "Current version: $$VERSION"; \
+	echo "Downloading release tarball..."; \
+	curl -L -s -o /tmp/swiftmac-$$VERSION.tar.gz \
+		https://github.com/$(GITHUB_USER)/$(REPO_NAME)/releases/download/v$$VERSION/swiftmac-$$VERSION.tar.gz; \
+	if [ ! -f /tmp/swiftmac-$$VERSION.tar.gz ]; then \
+		echo "ERROR: Failed to download release tarball for v$$VERSION"; \
+		echo "Make sure the release exists at:"; \
+		echo "https://github.com/$(GITHUB_USER)/$(REPO_NAME)/releases/tag/v$$VERSION"; \
+		exit 1; \
+	fi; \
+	echo "Calculating SHA256..."; \
+	SHA256=$$(shasum -a 256 /tmp/swiftmac-$$VERSION.tar.gz | cut -d' ' -f1); \
+	echo "SHA256: $$SHA256"; \
+	echo "Updating formula..."; \
+	cd ../homebrew-swiftmac && \
+	sed -i.bak "s|url \".*\"|url \"https://github.com/$(GITHUB_USER)/$(REPO_NAME)/releases/download/v$$VERSION/swiftmac-$$VERSION.tar.gz\"|g" Formula/swiftmac.rb && \
+	sed -i.bak "s/sha256 \".*\"/sha256 \"$$SHA256\"/g" Formula/swiftmac.rb && \
+	sed -i.bak "s/version \".*\"/version \"$$VERSION\"/g" Formula/swiftmac.rb && \
+	rm Formula/swiftmac.rb.bak && \
+	echo "Committing and pushing..."; \
+	git add Formula/swiftmac.rb; \
+	if git diff --cached --quiet; then \
+		echo "✅ Formula already up to date with version $$VERSION"; \
+	else \
+		git commit -m "Update formula to version $$VERSION" && \
+		git push && \
+		echo "✅ Homebrew formula updated to version $$VERSION"; \
+	fi
+	@rm -f /tmp/swiftmac-*.tar.gz

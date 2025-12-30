@@ -362,10 +362,22 @@ When you update the version in =Sources/SwiftMacPackage/main.swift= and push to 
    git push
    #+END_SRC
 
-3. GitHub Actions will automatically create the release
+3. Wait for GitHub Actions to create the release (usually ~2 minutes)
 
-4. Download link will be available at:
-   =https://github.com/robertmeta/swiftmac/releases=
+4. Update the Homebrew formula:
+   #+BEGIN_SRC shell
+   make update-brew
+   #+END_SRC
+
+   This will:
+   - Download the release tarball
+   - Calculate the SHA256 checksum
+   - Update the formula in =../homebrew-swiftmac=
+   - Commit and push the changes
+
+5. Release is now available:
+   - Download: =https://github.com/robertmeta/swiftmac/releases=
+   - Homebrew: =brew upgrade swiftmac=
 
 *** What Gets Included in Releases
 
@@ -399,6 +411,7 @@ Utility commands:
 #+begin_src shell
 make list-devices # List audio output devices with IDs
 make update-ogg   # Update OggDecoder dependency to latest version
+make update-brew  # Update Homebrew formula with current version
 make tidy         # Format all source files (Swift, shell, Emacs Lisp)
 make clean        # Clean build artifacts
 make super-nuke   # Deep clean including caches

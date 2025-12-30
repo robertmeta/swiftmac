@@ -102,25 +102,58 @@ jobs:
           file swiftmac-universal
           lipo -info swiftmac-universal
 
-          # Create universal frameworks by copying arm64 structure and merging binaries
+          # Check framework architectures
           mkdir -p universal-frameworks
 
-          # OggDecoder framework
-          cp -r build-artifacts/arm64/ogg.framework universal-frameworks/
-          lipo -create \
-            build-artifacts/arm64/ogg.framework/ogg \
-            build-artifacts/x86_64/ogg.framework/ogg \
-            -output universal-frameworks/ogg.framework/ogg
+          echo ""
+          echo "Checking ogg.framework architectures..."
+          echo "ARM64 version:"
+          lipo -info build-artifacts/arm64/ogg.framework/ogg || true
+          echo "x86_64 version:"
+          lipo -info build-artifacts/x86_64/ogg.framework/ogg || true
 
-          # Vorbis framework
-          cp -r build-artifacts/arm64/vorbis.framework universal-frameworks/
-          lipo -create \
-            build-artifacts/arm64/vorbis.framework/vorbis \
-            build-artifacts/x86_64/vorbis.framework/vorbis \
-            -output universal-frameworks/vorbis.framework/vorbis
+          # Handle ogg framework - check if architectures differ
+          ARM_OGG_ARCH=$(lipo -info build-artifacts/arm64/ogg.framework/ogg 2>&1 | grep -o 'arm64\|x86_64' | head -1)
+          X86_OGG_ARCH=$(lipo -info build-artifacts/x86_64/ogg.framework/ogg 2>&1 | grep -o 'arm64\|x86_64' | head -1)
 
-          # Verify frameworks are universal
-          echo "Verifying universal frameworks..."
+          if [ "$ARM_OGG_ARCH" = "$X86_OGG_ARCH" ]; then
+            echo "ogg.framework has same architecture in both builds, using as-is"
+            cp -r build-artifacts/arm64/ogg.framework universal-frameworks/
+          else
+            echo "Creating universal ogg.framework"
+            cp -r build-artifacts/arm64/ogg.framework universal-frameworks/
+            lipo -create \
+              build-artifacts/arm64/ogg.framework/ogg \
+              build-artifacts/x86_64/ogg.framework/ogg \
+              -output universal-frameworks/ogg.framework/ogg
+          fi
+
+          echo ""
+          echo "Checking vorbis.framework architectures..."
+          echo "ARM64 version:"
+          lipo -info build-artifacts/arm64/vorbis.framework/vorbis || true
+          echo "x86_64 version:"
+          lipo -info build-artifacts/x86_64/vorbis.framework/vorbis || true
+
+          # Handle vorbis framework - check if architectures differ
+          ARM_VORBIS_ARCH=$(lipo -info build-artifacts/arm64/vorbis.framework/vorbis 2>&1 | grep -o 'arm64\|x86_64' | head -1)
+          X86_VORBIS_ARCH=$(lipo -info build-artifacts/x86_64/vorbis.framework/vorbis 2>&1 | grep -o 'arm64\|x86_64' | head -1)
+
+          if [ "$ARM_VORBIS_ARCH" = "$X86_VORBIS_ARCH" ]; then
+            echo "vorbis.framework has same architecture in both builds, using as-is"
+            cp -r build-artifacts/arm64/vorbis.framework universal-frameworks/
+          else
+            echo "Creating universal vorbis.framework"
+            cp -r build-artifacts/arm64/vorbis.framework universal-frameworks/
+            lipo -create \
+              build-artifacts/arm64/vorbis.framework/vorbis \
+              build-artifacts/x86_64/vorbis.framework/vorbis \
+              -output universal-frameworks/vorbis.framework/vorbis
+          fi
+
+          # Verify final frameworks
+          echo ""
+          echo "Final framework architectures:"
           lipo -info universal-frameworks/ogg.framework/ogg
           lipo -info universal-frameworks/vorbis.framework/vorbis
 

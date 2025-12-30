@@ -299,6 +299,51 @@ Unless you are a developer or interested in becoming one, you probably
 want to use the version bundled with emacspeak, I keep that copy up to 
 date with this one fairly consistently. 
 
+** Release Process
+
+SwiftMac uses automated GitHub Actions to build and release new versions.
+
+*** How It Works
+
+When you update the version in =Sources/SwiftMacPackage/main.swift= and push to main:
+
+1. GitHub Actions detects the version change
+2. Checks if a release for that version already exists
+3. If new, automatically:
+   - Builds the release binary
+   - Creates a release tarball with all necessary files
+   - Creates a Git tag (=v4.2.3=, etc.)
+   - Publishes a GitHub Release with the tarball
+   - Generates changelog from commits since last release
+
+*** Creating a New Release
+
+1. Update version in =Sources/SwiftMacPackage/main.swift=:
+   #+BEGIN_SRC swift
+   let version = "4.2.4"  // Change this
+   #+END_SRC
+
+2. Commit and push to main:
+   #+BEGIN_SRC shell
+   git add Sources/SwiftMacPackage/main.swift
+   git commit -m "Version 4.2.4: Description of changes"
+   git push
+   #+END_SRC
+
+3. GitHub Actions will automatically create the release
+
+4. Download link will be available at:
+   =https://github.com/robertmeta/swiftmac/releases=
+
+*** What Gets Included in Releases
+
+The release tarball (=swiftmac-VERSION.tar.gz=) includes:
+- =swiftmac= binary (release build)
+- =ogg.framework= and =vorbis.framework=
+- =swiftmac-voices.el=
+- =cloud-swiftmac= and =log-swiftmac= scripts
+- Documentation: =LICENSE=, =Readme.org=, =Readme.emacspeak.org=
+
 ** Hacking
 :PROPERTIES:
 :CUSTOM_ID: hacking

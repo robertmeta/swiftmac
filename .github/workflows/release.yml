@@ -2,54 +2,127 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+    paths:
+      - 'Sources/SwiftMacPackage/main.swift'
+      - '.github/workflows/release.yml'
 
 jobs:
-  build:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      version-changed: ${{ steps.check-tag.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from main.swift
+        id: get-version
+        run: |
+          VERSION=$(grep 'let version = ' Sources/SwiftMacPackage/main.swift | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+
+      - name: Check if version tag exists
+        id: check-tag
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Tag v$VERSION already exists"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Tag v$VERSION does not exist - will create release"
+          fi
+
+  build-and-release:
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
     runs-on: macos-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Swift
-      uses: fwal/setup-swift@v1
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
 
-    - name: Build
-      run: swift build --configuration release
+      - name: Build release version
+        run: swift build --configuration release
 
-    - name: Archive build
-      run: |
-        mkdir swiftmac
-        cp -rf .build/release/ogg.framework swiftmac/
-        cp -rf .build/release/vorbis.framework swiftmac/
-        cp .build/release/swiftmac swiftmac/
-        cp LICENSE swiftmac/
-        cp Readme.org swiftmac/
-        cp cloud-swiftmac swiftmac/
-        cp log-swiftmac swiftmac/
-        cp show-voices.swift swiftmac/
-        tar -czf swiftmac.tar.gz swiftmac
-      shell: bash
+      - name: Create release archive
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          echo "Building swiftmac version $VERSION"
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
+          # Create release directory
+          mkdir -p swiftmac
 
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: swiftmac.tar.gz
-        asset_name: swiftmac.tar.gz
-        asset_content_type: application/gzip
+          # Copy binary and frameworks
+          cp -rf .build/release/ogg.framework swiftmac/
+          cp -rf .build/release/vorbis.framework swiftmac/
+          cp .build/release/swiftmac swiftmac/
+
+          # Copy support files
+          cp swiftmac-voices.el swiftmac/
+          cp cloud-swiftmac swiftmac/
+          cp log-swiftmac swiftmac/
+
+          # Copy documentation
+          cp LICENSE swiftmac/
+          cp Readme.org swiftmac/
+          cp Readme.emacspeak.org swiftmac/
+
+          # Create tarball
+          tar -czf swiftmac-$VERSION.tar.gz swiftmac
+
+          echo "Release archive created: swiftmac-$VERSION.tar.gz"
+          ls -lh swiftmac-$VERSION.tar.gz
+        shell: bash
+
+      - name: Create Git tag
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release version $VERSION"
+          git push origin "v$VERSION"
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            CHANGES=$(git log --pretty=format:"- %s" -10)
+          else
+            CHANGES=$(git log --pretty=format:"- %s" ${LAST_TAG}..HEAD)
+          fi
+
+          # Save to file for multiline output
+          echo "$CHANGES" > CHANGELOG.txt
+          echo "Extracted changelog for release"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-version.outputs.version }}
+          name: SwiftMac ${{ needs.check-version.outputs.version }}
+          body_path: CHANGELOG.txt
+          files: |
+            swiftmac-${{ needs.check-version.outputs.version }}.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update latest release symlink
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          echo "Released SwiftMac version $VERSION"
+          echo "Download: https://github.com/robertmeta/swiftmac/releases/download/v$VERSION/swiftmac-$VERSION.tar.gz"

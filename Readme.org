@@ -2,6 +2,8 @@
 
 * SwiftMac
 
+#+HTML: <p align="center"><img src="logo.png" alt="SwiftMac logo" width="200"></p>
+
 A fast, async Emacspeak speech server for macOS written in Swift.
 
 *Requirements:* Apple Silicon Mac (M1, M2, M3, M4, or newer)

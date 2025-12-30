@@ -1,23 +1,45 @@
 ;;; voices-config-english.el --- English premium/enhanced voice mappings for swiftmac -*- lexical-binding: t; -*-
 
 ;; English voice personality definitions using PREMIUM and ENHANCED quality voices
-;; Strategy: Premium voices for main text reading, Enhanced for highlights/annotations
+;; Strategy: Samantha for main voice, Alex for strings, Premium for emphasis
 ;;
 ;; Voice mapping philosophy:
-;; - MAIN TEXT (Premium Quality 3): animate, monotone, smoothen, indent
-;; - HIGHLIGHTS/ANNOTATIONS (Enhanced Quality 2): bolden, brighten, lighten, annotate, overlay
+;; - MAIN/DEFAULT VOICE: Samantha (Enhanced) - primary reading voice
+;; - STRINGS: Alex (Enhanced) - for string literals and quoted text
+;; - EMPHASIS (Premium Quality 3): Ava, Zoe for special emphasis
+;; - HIGHLIGHTS (Enhanced Quality 2): Evan, Nathan for annotations
 ;;
 ;; Voice assignments:
-;; Premium (main reading):
+;; Main voices:
+;;   - Samantha (Enhanced) - Female, clear → default/main voice, monotone, smoothen
+;;   - Alex (Enhanced) - Male, friendly → strings, brighten, lighten
+;;
+;; Premium (emphasis):
 ;;   - Ava (Premium) - Female, lively → animate voices
-;;   - Zoe (Premium) - Female, calm → monotone, smoothen voices
+;;   - Zoe (Premium) - Female, calm → indent (when needed for special cases)
 ;;
 ;; Enhanced (highlights/annotations):
 ;;   - Evan (Enhanced) - Male, strong → bolden voices
-;;   - Alex (Enhanced) - Male, friendly → brighten, lighten voices
 ;;   - Nathan (Enhanced) - Male, distinct → annotate, overlay voices
 
-;; === MAIN TEXT VOICES (Premium Quality 3) ===
+;; === DEFAULT/MAIN VOICE ===
+
+;; Set Samantha as the default voice (this is the 'paul' voice)
+(swiftmac-define-voice 'paul "[{voice en-US:Samantha}] [[pitch 1]]")
+
+;; === MAIN TEXT VOICES ===
+
+;; Monotone voices - flat, neutral (using Samantha Enhanced - main reading voice)
+(swiftmac-define-voice voice-monotone "[{voice en-US:Samantha}] [[pitch 1]]")
+(swiftmac-define-voice voice-monotone-extra "[{voice en-US:Samantha}] [[pitch 1.5]]")
+(swiftmac-define-voice voice-monotone-medium "[{voice en-US:Samantha}] [[pitch 1.3]]")
+
+;; Smoothen voices - calm, lower (using Samantha Enhanced)
+(swiftmac-define-voice voice-smoothen "[{voice en-US:Samantha}] [[pitch 0.6]]")
+(swiftmac-define-voice voice-smoothen-extra "[{voice en-US:Samantha}] [[pitch 0.4]]")
+(swiftmac-define-voice voice-smoothen-medium "[{voice en-US:Samantha}] [[pitch 0.2]]")
+
+;; === PREMIUM VOICES FOR SPECIAL EMPHASIS ===
 
 ;; Animate voices - lively, energetic (using Ava Premium - for animated text)
 (swiftmac-define-voice voice-animate "[{voice en-US:Ava (Premium)}] [[pitch 1]]")
@@ -48,12 +70,12 @@
 (swiftmac-define-voice voice-bolden-extra "[{voice en-US:Evan}] [[pitch 1.4]]")
 (swiftmac-define-voice voice-bolden-medium "[{voice en-US:Evan}] [[pitch 0.8]]")
 
-;; Brighten voices - cheerful, lighter (using Alex Enhanced - friendly male)
+;; Brighten voices - for strings and quoted text (using Alex - friendly male)
 (swiftmac-define-voice voice-brighten "[{voice en-US:Alex}] [[pitch 1]]")
 (swiftmac-define-voice voice-brighten-extra "[{voice en-US:Alex}] [[pitch 1.2]]")
 (swiftmac-define-voice voice-brighten-medium "[{voice en-US:Alex}] [[pitch 0.8]]")
 
-;; Lighten voices - lighter tone (using Alex Enhanced with varied pitch)
+;; Lighten voices - for lighter emphasis (using Alex with varied pitch)
 (swiftmac-define-voice voice-lighten "[{voice en-US:Alex}] [[pitch 1]]")
 (swiftmac-define-voice voice-lighten-extra "[{voice en-US:Alex}] [[pitch 1.4]]")
 (swiftmac-define-voice voice-lighten-medium "[{voice en-US:Alex}] [[pitch 0.8]]")

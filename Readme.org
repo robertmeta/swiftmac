@@ -55,8 +55,8 @@ Keybindings:
 Lists all available premium and enhanced voices with installation instructions.
 
 #+BEGIN_SRC shell
-  ./download-premium-voices.sh          # Show available voices
-  ./download-premium-voices.sh verify   # Verify installed voices
+  ./scripts/download-premium-voices.sh          # Show available voices
+  ./scripts/download-premium-voices.sh verify   # Verify installed voices
 #+END_SRC
 
 To download voices:
@@ -71,7 +71,7 @@ To download voices:
 Quick script to list all available voices with quality levels:
 
 #+BEGIN_SRC shell
-  swift show-voices.swift
+  swift scripts/show-voices.swift
 #+END_SRC
 
 Output includes language, identifier, name, and quality level (1=Compact, 2=Enhanced, 3=Premium).
@@ -137,7 +137,7 @@ Control volume levels for different audio types (values between 0.0 and 1.0):
 Lists all available audio output devices with their IDs and channel counts:
 
 #+BEGIN_SRC shell
-  swift list-audio-devices.swift
+  swift scripts/list-audio-devices.swift
   # or
   make list-devices
 #+END_SRC
@@ -169,11 +169,11 @@ These are primarily for testing and development, but can be useful as configurat
 If you're developing or debugging SwiftMac:
 
 **Shell Test Scripts:**
-- =test-clean-emacspeak.sh= - Test with clean Emacspeak environment
-- =test-dual-mode.sh= - Test dual-process mode
-- =test-multi-device.sh= - Test multi-device routing
-- =test-multiple-instances.sh= - Test multiple SwiftMac instances
-- =test-proper-dual.sh= - Test proper dual-mode setup
+- =scripts/test-clean-emacspeak.sh= - Test with clean Emacspeak environment
+- =scripts/test-dual-mode.sh= - Test dual-process mode
+- =scripts/test-multi-device.sh= - Test multi-device routing
+- =scripts/test-multiple-instances.sh= - Test multiple SwiftMac instances
+- =scripts/test-proper-dual.sh= - Test proper dual-mode setup
 
 **Emacs Test Files:**
 - =device-test-with-stop.el= - Device testing with stop commands

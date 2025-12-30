@@ -1,6 +1,6 @@
 # Targets that don't require EMACSPEAK_DIR
 list-devices:
-	@swift list-audio-devices.swift
+	@swift scripts/list-audio-devices.swift
 
 update-ogg:
 	@echo "Updating OggDecoder to latest version..."

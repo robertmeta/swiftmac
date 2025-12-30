@@ -89,25 +89,26 @@ This file is automatically loaded when you select the swiftmac server.
 
 **English (Premium + Enhanced)**
 
-The repo includes =voices-config-english.el= which uses:
-- Premium voices (Quality 3) for main text reading
-- Enhanced voices (Quality 2) for highlights/annotations
+The repo includes =examples/voices-config-english.el= which uses:
+- Samantha (Enhanced) as main/default voice
+- Alex (Enhanced) for strings and quoted text
+- Premium voices for special emphasis
 
 #+BEGIN_SRC emacs-lisp
-  (load-file "/path/to/swiftmac/voices-config-english.el")
+  (load-file "/path/to/swiftmac/examples/voices-config-english.el")
 #+END_SRC
 
 **Polish**
 
-The repo includes =voices-config-polish.el= for Polish voices:
+The repo includes =examples/voices-config-polish.el= for Polish voices:
 
 #+BEGIN_SRC emacs-lisp
-  (load-file "/path/to/swiftmac/voices-config-polish.el")
+  (load-file "/path/to/swiftmac/examples/voices-config-polish.el")
 #+END_SRC
 
 **Markdown Reading**
 
-The =markdown-voices-config.el= provides optimized voice settings for reading Markdown files.
+The =examples/markdown-voices-config.el= provides optimized voice settings for reading Markdown files.
 
 **Custom Voice Configuration**
 
@@ -153,16 +154,18 @@ Use these device IDs for multi-device routing configuration (see below).
 
 *** Example Configuration Files
 
-The repository includes several example configurations:
+The =examples/= directory contains several example configurations:
 
-- =init.el-example.el= - Example Emacspeak initialization
-- =minimal-emacspeak-init.el= - Minimal working Emacspeak config
-- =markdown-voices-config.el= - Voice configuration for reading Markdown files
-- =simple-device-test.el= - Basic device routing test
-- =simple-device-switch.el= - Example of switching audio devices
-- =test-notifications.el= - Test notification routing
+- =examples/init.el-example.el= - Example Emacspeak initialization
+- =examples/minimal-emacspeak-init.el= - Minimal working Emacspeak config
+- =examples/voices-config-english.el= - English voice configuration (Samantha + Alex)
+- =examples/voices-config-polish.el= - Polish voice configuration
+- =examples/markdown-voices-config.el= - Voice configuration for reading Markdown files
+- =examples/simple-device-test.el= - Basic device routing test
+- =examples/simple-device-switch.el= - Example of switching audio devices
+- =examples/device-test-with-stop.el= - Device testing with stop commands
 
-These are primarily for testing and development, but can be useful as configuration examples.
+These are useful as starting points for your own configuration.
 
 *** Testing and Development Files
 
@@ -176,10 +179,11 @@ If you're developing or debugging SwiftMac:
 - =scripts/test-proper-dual.sh= - Test proper dual-mode setup
 
 **Emacs Test Files:**
-- =device-test-with-stop.el= - Device testing with stop commands
-- =test-audio-routing.el= - Audio routing tests
-- =test-runtime-device-switching.el= - Runtime device switch tests
-- =test-simple-routing.el= - Simple routing tests
+The =tests/= directory contains automated test files:
+- =tests/test-audio-routing.el= - Audio routing tests
+- =tests/test-notifications.el= - Notification routing tests
+- =tests/test-runtime-device-switching.el= - Runtime device switch tests
+- =tests/test-simple-routing.el= - Simple routing tests
 
 ** Multi-Device and Channel Routing
 :PROPERTIES:

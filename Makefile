@@ -176,8 +176,8 @@ install-binary: download-latest-release
 
 test-emacs: debug
 	@echo "Launching clean Emacs with debug build..."
-	@DTK_PROGRAM="$(CURDIR)/.build/debug/swiftmac" emacs -Q -l "$(CURDIR)/minimal-emacspeak-init.el"
+	@DTK_PROGRAM="$(CURDIR)/.build/debug/swiftmac" emacs -Q -l "$(CURDIR)/examples/minimal-emacspeak-init.el"
 
 test-emacs-release: release
 	@echo "Launching clean Emacs with release build..."
-	@DTK_PROGRAM="$(CURDIR)/.build/release/swiftmac" emacs -Q -l "$(CURDIR)/minimal-emacspeak-init.el"
+	@DTK_PROGRAM="$(CURDIR)/.build/release/swiftmac" emacs -Q -l "$(CURDIR)/examples/minimal-emacspeak-init.el"

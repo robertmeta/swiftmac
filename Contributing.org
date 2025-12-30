@@ -1,0 +1,382 @@
+#+STARTUP: overview
+
+* Contributing to SwiftMac
+
+Thank you for your interest in contributing to SwiftMac! This guide will help you get set up for development.
+
+** Development Requirements
+
+*** Xcode Command Line Tools
+
+SwiftMac requires Swift and the Xcode Command Line Tools:
+
+#+BEGIN_SRC shell
+xcode-select --install
+#+END_SRC
+
+Verify Swift is installed:
+
+#+BEGIN_SRC shell
+swift --version
+#+END_SRC
+
+You should see Swift 5.9 or newer.
+
+*** Homebrew Tools (Recommended)
+
+For the best development experience, install these tools:
+
+#+BEGIN_SRC shell
+# Code formatting
+brew install swift-format    # Format Swift code
+brew install shfmt           # Format shell scripts
+
+# Development tools
+brew install gh              # GitHub CLI (for releases)
+#+END_SRC
+
+These tools are used by =make tidy= to format code before commits.
+
+*** Emacspeak (For Testing)
+
+To test SwiftMac, you'll need Emacspeak installed. Set the =EMACSPEAK_DIR= environment variable:
+
+#+BEGIN_SRC shell
+export EMACSPEAK_DIR="/path/to/.emacspeak"
+#+END_SRC
+
+Add this to your shell profile (=~/.zshrc= or =~/.bashrc=) to make it permanent.
+
+** Development Workflow
+
+*** Initial Setup
+
+1. Clone the repository:
+   #+BEGIN_SRC shell
+   git clone https://github.com/robertmeta/swiftmac.git
+   cd swiftmac
+   #+END_SRC
+
+2. Build the project:
+   #+BEGIN_SRC shell
+   make debug
+   #+END_SRC
+
+3. (Optional) Symlink to Emacspeak for testing:
+   #+BEGIN_SRC shell
+   ln -sf $(pwd)/.build/debug/swiftmac $EMACSPEAK_DIR/servers/swiftmac
+   #+END_SRC
+
+*** Making Changes
+
+1. Create a feature branch:
+   #+BEGIN_SRC shell
+   git checkout -b feature-name
+   #+END_SRC
+
+2. Make your changes
+
+3. **IMPORTANT:** Format your code before committing:
+   #+BEGIN_SRC shell
+   make tidy
+   #+END_SRC
+
+   This formats:
+   - Swift files with =swift-format=
+   - Shell scripts with =shfmt=
+   - Emacs Lisp files with Emacs batch mode
+
+4. Build and test:
+   #+BEGIN_SRC shell
+   make debug              # Build debug version
+   make test-emacs         # Test with Emacspeak
+   #+END_SRC
+
+5. Commit your changes:
+   #+BEGIN_SRC shell
+   git add .
+   git commit -m "Brief description of changes"
+   #+END_SRC
+
+6. Push and create a pull request:
+   #+BEGIN_SRC shell
+   git push origin feature-name
+   #+END_SRC
+
+** Make Commands Reference
+
+*** Build Commands
+
+#+BEGIN_SRC shell
+make              # Build debug version (default)
+make debug        # Same as above
+make release      # Build optimized release version
+make quick        # Alias for 'make debug'
+#+END_SRC
+
+*** Development Utilities
+
+#+BEGIN_SRC shell
+make tidy         # Format all source files (REQUIRED before commits)
+make list-devices # List available audio output devices with IDs
+make update-ogg   # Update OggDecoder dependency to latest version
+make clean        # Clean build artifacts
+make super-nuke   # Deep clean including all caches
+#+END_SRC
+
+*** Testing Commands
+
+#+BEGIN_SRC shell
+make test-emacs         # Launch Emacs with debug build
+make test-emacs-release # Launch Emacs with release build
+#+END_SRC
+
+These commands use the minimal init file in =examples/minimal-emacspeak-init.el=.
+
+*** Installation Commands
+
+#+BEGIN_SRC shell
+make install         # Install release build to $EMACSPEAK_DIR/servers
+make install-debug   # Install debug build to $EMACSPEAK_DIR/servers
+#+END_SRC
+
+Note: =EMACSPEAK_DIR= must be set for these to work.
+
+** Project Structure
+
+#+BEGIN_SRC
+swiftmac/
+├── Sources/SwiftMacPackage/
+│   ├── main.swift         # Main entry point, command processing
+│   ├── statestore.swift   # Application state management
+│   ├── soundmanager.swift # Audio file playback
+│   ├── toneplayer.swift   # Tone generation
+│   └── logger.swift       # Debug logging
+├── Package.swift          # Swift package definition
+├── Makefile              # Build and utility commands
+├── examples/             # Configuration examples
+│   ├── minimal-emacspeak-init.el
+│   ├── voices-config-english.el
+│   └── voices-config-polish.el
+├── scripts/              # Helper scripts
+│   ├── download-premium-voices.sh
+│   ├── show-voices.swift
+│   └── list-audio-devices.swift
+├── sample-voices.el      # Interactive voice browser
+├── swiftmac-voices.el    # Default voice configuration
+├── cloud-swiftmac        # Cloud voices wrapper
+└── log-swiftmac          # Debug logging wrapper
+#+END_SRC
+
+** Architecture Overview
+
+*** Core Components
+
+- *main.swift*: Command processing loop, network listener, TTS functions
+- *StateStore*: Actor-based state management (voice settings, volumes, rates)
+- *SoundManager*: Audio file playback using AVFoundation
+- *TonePlayer*: Tone generation and playback
+- *Logger*: Debug logging (only active in DEBUG builds)
+
+*** Key Design Patterns
+
+- Swift actors for thread-safe state management
+- Async/await throughout for non-blocking operations
+- Command-based architecture processing stdin from Emacspeak
+- Queue-based speech processing (immediate vs queued operations)
+
+*** Command Types
+
+- *Instant commands*: Execute immediately (=l=, =p=, =s=, =tts_pause=, etc.)
+- *Queued commands*: Processed via dispatch (=q=, =c=, =a=, =t=, =sh=)
+- *State changes*: =tts_set_*= commands for voice, rate, volume, etc.
+
+** Release Process (Maintainers Only)
+
+*** Creating a Release
+
+1. Update version in =Sources/SwiftMacPackage/main.swift=:
+   #+BEGIN_SRC swift
+   let version = "4.3.7"  // Change this
+   #+END_SRC
+
+2. Commit and push to main:
+   #+BEGIN_SRC shell
+   git add Sources/SwiftMacPackage/main.swift
+   git commit -m "Version 4.3.7: Description of changes"
+   git push
+   #+END_SRC
+
+3. Wait for GitHub Actions to create the release (~2 minutes)
+
+4. Update the Homebrew formula:
+   #+BEGIN_SRC shell
+   make update-brew
+   #+END_SRC
+
+*** How Automated Releases Work
+
+GitHub Actions (=.github/workflows/release.yml=) automatically:
+- Detects version changes in =main.swift=
+- Checks if a release for that version exists
+- Builds the release binary (Apple Silicon arm64)
+- Creates a release tarball with all necessary files
+- Creates a Git tag (=v4.3.7=)
+- Publishes a GitHub Release with changelog
+- Generates release notes from commits since last tag
+
+*** Homebrew Formula Updates
+
+The =make update-brew= target:
+- Downloads the release tarball
+- Calculates SHA256 checksum
+- Updates =../homebrew-swiftmac/Formula/swiftmac.rb=
+- Commits and pushes to the homebrew-swiftmac repository
+
+** Code Style Guidelines
+
+*** Swift Code
+
+- Use =swift-format= (run via =make tidy=)
+- Follow Swift naming conventions
+- Use actors for shared state
+- Prefer async/await over callbacks
+- Document complex logic with comments
+
+*** Shell Scripts
+
+- Use =shfmt= formatting (run via =make tidy=)
+- 2-space indentation
+- Use =-e= for error handling
+- Quote variables: ="$VAR"= not =$VAR=
+
+*** Emacs Lisp
+
+- Follow Emacs Lisp conventions
+- Use =lexical-binding: t=
+- Document public functions
+- Keep lines under 80 characters where reasonable
+
+*** Commit Messages
+
+Good commit messages:
+- Start with a verb (Add, Fix, Update, Remove)
+- Be concise but descriptive
+- Reference issues if applicable
+
+Examples:
+#+BEGIN_EXAMPLE
+Add support for multi-device audio routing
+Fix crash when stopping speech during playback
+Update OggDecoder to latest version
+Remove deprecated tts_allcaps_beep command
+#+END_EXAMPLE
+
+** Testing
+
+*** Manual Testing
+
+1. Build and install to Emacspeak:
+   #+BEGIN_SRC shell
+   make install-debug
+   #+END_SRC
+
+2. Launch Emacs with Emacspeak:
+   #+BEGIN_SRC shell
+   emacs
+   #+END_SRC
+
+3. Test various features:
+   - Text to speech (navigate around)
+   - Audio icons (press keys, open files)
+   - Voice changes (different text styles)
+   - Speech rate adjustment (=C-e d r=)
+
+*** Using the Test Environment
+
+The =make test-emacs= command launches a clean Emacs instance with minimal Emacspeak configuration:
+
+#+BEGIN_SRC shell
+make test-emacs  # Uses debug build
+#+END_SRC
+
+This is useful for testing changes without affecting your main Emacs setup.
+
+** Debugging
+
+*** Debug Logging
+
+Debug builds include extensive logging. Build and install a debug version:
+
+#+BEGIN_SRC shell
+make install-debug
+#+END_SRC
+
+Or use the =log-swiftmac= wrapper which logs to =/tmp/swiftmac.log=:
+
+#+BEGIN_SRC emacs-lisp
+(dtk-select-server "log-swiftmac")
+#+END_SRC
+
+View logs:
+
+#+BEGIN_SRC shell
+tail -f /tmp/swiftmac.log
+#+END_SRC
+
+*** Common Issues
+
+**** Build Errors
+
+If you get build errors:
+
+#+BEGIN_SRC shell
+make clean
+make debug
+#+END_SRC
+
+If that doesn't work:
+
+#+BEGIN_SRC shell
+make super-nuke  # Nuclear option - clears all caches
+#+END_SRC
+
+**** Audio Device Issues
+
+List available audio devices:
+
+#+BEGIN_SRC shell
+make list-devices
+#+END_SRC
+
+Or:
+
+#+BEGIN_SRC shell
+swift scripts/list-audio-devices.swift
+#+END_SRC
+
+**** Framework Not Found
+
+If you get framework errors, ensure the frameworks are in =.build/debug/= or =.build/release/=:
+
+#+BEGIN_SRC shell
+ls -la .build/debug/*.framework
+#+END_SRC
+
+** Contributing to Documentation
+
+Documentation improvements are always welcome! Key files:
+
+- =Readme.org= - User-facing documentation
+- =Contributing.org= - This file (developer documentation)
+- =Readme.emacspeak.org= - Emacspeak-specific installation guide
+- Code comments - Document complex logic
+
+** Getting Help
+
+- GitHub Issues: https://github.com/robertmeta/swiftmac/issues
+- Discussion: https://github.com/robertmeta/swiftmac/discussions
+
+** License
+
+SwiftMac is licensed under the MIT License. See =LICENSE= file for details.

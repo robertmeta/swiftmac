@@ -8,10 +8,11 @@ A fast, async Emacspeak speech server for macOS written in Swift.
 
 ** Quick Links
 
+- [[#installation][Installation]] - Get started with Homebrew or binary releases
 - [[#helper-scripts-and-tools][Helper Scripts and Tools]] - Voice browsers, device finders, configuration helpers
 - [[#multi-device-and-channel-routing][Multi-Device Routing]] - Route audio to different devices/channels
-- [[#hacking][Development]] - Building and hacking on SwiftMac
 - [[#having-trouble][Troubleshooting]] - Common issues and solutions
+- [[file:Contributing.org][Contributing]] - Development setup, build instructions, release process
 
 ** Installation
 
@@ -331,113 +332,28 @@ Unless you are a developer or interested in becoming one, you probably
 want to use the version bundled with emacspeak, I keep that copy up to 
 date with this one fairly consistently. 
 
-** Release Process
+** Development
 
-SwiftMac uses automated GitHub Actions to build and release new versions.
-
-*** How It Works
-
-When you update the version in =Sources/SwiftMacPackage/main.swift= and push to main:
-
-1. GitHub Actions detects the version change
-2. Checks if a release for that version already exists
-3. If new, automatically:
-   - Builds the release binary
-   - Creates a release tarball with all necessary files
-   - Creates a Git tag (=v4.2.3=, etc.)
-   - Publishes a GitHub Release with the tarball
-   - Generates changelog from commits since last release
-
-*** Creating a New Release
-
-1. Update version in =Sources/SwiftMacPackage/main.swift=:
-   #+BEGIN_SRC swift
-   let version = "4.2.4"  // Change this
-   #+END_SRC
-
-2. Commit and push to main:
-   #+BEGIN_SRC shell
-   git add Sources/SwiftMacPackage/main.swift
-   git commit -m "Version 4.2.4: Description of changes"
-   git push
-   #+END_SRC
-
-3. Wait for GitHub Actions to create the release (usually ~2 minutes)
-
-4. Update the Homebrew formula:
-   #+BEGIN_SRC shell
-   make update-brew
-   #+END_SRC
-
-   This will:
-   - Download the release tarball
-   - Calculate the SHA256 checksum
-   - Update the formula in =../homebrew-swiftmac=
-   - Commit and push the changes
-
-5. Release is now available:
-   - Download: =https://github.com/robertmeta/swiftmac/releases=
-   - Homebrew: =brew upgrade swiftmac=
-
-*** What Gets Included in Releases
-
-The release tarball (=swiftmac-VERSION.tar.gz=) includes:
-- =swiftmac= binary (Apple Silicon arm64)
-- =ogg.framework= and =vorbis.framework=
-- =swiftmac-voices.el=
-- =cloud-swiftmac= and =log-swiftmac= scripts
-- Documentation: =LICENSE=, =Readme.org=, =Readme.emacspeak.org=
-
-*Note:* SwiftMac is built for Apple Silicon (arm64) only. Requires M1, M2, M3, M4, or newer Mac.
-
-** Hacking
 :PROPERTIES:
 :CUSTOM_ID: hacking
 :END:
 
-The recommended workflow is to symlink the swiftmac binary under either
-.build/release/swiftmac or ./build/debug/swiftmac (depending which you are building) to your emacspeak servers directory.
+Want to contribute or build from source? See [[file:Contributing.org][Contributing.org]] for:
 
-*** Common Make Commands
+- Development requirements (Xcode, Homebrew tools)
+- Build instructions and workflow
+- Make commands reference
+- Testing and debugging
+- Release process
+- Code style guidelines
 
-Build commands:
+Quick start for developers:
+
 #+begin_src shell
-make              # Build debug version
-make debug        # Same as above
-make release      # Build optimized release version
-#+end_src
-
-Utility commands:
-#+begin_src shell
-make list-devices # List audio output devices with IDs
-make update-ogg   # Update OggDecoder dependency to latest version
-make update-brew  # Update Homebrew formula with current version
-make tidy         # Format all source files (Swift, shell, Emacs Lisp)
-make clean        # Clean build artifacts
-make super-nuke   # Deep clean including caches
-#+end_src
-
-The =make tidy= command formats all source files in the repository:
-- *Swift files*: Uses =swift-format= (install: =brew install swift-format=)
-- *Shell scripts (.sh)*: Uses =shfmt= with 2-space indentation (install: =brew install shfmt=)
-- *Emacs Lisp files (.el)*: Uses Emacs batch mode for indentation
-
-If any formatter is not installed, it will skip that file type and show installation instructions.
-
-Installation:
-#+begin_src shell
-make install         # Install release version to $EMACSPEAK_DIR
-make install-debug   # Install debug version to $EMACSPEAK_DIR
-#+end_src
-
-Testing:
-#+begin_src shell
-make test-emacs         # Test with debug build
-make test-emacs-release # Test with release build
-#+end_src
-
-I will likely remove make install in the future, as it is a bit fidgety, but I
-will leave it in for now. 
+make debug        # Build debug version
+make test-emacs   # Test with Emacspeak
+make tidy         # Format code (required before commits)
+#+end_src 
 
 ** Having Trouble?
 :PROPERTIES:

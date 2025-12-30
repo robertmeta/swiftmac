@@ -4,6 +4,8 @@
 
 A fast, async Emacspeak speech server for macOS written in Swift.
 
+*Requirements:* Apple Silicon Mac (M1, M2, M3, M4, or newer)
+
 ** Quick Links
 
 - [[#helper-scripts-and-tools][Helper Scripts and Tools]] - Voice browsers, device finders, configuration helpers
@@ -338,13 +340,13 @@ When you update the version in =Sources/SwiftMacPackage/main.swift= and push to 
 *** What Gets Included in Releases
 
 The release tarball (=swiftmac-VERSION.tar.gz=) includes:
-- =swiftmac= universal binary (works on both Intel and Apple Silicon Macs)
-- =ogg.framework= and =vorbis.framework= (universal frameworks)
+- =swiftmac= binary (Apple Silicon arm64)
+- =ogg.framework= and =vorbis.framework=
 - =swiftmac-voices.el=
 - =cloud-swiftmac= and =log-swiftmac= scripts
 - Documentation: =LICENSE=, =Readme.org=, =Readme.emacspeak.org=
 
-*Note:* All binaries are universal, containing both x86_64 (Intel) and arm64 (Apple Silicon) code.
+*Note:* SwiftMac is built for Apple Silicon (arm64) only. Requires M1, M2, M3, M4, or newer Mac.
 
 ** Hacking
 :PROPERTIES:

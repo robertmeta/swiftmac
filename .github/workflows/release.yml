@@ -55,120 +55,24 @@ jobs:
         run: |
           echo "Building for Apple Silicon (arm64)..."
           swift build --configuration release --arch arm64
-          mkdir -p build-artifacts/arm64
-          cp .build/release/swiftmac build-artifacts/arm64/
-          cp -r .build/release/ogg.framework build-artifacts/arm64/
-          cp -r .build/release/vorbis.framework build-artifacts/arm64/
-          echo "Saved arm64 build artifacts"
-          file build-artifacts/arm64/swiftmac
 
-      - name: Clean build directory
-        run: |
-          echo "Cleaning build directory..."
-          rm -rf .build
-
-      - name: Build for Intel (x86_64)
-        run: |
-          echo "Building for Intel (x86_64)..."
-          swift build --configuration release --arch x86_64
-          mkdir -p build-artifacts/x86_64
-          cp .build/release/swiftmac build-artifacts/x86_64/
-          cp -r .build/release/ogg.framework build-artifacts/x86_64/
-          cp -r .build/release/vorbis.framework build-artifacts/x86_64/
-          echo "Saved x86_64 build artifacts"
-          file build-artifacts/x86_64/swiftmac
-
-      - name: Create Universal Binary
-        run: |
-          echo "Creating universal binary..."
-
-          # Verify source binaries
-          echo "ARM64 binary:"
-          file build-artifacts/arm64/swiftmac
-          lipo -info build-artifacts/arm64/swiftmac
-
-          echo "x86_64 binary:"
-          file build-artifacts/x86_64/swiftmac
-          lipo -info build-artifacts/x86_64/swiftmac
-
-          # Create universal binary for swiftmac executable
-          lipo -create \
-            build-artifacts/arm64/swiftmac \
-            build-artifacts/x86_64/swiftmac \
-            -output swiftmac-universal
-
-          # Verify it's universal
-          echo "Universal binary:"
-          file swiftmac-universal
-          lipo -info swiftmac-universal
-
-          # Check framework architectures
-          mkdir -p universal-frameworks
-
-          echo ""
-          echo "Checking ogg.framework architectures..."
-          echo "ARM64 version:"
-          lipo -info build-artifacts/arm64/ogg.framework/ogg || true
-          echo "x86_64 version:"
-          lipo -info build-artifacts/x86_64/ogg.framework/ogg || true
-
-          # Handle ogg framework - check if architectures differ
-          ARM_OGG_ARCH=$(lipo -info build-artifacts/arm64/ogg.framework/ogg 2>&1 | grep -o 'arm64\|x86_64' | head -1)
-          X86_OGG_ARCH=$(lipo -info build-artifacts/x86_64/ogg.framework/ogg 2>&1 | grep -o 'arm64\|x86_64' | head -1)
-
-          if [ "$ARM_OGG_ARCH" = "$X86_OGG_ARCH" ]; then
-            echo "ogg.framework has same architecture in both builds, using as-is"
-            cp -r build-artifacts/arm64/ogg.framework universal-frameworks/
-          else
-            echo "Creating universal ogg.framework"
-            cp -r build-artifacts/arm64/ogg.framework universal-frameworks/
-            lipo -create \
-              build-artifacts/arm64/ogg.framework/ogg \
-              build-artifacts/x86_64/ogg.framework/ogg \
-              -output universal-frameworks/ogg.framework/ogg
-          fi
-
-          echo ""
-          echo "Checking vorbis.framework architectures..."
-          echo "ARM64 version:"
-          lipo -info build-artifacts/arm64/vorbis.framework/vorbis || true
-          echo "x86_64 version:"
-          lipo -info build-artifacts/x86_64/vorbis.framework/vorbis || true
-
-          # Handle vorbis framework - check if architectures differ
-          ARM_VORBIS_ARCH=$(lipo -info build-artifacts/arm64/vorbis.framework/vorbis 2>&1 | grep -o 'arm64\|x86_64' | head -1)
-          X86_VORBIS_ARCH=$(lipo -info build-artifacts/x86_64/vorbis.framework/vorbis 2>&1 | grep -o 'arm64\|x86_64' | head -1)
-
-          if [ "$ARM_VORBIS_ARCH" = "$X86_VORBIS_ARCH" ]; then
-            echo "vorbis.framework has same architecture in both builds, using as-is"
-            cp -r build-artifacts/arm64/vorbis.framework universal-frameworks/
-          else
-            echo "Creating universal vorbis.framework"
-            cp -r build-artifacts/arm64/vorbis.framework universal-frameworks/
-            lipo -create \
-              build-artifacts/arm64/vorbis.framework/vorbis \
-              build-artifacts/x86_64/vorbis.framework/vorbis \
-              -output universal-frameworks/vorbis.framework/vorbis
-          fi
-
-          # Verify final frameworks
-          echo ""
-          echo "Final framework architectures:"
-          lipo -info universal-frameworks/ogg.framework/ogg
-          lipo -info universal-frameworks/vorbis.framework/vorbis
+          # Verify architecture
+          echo "Verifying swiftmac binary:"
+          file .build/release/swiftmac
+          lipo -info .build/release/swiftmac
 
       - name: Create release archive
         run: |
           VERSION="${{ needs.check-version.outputs.version }}"
-          echo "Building swiftmac version $VERSION (Universal Binary)"
+          echo "Building swiftmac version $VERSION (Apple Silicon only)"
 
           # Create release directory
           mkdir -p swiftmac
 
-          # Copy universal binary and frameworks
-          cp swiftmac-universal swiftmac/swiftmac
-          cp -rf universal-frameworks/ogg.framework swiftmac/
-          cp -rf universal-frameworks/vorbis.framework swiftmac/
+          # Copy arm64 binary and frameworks
+          cp .build/release/swiftmac swiftmac/
+          cp -rf .build/release/ogg.framework swiftmac/
+          cp -rf .build/release/vorbis.framework swiftmac/
 
           # Copy support files
           cp swiftmac-voices.el swiftmac/

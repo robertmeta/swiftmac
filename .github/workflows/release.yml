@@ -144,7 +144,7 @@ jobs:
             printf '```\n\n'
             printf "### Changes\n\n"
             printf "%s\n\n" "$CHANGES"
-            printf -- "---\n\n"
+            printf "%s\n\n" "---"
             printf "For more information, see the [full documentation](https://github.com/robertmeta/swiftmac).\n"
           } > RELEASE_NOTES.md
 

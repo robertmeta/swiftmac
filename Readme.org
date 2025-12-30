@@ -1,6 +1,16 @@
 #+STARTUP: overview
 
 * SwiftMac
+
+A fast, async Emacspeak speech server for macOS written in Swift.
+
+** Quick Links
+
+- [[#helper-scripts-and-tools][Helper Scripts and Tools]] - Voice browsers, device finders, configuration helpers
+- [[#multi-device-and-channel-routing][Multi-Device Routing]] - Route audio to different devices/channels
+- [[#hacking][Development]] - Building and hacking on SwiftMac
+- [[#having-trouble][Troubleshooting]] - Common issues and solutions
+
 ** Configuration / Install
 *** swiftmac.tar.gz (binaries)
 
@@ -12,26 +22,169 @@ info see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
 Otherwise see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
-** Bonus configuration stuff
+** Helper Scripts and Tools
+:PROPERTIES:
+:CUSTOM_ID: helper-scripts-and-tools
+:END:
 
+SwiftMac includes several helper tools to make configuration easier.
+
+*** Voice Configuration Tools
+
+**** list-voices.el - Interactive Voice Browser
+
+Interactive Emacs tool to browse and sample all installed voices.
+
+Load it in your Emacs config:
 #+BEGIN_SRC emacs-lisp
-  ; control volume
-  ; these are between 0.0 and 1.0
-  (setenv "SWIFTMAC_TONE_VOLUME" "0.1")
-  (setenv "SWIFTMAC_SOUND_VOLUME" "0.1")
-  (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")
-  ; examples of messing with voices
-  (swiftmac-define-voice voice-bolden "[{voice en_US:Fred}] [[pitch 0.8]]")
-  (swiftmac-define-voice voice-animate "[{voice en-US:Kit}] [[pitch 1]]")
-  (swiftmac-define-voice voice-animate-extra "[{voice en-US:Kit}] [[pitch 1.5 ]]")
-  (swiftmac-define-voice voice-lighten "[{voice en-AU:Matilda}] [[pitch 1]]")
-  (swiftmac-define-voice voice-lighten-extra "[{voice en-AU:Matilda}] [[pitch 1.1]]")
-  (swiftmac-define-voice voice-smoothen "[{voice en-UK:Daniel}] [[pitch 1]]")
-  (swiftmac-define-voice voice-monotone "[{voice en-US:Eddy}] [[pitch 1]]")
-  (swiftmac-define-voice voice-monotone-extra "[{voice en-US:Eddy}] [[pitch 1.5]]")
+  (load-file "/path/to/swiftmac/list-voices.el")
 #+END_SRC
 
+Run =M-x swiftmac-list-voices= to open an interactive buffer showing:
+- All voices grouped by quality (Premium/Enhanced/Compact)
+- Organized by locale (en_US, en_GB, etc.)
+
+Keybindings:
+- =RET= or =s= - Sample the voice at point
+- =x= - Stop all speaking
+- =g= - Refresh the list
+- =q= - Quit
+
+**** download-premium-voices.sh - Voice Installation Helper
+
+Lists all available premium and enhanced voices with installation instructions.
+
+#+BEGIN_SRC shell
+  ./download-premium-voices.sh          # Show available voices
+  ./download-premium-voices.sh verify   # Verify installed voices
+#+END_SRC
+
+To download voices:
+
+1. Open System Settings → Accessibility → Spoken Content
+2. Click the INFO BUTTON (ⓘ) next to 'System Voice'
+3. Search for 'premium' or 'enhanced'
+4. Download only the voices you'll use (each is 50-300MB)
+
+**** show-voices.swift - List All Voices
+
+Quick script to list all available voices with quality levels:
+
+#+BEGIN_SRC shell
+  swift show-voices.swift
+#+END_SRC
+
+Output includes language, identifier, name, and quality level (1=Compact, 2=Enhanced, 3=Premium).
+
+**** Voice Configuration Examples
+
+**Default Configuration (swiftmac-voices.el)**
+
+The =swiftmac-voices.el= file is the standard voice configuration that ships with Emacspeak. It provides:
+- Default voice definitions
+- CSS voice mapping (for rich text rendering)
+- Integration with Emacspeak's voice lock system
+
+This file is automatically loaded when you select the swiftmac server.
+
+**English (Premium + Enhanced)**
+
+The repo includes =voices-config-english.el= which uses:
+- Premium voices (Quality 3) for main text reading
+- Enhanced voices (Quality 2) for highlights/annotations
+
+#+BEGIN_SRC emacs-lisp
+  (load-file "/path/to/swiftmac/voices-config-english.el")
+#+END_SRC
+
+**Polish**
+
+The repo includes =voices-config-polish.el= for Polish voices:
+
+#+BEGIN_SRC emacs-lisp
+  (load-file "/path/to/swiftmac/voices-config-polish.el")
+#+END_SRC
+
+**Markdown Reading**
+
+The =markdown-voices-config.el= provides optimized voice settings for reading Markdown files.
+
+**Custom Voice Configuration**
+
+Example of defining your own voices:
+
+#+BEGIN_SRC emacs-lisp
+  (swiftmac-define-voice voice-bolden "[{voice en-US:Evan}] [[pitch 1]]")
+  (swiftmac-define-voice voice-animate "[{voice en-US:Ava (Premium)}] [[pitch 1]]")
+  (swiftmac-define-voice voice-lighten "[{voice en-AU:Matilda}] [[pitch 1.1]]")
+  (swiftmac-define-voice voice-smoothen "[{voice en-US:Zoe (Premium)}] [[pitch 0.8]]")
+#+END_SRC
+
+*** Audio Volume Control
+
+Control volume levels for different audio types (values between 0.0 and 1.0):
+
+#+BEGIN_SRC emacs-lisp
+  (setenv "SWIFTMAC_TONE_VOLUME" "0.1")      ; Beeps and tones
+  (setenv "SWIFTMAC_SOUND_VOLUME" "0.1")     ; Sound effects
+  (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")     ; Speech
+#+END_SRC
+
+*** Audio Device Tools
+
+**** list-audio-devices.swift - Find Audio Device IDs
+
+Lists all available audio output devices with their IDs and channel counts:
+
+#+BEGIN_SRC shell
+  swift list-audio-devices.swift
+  # or
+  make list-devices
+#+END_SRC
+
+Example output:
+#+BEGIN_EXAMPLE
+[DEFAULT] DeviceID: 125 | "Audioengine D1" | Channels: 2
+          DeviceID: 110 | "LG Ultra HD" | Channels: 2
+          DeviceID: 89 | "MacBook Pro Speakers" | Channels: 2
+#+END_EXAMPLE
+
+Use these device IDs for multi-device routing configuration (see below).
+
+*** Example Configuration Files
+
+The repository includes several example configurations:
+
+- =init.el-example.el= - Example Emacspeak initialization
+- =minimal-emacspeak-init.el= - Minimal working Emacspeak config
+- =markdown-voices-config.el= - Voice configuration for reading Markdown files
+- =simple-device-test.el= - Basic device routing test
+- =simple-device-switch.el= - Example of switching audio devices
+- =test-notifications.el= - Test notification routing
+
+These are primarily for testing and development, but can be useful as configuration examples.
+
+*** Testing and Development Files
+
+If you're developing or debugging SwiftMac:
+
+**Shell Test Scripts:**
+- =test-clean-emacspeak.sh= - Test with clean Emacspeak environment
+- =test-dual-mode.sh= - Test dual-process mode
+- =test-multi-device.sh= - Test multi-device routing
+- =test-multiple-instances.sh= - Test multiple SwiftMac instances
+- =test-proper-dual.sh= - Test proper dual-mode setup
+
+**Emacs Test Files:**
+- =device-test-with-stop.el= - Device testing with stop commands
+- =test-audio-routing.el= - Audio routing tests
+- =test-runtime-device-switching.el= - Runtime device switch tests
+- =test-simple-routing.el= - Simple routing tests
+
 ** Multi-Device and Channel Routing
+:PROPERTIES:
+:CUSTOM_ID: multi-device-and-channel-routing
+:END:
 
 SwiftMac supports routing different audio types to different physical devices AND channels. All four audio types can be independently configured:
 - Speech (main spoken output)
@@ -143,27 +296,57 @@ want to use the version bundled with emacspeak, I keep that copy up to
 date with this one fairly consistently. 
 
 ** Hacking
+:PROPERTIES:
+:CUSTOM_ID: hacking
+:END:
 
 The recommended workflow is to symlink the swiftmac binary under either
-.build/release/swiftmac or ./build/debug/swiftmac (depending which you are building) to your emacspeak servers directory. 
+.build/release/swiftmac or ./build/debug/swiftmac (depending which you are building) to your emacspeak servers directory.
 
-then just
+*** Common Make Commands
+
+Build commands:
 #+begin_src shell
-make
+make              # Build debug version
+make debug        # Same as above
+make release      # Build optimized release version
 #+end_src
 
-for debug or
-
+Utility commands:
 #+begin_src shell
-make release
+make list-devices # List audio output devices with IDs
+make update-ogg   # Update OggDecoder dependency to latest version
+make tidy         # Format all source files (Swift, shell, Emacs Lisp)
+make clean        # Clean build artifacts
+make super-nuke   # Deep clean including caches
 #+end_src
 
-to build a fresh binary.
+The =make tidy= command formats all source files in the repository:
+- *Swift files*: Uses =swift-format= (install: =brew install swift-format=)
+- *Shell scripts (.sh)*: Uses =shfmt= with 2-space indentation (install: =brew install shfmt=)
+- *Emacs Lisp files (.el)*: Uses Emacs batch mode for indentation
 
-I will likely remove make install in the future, as it is a bit fidgety, but I 
+If any formatter is not installed, it will skip that file type and show installation instructions.
+
+Installation:
+#+begin_src shell
+make install         # Install release version to $EMACSPEAK_DIR
+make install-debug   # Install debug version to $EMACSPEAK_DIR
+#+end_src
+
+Testing:
+#+begin_src shell
+make test-emacs         # Test with debug build
+make test-emacs-release # Test with release build
+#+end_src
+
+I will likely remove make install in the future, as it is a bit fidgety, but I
 will leave it in for now. 
 
 ** Having Trouble?
+:PROPERTIES:
+:CUSTOM_ID: having-trouble
+:END:
 
 *** It emits warnings and notes
 

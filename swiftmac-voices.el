@@ -72,8 +72,8 @@
 
 ;;;   voice table
 
-; when this is set it makes dtk-set-language do nothing 
-; (defvar swiftmac-default-voice-string "[{voice en-US:Alex}]"
+                                        ; when this is set it makes dtk-set-language do nothing 
+                                        ; (defvar swiftmac-default-voice-string "[{voice en-US:Alex}]"
 (defvar swiftmac-default-voice-string "[{voice :Alex}] [[pitch 1]]"
   "Default swiftmac tag for  default . Empty uses system default")
 

@@ -1,6 +1,6 @@
 import AVFoundation
-import Foundation
 import CoreAudio
+import Foundation
 
 actor TonePlayerActor {
   private let audioPlayer = AVAudioPlayerNode()
@@ -24,21 +24,23 @@ actor TonePlayerActor {
     // Set output device if specified (0 means system default)
     if deviceID != 0 {
       #if os(macOS)
-      do {
-        try audioEngine.outputNode.auAudioUnit.setDeviceID(deviceID)
-      } catch {
-        debugLogger.log("Failed to set tone output device: \(error)")
-      }
+        do {
+          try audioEngine.outputNode.auAudioUnit.setDeviceID(deviceID)
+        } catch {
+          debugLogger.log("Failed to set tone output device: \(error)")
+        }
       #endif
     }
 
     let mixer = audioEngine.mainMixerNode
 
-    guard let format = AVAudioFormat(
-      commonFormat: .pcmFormatFloat32,
-      sampleRate: 44_100,
-      channels: AVAudioChannelCount(2),  // Changed to stereo for channel routing
-      interleaved: false) else { return }
+    guard
+      let format = AVAudioFormat(
+        commonFormat: .pcmFormatFloat32,
+        sampleRate: 44_100,
+        channels: AVAudioChannelCount(2),  // Changed to stereo for channel routing
+        interleaved: false)
+    else { return }
 
     outputFormat = format
     audioEngine.connect(audioPlayer, to: mixer, format: format)
@@ -49,23 +51,29 @@ actor TonePlayerActor {
   }
 
   // PCM channel manipulation - copied from main.swift for consistency
-  private func applyChannelMode(to inputBuffer: AVAudioPCMBuffer, mode: ChannelMode) -> AVAudioPCMBuffer {
+  private func applyChannelMode(to inputBuffer: AVAudioPCMBuffer, mode: ChannelMode)
+    -> AVAudioPCMBuffer
+  {
     let inputFormat = inputBuffer.format
     let frameCount = Int(inputBuffer.frameLength)
 
-    guard let outputFormat = AVAudioFormat(
-      commonFormat: .pcmFormatFloat32,
-      sampleRate: inputFormat.sampleRate,
-      channels: 2,
-      interleaved: false
-    ) else {
+    guard
+      let outputFormat = AVAudioFormat(
+        commonFormat: .pcmFormatFloat32,
+        sampleRate: inputFormat.sampleRate,
+        channels: 2,
+        interleaved: false
+      )
+    else {
       return inputBuffer
     }
 
-    guard let outputBuffer = AVAudioPCMBuffer(
-      pcmFormat: outputFormat,
-      frameCapacity: inputBuffer.frameCapacity
-    ) else {
+    guard
+      let outputBuffer = AVAudioPCMBuffer(
+        pcmFormat: outputFormat,
+        frameCapacity: inputBuffer.frameCapacity
+      )
+    else {
       return inputBuffer
     }
 
@@ -106,23 +114,28 @@ actor TonePlayerActor {
     return outputBuffer
   }
 
-  func playPureTone(frequencyInHz: Int, amplitude: Float, durationInMillis: Int, routing: AudioRouting) async {
+  func playPureTone(
+    frequencyInHz: Int, amplitude: Float, durationInMillis: Int, routing: AudioRouting
+  ) async {
     setupEngineIfNeeded(deviceID: routing.deviceID)
 
     let sampleRateHz: Float = 44_100
 
     // Generate tone in mono first
-    guard let monoFormat = AVAudioFormat(
-      commonFormat: .pcmFormatFloat32,
-      sampleRate: Double(sampleRateHz),
-      channels: AVAudioChannelCount(1),
-      interleaved: false) else { return }
+    guard
+      let monoFormat = AVAudioFormat(
+        commonFormat: .pcmFormatFloat32,
+        sampleRate: Double(sampleRateHz),
+        channels: AVAudioChannelCount(1),
+        interleaved: false)
+    else { return }
 
     let totalDurationSeconds = Float(durationInMillis) / 1000
     let fadeDurationSeconds = totalDurationSeconds / 5
     let numberOfSamples = AVAudioFrameCount(sampleRateHz * totalDurationSeconds)
 
-    guard let monoBuffer = AVAudioPCMBuffer(pcmFormat: monoFormat, frameCapacity: numberOfSamples) else {
+    guard let monoBuffer = AVAudioPCMBuffer(pcmFormat: monoFormat, frameCapacity: numberOfSamples)
+    else {
       return
     }
     monoBuffer.frameLength = numberOfSamples
@@ -167,7 +180,7 @@ actor TonePlayerActor {
       print("Error: Engine start failure: \(error)")
     }
   }
-  
+
   private func handleBufferComplete() {
     // Stop player after buffer completes to clean up resources
     audioPlayer.stop()
@@ -183,7 +196,7 @@ actor TonePlayerActor {
       audioEngine.stop()
     }
   }
-  
+
   deinit {
     stop()
   }

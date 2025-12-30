@@ -8,7 +8,7 @@
 
 export SWIFTMAC_SPEECH_DEVICE_AND_CHANNEL="125:both"
 export SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL="110:left"
-export SWIFTMAC_NOTIFICATION_SERVER="1"  # NEW FLAG!
+export SWIFTMAC_NOTIFICATION_SERVER="1" # NEW FLAG!
 
 echo "Testing multi-device routing:"
 echo "  Speech -> Device 125 (Audioengine D1), both channels"

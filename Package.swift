@@ -19,9 +19,11 @@ let package = Package(
   dependencies: [
     // Dependencies declare other packages that this package
     // depends on.
-    // .package(url: /* package url */, from: "1.0.0"),
-    // .package(url: "https://github.com/robertmeta/OggDecoder.git", .upToNextMajor(from: "1.0.0"))
-    .package(url: "https://github.com/robertmeta/OggDecoder.git", branch: "main")
+    // Pin to specific revision for faster, cacheable builds
+    // To update: run 'make update-ogg'
+    .package(
+      url: "https://github.com/robertmeta/OggDecoder.git",
+      revision: "7679b8228978c258d2ad2dd38ba2f4f96d9d97be")
   ],
   targets: [
     // Targets are the basic building blocks of a package.

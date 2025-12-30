@@ -16,7 +16,7 @@ import OggDecoder
 #else
   let debugLogger = Logger()  // No-Op
 #endif
-let version = "4.2.0"
+let version = "4.2.1"
 let name = "swiftmac"
 var ss = StateStore()  // just create new one to reset
 
@@ -171,7 +171,9 @@ class ChunkQueue {
 let chunkQueue = ChunkQueue()
 
 // Aggressive silence trimming - safe now because chunks are single-buffer units
-func detectSilenceBounds(buffer: AVAudioPCMBuffer, threshold: Float = 0.01) -> (start: Int, end: Int)? {
+func detectSilenceBounds(buffer: AVAudioPCMBuffer, threshold: Float = 0.01) -> (
+  start: Int, end: Int
+)? {
   guard let channelData = buffer.floatChannelData?[0] else { return nil }
   let frameLength = Int(buffer.frameLength)
 
@@ -207,7 +209,9 @@ func trimSilence(buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
 
   let trimmedLength = bounds.end - bounds.start + 1
   guard let format = buffer.format as? AVAudioFormat,
-        let trimmedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(trimmedLength)) else {
+    let trimmedBuffer = AVAudioPCMBuffer(
+      pcmFormat: format, frameCapacity: AVAudioFrameCount(trimmedLength))
+  else {
     return buffer
   }
 
@@ -216,7 +220,8 @@ func trimSilence(buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
   // Copy non-silent audio data
   for channel in 0..<Int(buffer.format.channelCount) {
     guard let sourceData = buffer.floatChannelData?[channel],
-          let destData = trimmedBuffer.floatChannelData?[channel] else {
+      let destData = trimmedBuffer.floatChannelData?[channel]
+    else {
       continue
     }
 
@@ -317,12 +322,12 @@ let bufferHandler: (AVAudioBuffer) -> Void = { buffer in
     // Set output device if specified (0 means system default)
     if routing.deviceID != 0 {
       #if os(macOS)
-      do {
-        try engine.outputNode.auAudioUnit.setDeviceID(routing.deviceID)
-        debugLogger.log("Set output device to \(routing.deviceID)")
-      } catch {
-        debugLogger.log("Failed to set output device: \(error)")
-      }
+        do {
+          try engine.outputNode.auAudioUnit.setDeviceID(routing.deviceID)
+          debugLogger.log("Set output device to \(routing.deviceID)")
+        } catch {
+          debugLogger.log("Failed to set output device: \(error)")
+        }
       #endif
     }
 
@@ -505,11 +510,10 @@ func main() async {
     // Keep the program running for network mode
     // Use a continuous async sleep to keep the async context alive
     while true {
-      try? await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
+      try? await Task.sleep(nanoseconds: 1_000_000_000)  // Sleep for 1 second
     }
   }
 }
-
 
 func processInputLine(_ line: String) async {
   debugLogger.log("Enter: processInputLine")

@@ -16,11 +16,11 @@
   (setenv "SWIFTMAC_NOTIFICATION_DEVICE_AND_CHANNEL" "110:left")
 
   :config
-  ; stops doubletalk (when supported)
+                                        ; stops doubletalk (when supported)
   (setopt mac-ignore-accessibility 't)
   (setopt dtk-program "swiftmac")
 
-  ; Volume controls (between 0.0 and 1.0)
+                                        ; Volume controls (between 0.0 and 1.0)
   (setenv "SWIFTMAC_TONE_VOLUME" "0.1")
   (setenv "SWIFTMAC_SOUND_VOLUME" "0.1")
   (setenv "SWIFTMAC_VOICE_VOLUME" "1.0")

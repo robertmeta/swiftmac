@@ -2,6 +2,32 @@
 list-devices:
 	@swift list-audio-devices.swift
 
+update-ogg:
+	@echo "Updating OggDecoder to latest version..."
+	@echo "Backing up Package.swift..."
+	@cp Package.swift Package.swift.bak
+	@echo "Switching to branch: main..."
+	@sed -i.tmp 's/revision: "[^"]*"/branch: "main"/g' Package.swift && rm Package.swift.tmp
+	@echo "Building to fetch latest..."
+	@swift build > /dev/null 2>&1 || true
+	@echo "Extracting new revision..."
+	@NEW_REV=$$(grep -A 2 '"oggdecoder"' Package.resolved | grep revision | sed 's/.*"\([^"]*\)".*/\1/'); \
+	if [ -n "$$NEW_REV" ]; then \
+		echo "New revision: $$NEW_REV"; \
+		echo "Updating Package.swift with new revision..."; \
+		sed -i.tmp "s/branch: \"main\"/revision: \"$$NEW_REV\"/g" Package.swift && rm Package.swift.tmp; \
+		echo "Done! OggDecoder updated to revision $$NEW_REV"; \
+		echo "Running clean build with new revision..."; \
+		swift package clean; \
+		swift build; \
+	else \
+		echo "ERROR: Could not extract revision from Package.resolved"; \
+		cp Package.swift.bak Package.swift; \
+		exit 1; \
+	fi
+	@rm -f Package.swift.bak
+	@echo "Update complete!"
+
 # Set up EMACSPEAK paths if EMACSPEAK_DIR is set
 ifdef EMACSPEAK_DIR
 EMACSPEAK := $(EMACSPEAK_DIR)
@@ -54,17 +80,47 @@ restore-from-backup:
 
 
 tidy:
-	@swift-format Package.swift > temp
-	@cp temp Package.swift
-	@swift-format Sources/SwiftMacPackage/logger.swift > temp
-	@cp temp Sources/SwiftMacPackage/logger.swift 
-	@swift-format Sources/SwiftMacPackage/statestore.swift > temp
-	@cp temp Sources/SwiftMacPackage/statestore.swift 
-	@swift-format Sources/SwiftMacPackage/main.swift > temp
-	@cp temp Sources/SwiftMacPackage/main.swift 
-	@swift-format Sources/SwiftMacPackage/toneplayer.swift > temp
-	@cp temp Sources/SwiftMacPackage/toneplayer.swift 
-	@rm temp
+	@echo "=== Formatting Swift files ==="
+	@if command -v swift-format >/dev/null 2>&1; then \
+		for file in Package.swift Sources/SwiftMacPackage/*.swift; do \
+			echo "Formatting $$file"; \
+			swift-format $$file > temp && cp temp $$file; \
+		done; \
+		rm -f temp; \
+	else \
+		echo "WARNING: swift-format not found. Skipping Swift files."; \
+		echo "Install with: brew install swift-format"; \
+	fi
+	@echo ""
+	@echo "=== Formatting Shell scripts ==="
+	@if command -v shfmt >/dev/null 2>&1; then \
+		for file in *.sh; do \
+			if [ -f "$$file" ]; then \
+				echo "Formatting $$file"; \
+				shfmt -w -i 2 -bn -ci -sr $$file; \
+			fi; \
+		done; \
+	else \
+		echo "WARNING: shfmt not found. Skipping shell scripts."; \
+		echo "Install with: brew install shfmt"; \
+	fi
+	@echo ""
+	@echo "=== Formatting Emacs Lisp files ==="
+	@if command -v emacs >/dev/null 2>&1; then \
+		for file in *.el; do \
+			if [ -f "$$file" ]; then \
+				echo "Formatting $$file"; \
+				emacs --batch "$$file" \
+					--eval '(setq-default indent-tabs-mode nil)' \
+					--eval '(indent-region (point-min) (point-max))' \
+					-f save-buffer 2>/dev/null; \
+			fi; \
+		done; \
+	else \
+		echo "WARNING: emacs not found. Skipping Emacs Lisp files."; \
+	fi
+	@echo ""
+	@echo "=== Tidy complete! ==="
 
 contribute: tidy
 	@mkdir -p ~/Projects/others/emacspeak/servers/mac-swiftmac/

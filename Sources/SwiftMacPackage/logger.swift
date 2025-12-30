@@ -28,7 +28,7 @@ class Logger {
 
       backgroundQueue = DispatchQueue(
         label: "org.emacspeak.server.swiftmac.logger", qos: .background)
-      
+
       // Initialize persistent file handle
       do {
         fileHandle = try FileHandle(forWritingTo: fileURL)
@@ -36,7 +36,7 @@ class Logger {
         print("Error opening log file handle: \(error)")
       }
     }
-    
+
     deinit {
       fileHandle?.closeFile()
     }
@@ -56,7 +56,8 @@ class Logger {
         }
 
         guard let handle = self.fileHandle,
-              let data = message.data(using: .utf8) else { return }
+          let data = message.data(using: .utf8)
+        else { return }
 
         handle.seekToEndOfFile()
         handle.write(data)

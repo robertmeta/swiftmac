@@ -109,28 +109,28 @@ public actor StateStore {
 
   private var _isNotificationServer: Bool = false
   public var isNotificationServer: Bool {
-    get { _isNotificationServer }
+    _isNotificationServer
   }
 
   // Audio routing configurations for device/channel control
   private var _speechRouting: AudioRouting = AudioRouting()
   public var speechRouting: AudioRouting {
-    get { _speechRouting }
+    _speechRouting
   }
 
   private var _notificationRouting: AudioRouting = AudioRouting(channelMode: .left)
   public var notificationRouting: AudioRouting {
-    get { _notificationRouting }
+    _notificationRouting
   }
 
   private var _toneRouting: AudioRouting = AudioRouting()
   public var toneRouting: AudioRouting {
-    get { _toneRouting }
+    _toneRouting
   }
 
   private var _soundEffectRouting: AudioRouting = AudioRouting()
   public var soundEffectRouting: AudioRouting {
-    get { _soundEffectRouting }
+    _soundEffectRouting
   }
 
   private var _soundVolume: Float = 1
@@ -163,7 +163,9 @@ public actor StateStore {
     set { _ttsDiscard = newValue }
   }
 
-  private var _voice: AVSpeechSynthesisVoice = AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first ?? AVSpeechSynthesisVoice()
+  private var _voice: AVSpeechSynthesisVoice =
+    AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first
+    ?? AVSpeechSynthesisVoice()
   public var voice: AVSpeechSynthesisVoice {
     get { _voice }
     set { _voice = newValue }
@@ -208,8 +210,10 @@ public actor StateStore {
     // Check if this is a notification server
     // Support both new explicit flag and legacy audioTarget detection
     let notificationServerFlag = self.getEnvironmentVariable("SWIFTMAC_NOTIFICATION_SERVER")
-    let explicitFlag = (notificationServerFlag == "1" || notificationServerFlag.lowercased() == "true")
-    let legacyMode = (self._audioTarget.lowercased() == "left" || self._audioTarget.lowercased() == "right")
+    let explicitFlag =
+      (notificationServerFlag == "1" || notificationServerFlag.lowercased() == "true")
+    let legacyMode =
+      (self._audioTarget.lowercased() == "left" || self._audioTarget.lowercased() == "right")
     self._isNotificationServer = explicitFlag || legacyMode
 
     // Parse audio routing configurations from environment variables
@@ -354,7 +358,9 @@ public actor StateStore {
         self._voice = voice
         voiceCache[cacheKey] = voice
       } else {
-        self._voice = AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first ?? AVSpeechSynthesisVoice()
+        self._voice =
+          AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first
+          ?? AVSpeechSynthesisVoice()
       }
     }
   }
@@ -362,7 +368,9 @@ public actor StateStore {
   private func getVoiceIdentifier(language: String?, voiceName: String?) -> String {
     debugLogger.log("Enter: getVoiceIdentifier")
 
-    let defaultVoice = AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first ?? AVSpeechSynthesisVoice()
+    let defaultVoice =
+      AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first
+      ?? AVSpeechSynthesisVoice()
 
     let voices = AVSpeechSynthesisVoice.speechVoices()
 
@@ -405,7 +413,7 @@ public actor StateStore {
   public func setNextPreDelay(_ value: TimeInterval) {
     self._nextPreDelay = value
   }
-  
+
   // Batch read for speech settings to reduce actor calls
   public func getSpeechSettings() -> (
     splitCaps: Bool,
@@ -445,11 +453,13 @@ public actor StateStore {
     _splitCaps = false
     _toneVolume = 1.0
     _ttsDiscard = false
-    _voice = AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first ?? AVSpeechSynthesisVoice()
+    _voice =
+      AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice.speechVoices().first
+      ?? AVSpeechSynthesisVoice()
     _voiceVolume = 1.0
     _nextPreDelay = 0
     voiceCache.removeAll()
-    
+
     // Reapply environment variables
     if let f = Float(self.getEnvironmentVariable("SWIFTMAC_SOUND_VOLUME")) {
       self._soundVolume = f

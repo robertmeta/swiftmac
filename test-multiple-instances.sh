@@ -5,8 +5,8 @@
 echo "Testing multiple SwiftMac instances..."
 
 # Create test fifos for each instance
-mkfifo /tmp/swiftmac_test1.fifo 2>/dev/null
-mkfifo /tmp/swiftmac_test2.fifo 2>/dev/null
+mkfifo /tmp/swiftmac_test1.fifo 2> /dev/null
+mkfifo /tmp/swiftmac_test2.fifo 2> /dev/null
 
 # Start first instance (speaker mode - both ears)
 echo "Starting instance 1 (speaker mode)..."
@@ -28,7 +28,7 @@ echo "Testing instance 1..."
 echo "tts_say Hello from instance one" > /tmp/swiftmac_test1.fifo &
 sleep 2
 
-# Test second instance  
+# Test second instance
 echo "Testing instance 2..."
 echo "tts_say Hello from instance two" > /tmp/swiftmac_test2.fifo &
 sleep 2
@@ -41,15 +41,15 @@ sleep 3
 
 # Check if both are still running
 if ps -p $PID1 > /dev/null; then
-    echo "✓ Instance 1 is still running"
+  echo "✓ Instance 1 is still running"
 else
-    echo "✗ Instance 1 crashed"
+  echo "✗ Instance 1 crashed"
 fi
 
 if ps -p $PID2 > /dev/null; then
-    echo "✓ Instance 2 is still running"
+  echo "✓ Instance 2 is still running"
 else
-    echo "✗ Instance 2 crashed"
+  echo "✗ Instance 2 crashed"
 fi
 
 # Cleanup
@@ -58,8 +58,8 @@ echo "tts_exit" > /tmp/swiftmac_test1.fifo &
 echo "tts_exit" > /tmp/swiftmac_test2.fifo &
 sleep 1
 
-kill $PID1 2>/dev/null
-kill $PID2 2>/dev/null
+kill $PID1 2> /dev/null
+kill $PID2 2> /dev/null
 rm -f /tmp/swiftmac_test1.fifo /tmp/swiftmac_test2.fifo
 
 echo "Test complete. Check /tmp/swiftmac1.log and /tmp/swiftmac2.log for details."

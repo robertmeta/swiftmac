@@ -1,11 +1,11 @@
-;;; list-voices.el --- Interactive voice browser for swiftmac -*- lexical-binding: t; -*-
+;;; sample-voices.el --- Interactive voice sampler for swiftmac -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024 Robert Melton
 
-;; Interactive tool to browse and sample all installed macOS voices
+;; Interactive tool to sample and test all installed macOS voices
 
 ;;; Commentary:
-;; This provides an interactive buffer listing all available voices
+;; This provides an interactive buffer for testing voices
 ;; Press RET on a voice to hear it speak a sample phrase
 
 ;;; Code:
@@ -73,7 +73,7 @@ Returns list of (name locale quality description)."
     (define-key map (kbd "s") 'swiftmac-sample-voice-at-point)
     (define-key map (kbd "q") 'quit-window)
     (define-key map (kbd "x") 'swiftmac-stop-all-voices)
-    (define-key map (kbd "g") 'swiftmac-list-voices)
+    (define-key map (kbd "g") 'swiftmac-sample-voices)
     map)
   "Keymap for swiftmac voice list mode.")
 
@@ -85,8 +85,8 @@ Commands:
   (setq buffer-read-only t))
 
 ;;;###autoload
-(defun swiftmac-list-voices ()
-  "Display an interactive list of all available macOS voices.
+(defun swiftmac-sample-voices ()
+  "Display an interactive voice sampler for all available macOS voices.
 Press RET or 's' on a voice to sample it.
 Press 'x' to stop all speaking.
 Press 'q' to quit the buffer."
@@ -133,5 +133,5 @@ Press 'q' to quit the buffer."
         (forward-line 4))
       (switch-to-buffer (current-buffer)))))
 
-(provide 'list-voices)
-;;; list-voices.el ends here
+(provide 'sample-voices)
+;;; sample-voices.el ends here

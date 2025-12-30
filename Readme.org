@@ -33,16 +33,16 @@ SwiftMac includes several helper tools to make configuration easier.
 
 *** Voice Configuration Tools
 
-**** list-voices.el - Interactive Voice Browser
+**** sample-voices.el - Interactive Voice Sampler
 
-Interactive Emacs tool to browse and sample all installed voices.
+Interactive Emacs tool to sample and test all installed voices.
 
 Load it in your Emacs config:
 #+BEGIN_SRC emacs-lisp
-  (load-file "/path/to/swiftmac/list-voices.el")
+  (load-file "/path/to/swiftmac/sample-voices.el")
 #+END_SRC
 
-Run =M-x swiftmac-list-voices= to open an interactive buffer showing:
+Run =M-x swiftmac-sample-voices= to open an interactive buffer showing:
 - All voices grouped by quality (Premium/Enhanced/Compact)
 - Organized by locale (en_US, en_GB, etc.)
 

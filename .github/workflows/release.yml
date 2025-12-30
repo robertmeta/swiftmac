@@ -112,8 +112,8 @@ jobs:
             printf "## SwiftMac %s\n\n" "$VERSION"
             printf "**Apple Silicon Release** (arm64)\n\n"
             printf "### Requirements\n\n"
-            printf "- macOS with Apple Silicon (M1, M2, M3, M4, or newer)\n"
-            printf "- Emacspeak installed\n\n"
+            printf "%s\n" "- macOS with Apple Silicon (M1, M2, M3, M4, or newer)"
+            printf "%s\n\n" "- Emacspeak installed"
             printf "### Installation\n\n"
             printf "**1. Download and extract:**\n\n"
             printf '```bash\n'

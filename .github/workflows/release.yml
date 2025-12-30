@@ -51,21 +51,68 @@ jobs:
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
 
-      - name: Build release version
-        run: swift build --configuration release
+      - name: Build for Apple Silicon (arm64)
+        run: |
+          echo "Building for Apple Silicon (arm64)..."
+          swift build --configuration release --arch arm64
+          mkdir -p .build/arm64-apple-macosx/release
+          cp -r .build/release/* .build/arm64-apple-macosx/release/
+
+      - name: Build for Intel (x86_64)
+        run: |
+          echo "Building for Intel (x86_64)..."
+          swift build --configuration release --arch x86_64
+          mkdir -p .build/x86_64-apple-macosx/release
+          cp -r .build/release/* .build/x86_64-apple-macosx/release/
+
+      - name: Create Universal Binary
+        run: |
+          echo "Creating universal binary..."
+
+          # Create universal binary for swiftmac executable
+          lipo -create \
+            .build/arm64-apple-macosx/release/swiftmac \
+            .build/x86_64-apple-macosx/release/swiftmac \
+            -output swiftmac-universal
+
+          # Verify it's universal
+          file swiftmac-universal
+          lipo -info swiftmac-universal
+
+          # Create universal frameworks by copying arm64 structure and merging binaries
+          mkdir -p universal-frameworks
+
+          # OggDecoder framework
+          cp -r .build/arm64-apple-macosx/release/ogg.framework universal-frameworks/
+          lipo -create \
+            .build/arm64-apple-macosx/release/ogg.framework/ogg \
+            .build/x86_64-apple-macosx/release/ogg.framework/ogg \
+            -output universal-frameworks/ogg.framework/ogg
+
+          # Vorbis framework
+          cp -r .build/arm64-apple-macosx/release/vorbis.framework universal-frameworks/
+          lipo -create \
+            .build/arm64-apple-macosx/release/vorbis.framework/vorbis \
+            .build/x86_64-apple-macosx/release/vorbis.framework/vorbis \
+            -output universal-frameworks/vorbis.framework/vorbis
+
+          # Verify frameworks are universal
+          echo "Verifying universal frameworks..."
+          lipo -info universal-frameworks/ogg.framework/ogg
+          lipo -info universal-frameworks/vorbis.framework/vorbis
 
       - name: Create release archive
         run: |
           VERSION="${{ needs.check-version.outputs.version }}"
-          echo "Building swiftmac version $VERSION"
+          echo "Building swiftmac version $VERSION (Universal Binary)"
 
           # Create release directory
           mkdir -p swiftmac
 
-          # Copy binary and frameworks
-          cp -rf .build/release/ogg.framework swiftmac/
-          cp -rf .build/release/vorbis.framework swiftmac/
-          cp .build/release/swiftmac swiftmac/
+          # Copy universal binary and frameworks
+          cp swiftmac-universal swiftmac/swiftmac
+          cp -rf universal-frameworks/ogg.framework swiftmac/
+          cp -rf universal-frameworks/vorbis.framework swiftmac/
 
           # Copy support files
           cp swiftmac-voices.el swiftmac/

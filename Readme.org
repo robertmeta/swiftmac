@@ -338,11 +338,13 @@ When you update the version in =Sources/SwiftMacPackage/main.swift= and push to 
 *** What Gets Included in Releases
 
 The release tarball (=swiftmac-VERSION.tar.gz=) includes:
-- =swiftmac= binary (release build)
-- =ogg.framework= and =vorbis.framework=
+- =swiftmac= universal binary (works on both Intel and Apple Silicon Macs)
+- =ogg.framework= and =vorbis.framework= (universal frameworks)
 - =swiftmac-voices.el=
 - =cloud-swiftmac= and =log-swiftmac= scripts
 - Documentation: =LICENSE=, =Readme.org=, =Readme.emacspeak.org=
+
+*Note:* All binaries are universal, containing both x86_64 (Intel) and arm64 (Apple Silicon) code.
 
 ** Hacking
 :PROPERTIES:

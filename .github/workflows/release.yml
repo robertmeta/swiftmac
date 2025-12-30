@@ -108,25 +108,63 @@ jobs:
           fi
 
           # Create release notes
-          cat > RELEASE_NOTES.md <<EOF
+          cat > RELEASE_NOTES.md <<'EOF'
           ## SwiftMac ${VERSION}
 
           **Apple Silicon Release** (arm64)
+
+          ### Requirements
+
+          - macOS with Apple Silicon (M1, M2, M3, M4, or newer)
+          - Emacspeak installed
+
+          ### Installation
+
+          1. **Download and extract:**
+          \`\`\`bash
+          curl -L https://github.com/robertmeta/swiftmac/releases/download/v${VERSION}/swiftmac-${VERSION}.tar.gz | tar xz
+          cd swiftmac
+          \`\`\`
+
+          2. **Install to Emacspeak:**
+          \`\`\`bash
+          # Copy binary and frameworks
+          cp -rf swiftmac ogg.framework vorbis.framework $EMACSPEAK_DIR/servers/
+
+          # Copy support scripts
+          cp cloud-swiftmac log-swiftmac $EMACSPEAK_DIR/servers/
+
+          # Copy voice configuration
+          cp swiftmac-voices.el $EMACSPEAK_DIR/lisp/
+
+          # Update .servers file
+          cd $EMACSPEAK_DIR/servers
+          echo "swiftmac" >> .servers
+          echo "log-swiftmac" >> .servers
+          echo "cloud-swiftmac" >> .servers
+          sort -u .servers -o .servers
+          \`\`\`
+
+          3. **Configure Emacs:**
+          Add to your Emacs init file:
+          \`\`\`elisp
+          (setenv "EMACSPEAK_DIR" "/path/to/.emacspeak")  ; Set your path
+          (load-file "/path/to/.emacspeak/lisp/emacspeak-setup.el")
+          (dtk-select-server "swiftmac")
+          \`\`\`
 
           ### Changes
 
           ${CHANGES}
 
-          ### Download
+          ---
 
-          \`\`\`bash
-          curl -L https://github.com/robertmeta/swiftmac/releases/download/v${VERSION}/swiftmac-${VERSION}.tar.gz | tar xz
-          \`\`\`
-
-          ### Requirements
-
-          - macOS with Apple Silicon (M1, M2, M3, M4, or newer)
+          For more information, see the [full documentation](https://github.com/robertmeta/swiftmac).
           EOF
+
+          # Substitute VERSION variable
+          sed -i.bak "s/\${VERSION}/$VERSION/g" RELEASE_NOTES.md
+          rm RELEASE_NOTES.md.bak
 
           echo "Release notes created"
 

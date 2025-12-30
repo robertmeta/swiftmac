@@ -13,16 +13,46 @@ A fast, async Emacspeak speech server for macOS written in Swift.
 - [[#hacking][Development]] - Building and hacking on SwiftMac
 - [[#having-trouble][Troubleshooting]] - Common issues and solutions
 
-** Configuration / Install
-*** swiftmac.tar.gz (binaries)
+** Installation
+
+*** Homebrew (Recommended)
+
+The easiest installation method for macOS users:
+
+#+BEGIN_SRC shell
+  brew tap robertmeta/swiftmac
+  brew install swiftmac
+#+END_SRC
+
+Then configure Emacs:
+
+#+BEGIN_SRC emacs-lisp
+  (setenv "EMACSPEAK_DIR" "/path/to/.emacspeak")
+  (load-file "/opt/homebrew/share/emacs/site-lisp/swiftmac-voices.el")
+  (dtk-select-server "swiftmac")
+#+END_SRC
+
+For manual Emacspeak integration:
+
+#+BEGIN_SRC shell
+  ln -sf /opt/homebrew/opt/swiftmac/libexec/swiftmac $EMACSPEAK_DIR/servers/
+  ln -sf /opt/homebrew/opt/swiftmac/libexec/log-swiftmac $EMACSPEAK_DIR/servers/
+  ln -sf /opt/homebrew/opt/swiftmac/libexec/cloud-swiftmac $EMACSPEAK_DIR/servers/
+  ln -sf /opt/homebrew/opt/swiftmac/libexec/ogg.framework $EMACSPEAK_DIR/servers/
+  ln -sf /opt/homebrew/opt/swiftmac/libexec/vorbis.framework $EMACSPEAK_DIR/servers/
+#+END_SRC
+
+*** Binary Release (swiftmac.tar.gz)
+
+Download from [[https://github.com/robertmeta/swiftmac/releases/latest][GitHub releases]].
 
 Copy the extracted files to the $EMACSPEAK_DIR/servers and
 then add the swiftmac server to your emacs config, for more
 info see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
-*** source based
+*** From Source
 
-Otherwise see: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
+See: [[file:Readme.emacspeak.org][Readme.emacspeak.org]]
 
 ** Helper Scripts and Tools
 :PROPERTIES:

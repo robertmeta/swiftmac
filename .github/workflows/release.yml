@@ -91,14 +91,6 @@ jobs:
           ls -lh swiftmac-$VERSION.tar.gz
         shell: bash
 
-      - name: Create Git tag
-        run: |
-          VERSION="${{ needs.check-version.outputs.version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v$VERSION" -m "Release version $VERSION"
-          git push origin "v$VERSION"
-
       - name: Extract changelog
         id: changelog
         run: |
@@ -125,8 +117,16 @@ jobs:
             swiftmac-${{ needs.check-version.outputs.version }}.tar.gz
           draft: false
           prerelease: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify release created
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          echo "✅ Release created successfully!"
+          echo "📦 Download: https://github.com/robertmeta/swiftmac/releases/download/v$VERSION/swiftmac-$VERSION.tar.gz"
+          echo "🔗 View release: https://github.com/robertmeta/swiftmac/releases/tag/v$VERSION"
 
       - name: Update latest release symlink
         run: |

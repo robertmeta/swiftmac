@@ -55,27 +55,50 @@ jobs:
         run: |
           echo "Building for Apple Silicon (arm64)..."
           swift build --configuration release --arch arm64
-          mkdir -p .build/arm64-apple-macosx/release
-          cp -r .build/release/* .build/arm64-apple-macosx/release/
+          mkdir -p build-artifacts/arm64
+          cp .build/release/swiftmac build-artifacts/arm64/
+          cp -r .build/release/ogg.framework build-artifacts/arm64/
+          cp -r .build/release/vorbis.framework build-artifacts/arm64/
+          echo "Saved arm64 build artifacts"
+          file build-artifacts/arm64/swiftmac
+
+      - name: Clean build directory
+        run: |
+          echo "Cleaning build directory..."
+          rm -rf .build
 
       - name: Build for Intel (x86_64)
         run: |
           echo "Building for Intel (x86_64)..."
           swift build --configuration release --arch x86_64
-          mkdir -p .build/x86_64-apple-macosx/release
-          cp -r .build/release/* .build/x86_64-apple-macosx/release/
+          mkdir -p build-artifacts/x86_64
+          cp .build/release/swiftmac build-artifacts/x86_64/
+          cp -r .build/release/ogg.framework build-artifacts/x86_64/
+          cp -r .build/release/vorbis.framework build-artifacts/x86_64/
+          echo "Saved x86_64 build artifacts"
+          file build-artifacts/x86_64/swiftmac
 
       - name: Create Universal Binary
         run: |
           echo "Creating universal binary..."
 
+          # Verify source binaries
+          echo "ARM64 binary:"
+          file build-artifacts/arm64/swiftmac
+          lipo -info build-artifacts/arm64/swiftmac
+
+          echo "x86_64 binary:"
+          file build-artifacts/x86_64/swiftmac
+          lipo -info build-artifacts/x86_64/swiftmac
+
           # Create universal binary for swiftmac executable
           lipo -create \
-            .build/arm64-apple-macosx/release/swiftmac \
-            .build/x86_64-apple-macosx/release/swiftmac \
+            build-artifacts/arm64/swiftmac \
+            build-artifacts/x86_64/swiftmac \
             -output swiftmac-universal
 
           # Verify it's universal
+          echo "Universal binary:"
           file swiftmac-universal
           lipo -info swiftmac-universal
 
@@ -83,17 +106,17 @@ jobs:
           mkdir -p universal-frameworks
 
           # OggDecoder framework
-          cp -r .build/arm64-apple-macosx/release/ogg.framework universal-frameworks/
+          cp -r build-artifacts/arm64/ogg.framework universal-frameworks/
           lipo -create \
-            .build/arm64-apple-macosx/release/ogg.framework/ogg \
-            .build/x86_64-apple-macosx/release/ogg.framework/ogg \
+            build-artifacts/arm64/ogg.framework/ogg \
+            build-artifacts/x86_64/ogg.framework/ogg \
             -output universal-frameworks/ogg.framework/ogg
 
           # Vorbis framework
-          cp -r .build/arm64-apple-macosx/release/vorbis.framework universal-frameworks/
+          cp -r build-artifacts/arm64/vorbis.framework universal-frameworks/
           lipo -create \
-            .build/arm64-apple-macosx/release/vorbis.framework/vorbis \
-            .build/x86_64-apple-macosx/release/vorbis.framework/vorbis \
+            build-artifacts/arm64/vorbis.framework/vorbis \
+            build-artifacts/x86_64/vorbis.framework/vorbis \
             -output universal-frameworks/vorbis.framework/vorbis
 
           # Verify frameworks are universal

@@ -8,6 +8,9 @@ on:
       - 'Sources/SwiftMacPackage/main.swift'
       - '.github/workflows/release.yml'
 
+permissions:
+  contents: write
+
 jobs:
   check-version:
     runs-on: ubuntu-latest
@@ -90,6 +93,15 @@ jobs:
           echo "Release archive created: swiftmac-$VERSION.tar.gz"
           ls -lh swiftmac-$VERSION.tar.gz
         shell: bash
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          echo "Creating tag v$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release version $VERSION"
+          git push origin "v$VERSION"
 
       - name: Extract changelog
         id: changelog

@@ -108,65 +108,71 @@ jobs:
           fi
 
           # Create release notes
-          cat > RELEASE_NOTES.md <<'EOF'
-          ## SwiftMac ${VERSION}
+          cat > RELEASE_NOTES.md <<'NOTES_EOF'
+## SwiftMac VERSION_PLACEHOLDER
 
-          **Apple Silicon Release** (arm64)
+**Apple Silicon Release** (arm64)
 
-          ### Requirements
+### Requirements
 
-          - macOS with Apple Silicon (M1, M2, M3, M4, or newer)
-          - Emacspeak installed
+- macOS with Apple Silicon (M1, M2, M3, M4, or newer)
+- Emacspeak installed
 
-          ### Installation
+### Installation
 
-          1. **Download and extract:**
-          \`\`\`bash
-          curl -L https://github.com/robertmeta/swiftmac/releases/download/v${VERSION}/swiftmac-${VERSION}.tar.gz | tar xz
-          cd swiftmac
-          \`\`\`
+**1. Download and extract:**
 
-          2. **Install to Emacspeak:**
-          \`\`\`bash
-          # Copy binary and frameworks
-          cp -rf swiftmac ogg.framework vorbis.framework $EMACSPEAK_DIR/servers/
+```bash
+curl -L https://github.com/robertmeta/swiftmac/releases/download/vVERSION_PLACEHOLDER/swiftmac-VERSION_PLACEHOLDER.tar.gz | tar xz
+cd swiftmac
+```
 
-          # Copy support scripts
-          cp cloud-swiftmac log-swiftmac $EMACSPEAK_DIR/servers/
+**2. Install to Emacspeak:**
 
-          # Copy voice configuration
-          cp swiftmac-voices.el $EMACSPEAK_DIR/lisp/
+```bash
+# Copy binary and frameworks
+cp -rf swiftmac ogg.framework vorbis.framework $EMACSPEAK_DIR/servers/
 
-          # Update .servers file
-          cd $EMACSPEAK_DIR/servers
-          echo "swiftmac" >> .servers
-          echo "log-swiftmac" >> .servers
-          echo "cloud-swiftmac" >> .servers
-          sort -u .servers -o .servers
-          \`\`\`
+# Copy support scripts
+cp cloud-swiftmac log-swiftmac $EMACSPEAK_DIR/servers/
 
-          3. **Configure Emacs:**
-          Add to your Emacs init file:
-          \`\`\`elisp
-          (setenv "EMACSPEAK_DIR" "/path/to/.emacspeak")  ; Set your path
-          (load-file "/path/to/.emacspeak/lisp/emacspeak-setup.el")
-          (dtk-select-server "swiftmac")
-          \`\`\`
+# Copy voice configuration
+cp swiftmac-voices.el $EMACSPEAK_DIR/lisp/
 
-          ### Changes
+# Update .servers file
+cd $EMACSPEAK_DIR/servers
+echo "swiftmac" >> .servers
+echo "log-swiftmac" >> .servers
+echo "cloud-swiftmac" >> .servers
+sort -u .servers -o .servers
+```
 
-          ${CHANGES}
+**3. Configure Emacs:**
 
-          ---
+Add to your Emacs init file:
 
-          For more information, see the [full documentation](https://github.com/robertmeta/swiftmac).
-          EOF
+```emacs-lisp
+(setenv "EMACSPEAK_DIR" "/path/to/.emacspeak")  ; Set your path
+(load-file "/path/to/.emacspeak/lisp/emacspeak-setup.el")
+(dtk-select-server "swiftmac")
+```
 
-          # Substitute VERSION variable
-          sed -i.bak "s/\${VERSION}/$VERSION/g" RELEASE_NOTES.md
+### Changes
+
+CHANGES_PLACEHOLDER
+
+---
+
+For more information, see the [full documentation](https://github.com/robertmeta/swiftmac).
+NOTES_EOF
+
+          # Substitute variables
+          sed -i.bak "s/VERSION_PLACEHOLDER/$VERSION/g" RELEASE_NOTES.md
+          sed -i.bak "s|CHANGES_PLACEHOLDER|$CHANGES|g" RELEASE_NOTES.md
           rm RELEASE_NOTES.md.bak
 
           echo "Release notes created"
+          cat RELEASE_NOTES.md
 
       - name: Create GitHub Release with gh CLI
         run: |
